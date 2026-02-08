@@ -49,7 +49,46 @@ workflows:
       - name: Build IPA
         script: |
           cd frontend/ios/App
-          xcode-project build-ipa --workspace App.xcworkspace --scheme App
+          
+          # Get signing identity
+          CERT_NAME=$(security find-identity -v -p codesigning | grep "Apple Distribution" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "Certificate: $CERT_NAME"
+          
+          # Get profile
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
+          TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
+          echo "Profile: $PROFILE_NAME ($PROFILE_UUID)"
+          echo "Team: $TEAM_ID"
+          
+          # Archive with signing
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination 'generic/platform=iOS' \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$CERT_NAME" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            DEVELOPMENT_TEAM="$TEAM_ID"
+          
+          # Export
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > ExportOptions.plist
+          echo '<plist version="1.0"><dict>' >> ExportOptions.plist
+          echo "<key>method</key><string>app-store-connect</string>" >> ExportOptions.plist
+          echo "<key>teamID</key><string>$TEAM_ID</string>" >> ExportOptions.plist
+          echo "<key>signingStyle</key><string>manual</string>" >> ExportOptions.plist
+          echo "<key>signingCertificate</key><string>$CERT_NAME</string>" >> ExportOptions.plist
+          echo "<key>provisioningProfiles</key><dict>" >> ExportOptions.plist
+          echo "<key>pl.rezerwacja24.app</key><string>$PROFILE_NAME</string>" >> ExportOptions.plist
+          echo "</dict></dict></plist>" >> ExportOptions.plist
+          
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ExportOptions.plist
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
     publishing:
