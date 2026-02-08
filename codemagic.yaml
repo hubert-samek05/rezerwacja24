@@ -24,30 +24,29 @@ workflows:
       - name: Fetch signing files
         script: |
           # List available certificates
-          echo "=== Certificates in keychain ==="
-          app-store-connect certificates list || true
+          echo "=== Certificates available ==="
+          app-store-connect certificates list --type IOS_DISTRIBUTION --save || true
           
           # List available profiles  
-          echo "=== Profiles in Apple ==="
-          app-store-connect profiles list || true
+          echo "=== Profiles available ==="
+          app-store-connect profiles list --type IOS_APP_STORE || true
           
-          # Fetch signing files
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          # Download profile
+          echo "=== Downloading profile ==="
+          app-store-connect profiles download \
+            --bundle-id-identifier "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
-            --strict-match-identifier || echo "Fetch failed, trying without strict match..."
+            --save || true
           
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create || true
-            
-          # Add certs and profiles
-          keychain add-certificates || true
-          xcode-project use-profiles || true
+          # Show downloaded files
+          echo "=== Downloaded certificates ==="
+          ls -la ~/Library/MobileDevice/Certificates/ || true
           
-          # Debug: show what we have
-          echo "=== Provisioning profiles installed ==="
+          echo "=== Downloaded profiles ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          
+          # Add certs to keychain
+          keychain add-certificates || true
       
       - name: Install dependencies
         script: |
@@ -78,43 +77,45 @@ workflows:
             archive \
             CODE_SIGNING_ALLOWED=NO
           
-          # Add certificates to keychain before export
-          keychain add-certificates
+          # Show what we have
+          echo "=== Certificates in keychain ==="
+          security find-identity -v -p codesigning || true
           
-          # Install provisioning profile
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
-          for profile in $(find $HOME/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" 2>/dev/null); do
-            echo "Found profile: $profile"
-          done
+          echo "=== Profiles available ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
           
-          # Get profile name
-          PROFILE_NAME=$(app-store-connect profiles list --bundle-id-identifier "$BUNDLE_ID" --type IOS_APP_STORE 2>/dev/null | grep -o '"name": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "Rezerwacja24 AppStore")
+          # Get profile path and extract name
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+          if [ -n "$PROFILE_PATH" ]; then
+            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH") 2>/dev/null)
+          fi
+          PROFILE_NAME=${PROFILE_NAME:-"Rezerwacja24 AppStore"}
           echo "Using profile: $PROFILE_NAME"
           
-          # Create export options with manual signing
+          # Create export options
           cat > ExportOptions.plist << PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>teamID</key>
-            <string>$TEAM_ID</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>pl.rezerwacja24.app</key>
-              <string>$PROFILE_NAME</string>
-            </dict>
-            <key>uploadSymbols</key>
-            <true/>
-          </dict>
-          </plist>
-          PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>app-store-connect</string>
+  <key>teamID</key>
+  <string>$TEAM_ID</string>
+  <key>signingStyle</key>
+  <string>manual</string>
+  <key>signingCertificate</key>
+  <string>Apple Distribution</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>pl.rezerwacja24.app</key>
+    <string>$PROFILE_NAME</string>
+  </dict>
+  <key>uploadSymbols</key>
+  <true/>
+</dict>
+</plist>
+PLIST
           
           cat ExportOptions.plist
           
