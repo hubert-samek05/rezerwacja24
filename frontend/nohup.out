@@ -1,0 +1,42 @@
+
+> rezerwacja24-frontend@1.0.0 start
+> next start
+
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at /root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/server/lib/start-server.js:279:16
+    at new Promise (<anonymous>)
+    at startServer (/root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/server/lib/start-server.js:190:11)
+    at nextStart (/root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/cli/next-start.js:50:40)
+    at /root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/bin/next:157:54
+    at async main (/root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/bin/next:157:5) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+> rezerwacja24-frontend@1.0.0 start
+> next start
+
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at /root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/server/lib/start-server.js:279:16
+    at new Promise (<anonymous>)
+    at startServer (/root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/server/lib/start-server.js:190:11)
+    at nextStart (/root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/cli/next-start.js:50:40)
+    at /root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/bin/next:157:54
+    at async main (/root/CascadeProjects/rezerwacja24-saas/frontend/node_modules/next/dist/bin/next:157:5) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}

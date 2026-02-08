@@ -1,0 +1,232 @@
+{
+  "nav": {
+    "features": "Funciones",
+    "howItWorks": "Cómo funciona",
+    "pricing": "Precios",
+    "contact": "Contacto",
+    "login": "Iniciar sesión",
+    "tryFree": "Prueba gratis"
+  },
+  "hero": {
+    "title": "Sistema de reservas online",
+    "titleHighlight": "para tu negocio",
+    "subtitle": "Salón de belleza, peluquería, taller de coches o consultorio médico — un sistema que automatiza las reservas y te ahorra tiempo.",
+    "cta": "Prueba 7 días gratis",
+    "ctaSecondary": "Ver funciones",
+    "benefit1": "Acceso completo inmediato",
+    "benefit2": "Configuración en 5 minutos",
+    "benefit3": "Cancela cuando quieras"
+  },
+  "stats": {
+    "companies": "Empresas activas",
+    "bookings": "Reservas al mes",
+    "uptime": "Disponibilidad del sistema",
+    "support": "Soporte técnico"
+  },
+  "features": {
+    "badge": "Conjunto completo de funciones",
+    "title": "Todo lo que necesitas",
+    "subtitle": "Herramientas profesionales para gestionar reservas, clientes y pagos en un solo lugar.",
+    "list": [
+      "Panel de gestión intuitivo",
+      "Todos los datos en un solo lugar",
+      "Acceso rápido a estadísticas"
+    ],
+    "calendar": {
+      "title": "Calendario inteligente",
+      "description": "Vista diaria, semanal y mensual. Arrastrar y soltar para reprogramar. Detección automática de conflictos."
+    },
+    "booking": {
+      "title": "Reservas 24/7",
+      "description": "Tus clientes pueden reservar en cualquier momento. Confirmaciones y recordatorios automáticos."
+    },
+    "notifications": {
+      "title": "Notificaciones SMS y email",
+      "description": "Los recordatorios automáticos reducen las ausencias hasta un 70%."
+    },
+    "payments": {
+      "title": "Pagos online",
+      "description": "Acepta pagos con tarjeta y transferencias bancarias. Facturas y liquidaciones automáticas."
+    },
+    "employees": {
+      "title": "Gestión de equipo",
+      "description": "Cada empleado tiene su propio calendario, servicios y horarios de trabajo. Seguimiento del rendimiento."
+    },
+    "analytics": {
+      "title": "Estadísticas e informes",
+      "description": "Sigue los ingresos, la popularidad de los servicios y el rendimiento de los empleados en tiempo real."
+    },
+    "packages": {
+      "title": "Paquetes de servicios",
+      "description": "Crea paquetes atractivos combinando varios servicios a un precio promocional."
+    },
+    "passes": {
+      "title": "Abonos y pases",
+      "description": "Vende pases para un número específico de visitas o suscripciones por tiempo."
+    },
+    "promotions": {
+      "title": "Promociones y cupones",
+      "description": "Crea códigos de descuento y promociones de temporada para atraer nuevos clientes."
+    },
+    "groups": {
+      "title": "Clases grupales",
+      "description": "Organiza talleres, formaciones y clases grupales con gestión automática de participantes."
+    },
+    "api": {
+      "title": "API e integraciones",
+      "description": "Integra el sistema con tus propias aplicaciones usando REST API y webhooks."
+    },
+    "security": {
+      "title": "Seguridad de datos",
+      "description": "Cifrado SSL, cumplimiento RGPD y copias de seguridad regulares."
+    },
+    "allFeatures": [
+      { "icon": "calendar", "title": "Calendario de reservas", "description": "Calendario avanzado con vistas diaria, semanal y mensual. Soporte de arrastrar y soltar." },
+      { "icon": "users", "title": "CRM y base de clientes", "description": "Base de datos de clientes completa con historial de visitas, notas y preferencias." },
+      { "icon": "bell", "title": "Notificaciones SMS", "description": "Recordatorios SMS automáticos 24h y 2h antes de las citas. Reduce las ausencias." },
+      { "icon": "creditCard", "title": "Pagos online", "description": "Stripe, PayPal, tarjetas de crédito. Acepta pagos online de los clientes." },
+      { "icon": "barChart", "title": "Análisis e informes", "description": "Estadísticas de ingresos, mapas de calor de reservas e indicadores KPI." },
+      { "icon": "usersRound", "title": "Gestión de equipo", "description": "Empleados, horarios, vacaciones y permisos en un solo lugar." },
+      { "icon": "palette", "title": "Página de reservas personalizada", "description": "Página profesional tu-negocio.bookings24.eu con colores, logo y apariencia personalizables." },
+      { "icon": "globe", "title": "Página multilingüe", "description": "Página de reservas disponible en inglés, alemán y polaco. Detección automática del idioma." },
+      { "icon": "gift", "title": "Programa de fidelidad", "description": "Recompensa a los clientes habituales con puntos por visitas. Niveles de fidelidad y recompensas canjeables." },
+      { "icon": "package", "title": "Paquetes de servicios", "description": "Crea paquetes combinando varios servicios a precios atractivos." },
+      { "icon": "ticket", "title": "Pases", "description": "Vende pases para múltiples visitas de clientes." },
+      { "icon": "star", "title": "Promociones y descuentos", "description": "Códigos de descuento, promociones de temporada y ofertas especiales." },
+      { "icon": "layers", "title": "Reservas de grupo", "description": "Acepta reservas para grupos y eventos." },
+      { "icon": "code", "title": "Widget para web", "description": "Integra el formulario de reservas en tu sitio web." },
+      { "icon": "refresh", "title": "Sincronización de calendario", "description": "Integración con Google Calendar y Apple Calendar." },
+      { "icon": "shield", "title": "Cumplimiento RGPD", "description": "Procesamiento y almacenamiento seguro de datos de clientes." },
+      { "icon": "lock", "title": "Seguridad 2FA", "description": "Autenticación de dos factores para la seguridad de la cuenta." },
+      { "icon": "zap", "title": "REST API", "description": "API completa para integración con tus propios sistemas." },
+      { "icon": "clock", "title": "Gestión del tiempo", "description": "Horarios de trabajo, descansos y disponibilidad de empleados." }
+    ],
+    "tryAllFeatures": "Prueba todas las funciones gratis",
+    "quickAccess": "Acceso rápido",
+    "toAllFeatures": "A todas las funciones"
+  },
+  "howItWorks": {
+    "badge": "Proceso simple",
+    "title": "Empieza en 3 pasos",
+    "subtitle": "La configuración solo lleva unos minutos. Sin ajustes complicados.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Crea una cuenta",
+        "description": "Regístrate gratis con la información básica de tu negocio. Solo lleva un momento.",
+        "details": ["Registro en 30 segundos", "Acceso completo inmediato", "7 días gratis"]
+      },
+      {
+        "num": "02",
+        "title": "Configura el negocio",
+        "description": "Añade tus servicios, establece precios, horarios de trabajo y asigna empleados.",
+        "details": ["Añade servicios y precios", "Establece horarios de trabajo", "Añade empleados"]
+      },
+      {
+        "num": "03",
+        "title": "Acepta reservas",
+        "description": "Comparte el enlace de reservas con los clientes y empieza a automatizar tu negocio.",
+        "details": ["Página de reservas personalizada", "Widget para tu web", "Notificaciones automáticas"]
+      }
+    ]
+  },
+  "pricing": {
+    "badge": "Precios simples",
+    "title": "Elige tu plan",
+    "subtitle": "Sin costes ocultos. Cancela cuando quieras.",
+    "monthly": "mensual",
+    "yearly": "anual",
+    "popular": "Más popular",
+    "cta": "Empezar gratis",
+    "features": {
+      "bookings": "reservas al mes",
+      "unlimited": "Ilimitadas",
+      "employees": "empleados",
+      "sms": "Notificaciones SMS",
+      "support": "Soporte",
+      "email": "Email",
+      "priority": "Prioritario",
+      "dedicated": "Dedicado",
+      "api": "Acceso API",
+      "branding": "Logo y colores personalizados"
+    },
+    "plans": {
+      "starter": "Starter",
+      "professional": "Professional",
+      "business": "Business"
+    }
+  },
+  "startNow": "Empezar ahora",
+  "freeTrial": "Prueba gratuita de 7 días",
+  "testimonials": {
+    "title": "Lo que dicen nuestros clientes",
+    "items": [
+      { "quote": "El sistema me ahorra al menos 10 horas a la semana. Los clientes reservan solos.", "author": "Ana K.", "role": "Salón de belleza" },
+      { "quote": "Las notificaciones SMS son un cambio total. Prácticamente no tengo ausencias.", "author": "Marco W.", "role": "Peluquería" },
+      { "quote": "Fácil de usar, pero tiene todo lo que necesito.", "author": "Catalina M.", "role": "Estudio de masajes" }
+    ]
+  },
+  "pricingSection": {
+    "title": "Elige tu plan",
+    "subtitle": "7 días gratis. Sin compromiso.",
+    "freeDays": "7 días gratis",
+    "perMonth": "€/mes",
+    "startFree": "Empezar gratis",
+    "mostPopular": "Más popular",
+    "starter": {
+      "name": "Starter",
+      "price": "2.99",
+      "features": ["100 reservas/mes", "1 empleado", "Sin SMS", "Página de reservas"]
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "11.99",
+      "features": ["Reservas ilimitadas", "Hasta 5 empleados", "100 SMS/mes", "Subdominio personalizado", "Análisis"]
+    },
+    "business": {
+      "name": "Business",
+      "price": "24.99",
+      "features": ["Reservas ilimitadas", "Empleados ilimitados", "500 SMS/mes", "Subdominio personalizado", "Análisis", "API", "Soporte prioritario"]
+    }
+  },
+  "cta": {
+    "title": "¿Listo para automatizar tus reservas?",
+    "subtitle": "Únete a cientos de empresas que ya ahorran tiempo con nuestro sistema.",
+    "button": "Empezar prueba de 7 días",
+    "note": "Sin tarjeta de crédito • Acceso completo • Cancela cuando quieras"
+  },
+  "footer": {
+    "brandName": "Bookings24",
+    "description": "Sistema profesional de reservas online para empresas de servicios. Automatiza las reservas y ahorra tiempo.",
+    "product": "Producto",
+    "productLinks": {
+      "features": "Funciones del sistema",
+      "howItWorks": "Cómo funciona",
+      "pricing": "Precios de suscripción",
+      "help": "Centro de ayuda"
+    },
+    "industries": "Sectores",
+    "industryLinks": {
+      "beauty": "Salones de belleza",
+      "hair": "Peluquerías",
+      "massage": "Estudios de masajes",
+      "auto": "Talleres de coches"
+    },
+    "company": "Empresa",
+    "companyLinks": {
+      "contact": "Contáctanos",
+      "privacy": "Política de privacidad",
+      "terms": "Términos de servicio"
+    },
+    "developers": "Desarrolladores",
+    "developerLinks": {
+      "api": "Documentación API",
+      "widget": "Widget de reservas",
+      "integrations": "Integraciones"
+    },
+    "copyright": "Sistema de reservas online. Todos los derechos reservados.",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "contact": "Contacto"
+  }
+}

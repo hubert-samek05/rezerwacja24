@@ -1,0 +1,90 @@
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { EmailService } from './email.service';
+
+@Controller('email')
+export class EmailController {
+  constructor(private readonly emailService: EmailService) {}
+
+  /**
+   * POST /api/email/test
+   * Endpoint do testowania wysyłania maili (tylko dla admina)
+   */
+  @Post('test')
+  @HttpCode(HttpStatus.OK)
+  async sendTestEmail(@Body() body: { to: string; type?: string }) {
+    const { to, type = 'welcome' } = body;
+
+    if (!to) {
+      return { success: false, error: 'Email address is required' };
+    }
+
+    let result = false;
+
+    switch (type) {
+      case 'welcome':
+        result = await this.emailService.sendWelcomeEmail(to, {
+          name: 'Test User',
+          companyName: 'Test Company',
+          subdomain: 'test-company',
+        });
+        break;
+
+      case 'trial-started':
+        result = await this.emailService.sendTrialStartedEmail(to, {
+          name: 'Test User',
+          trialDays: 7,
+          trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL'),
+        });
+        break;
+
+      case 'trial-ending':
+        result = await this.emailService.sendTrialEndingEmail(to, {
+          name: 'Test User',
+          daysLeft: 3,
+          trialEndDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL'),
+        });
+        break;
+
+      case 'trial-ended-today':
+        result = await this.emailService.sendTrialEndedTodayEmail(to, {
+          name: 'Test User',
+          planName: 'Starter',
+        });
+        break;
+
+      case 'subscription-active':
+        result = await this.emailService.sendSubscriptionActiveEmail(to, {
+          name: 'Test User',
+          planName: 'Professional',
+          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL'),
+        });
+        break;
+
+      case 'password-reset':
+        result = await this.emailService.sendPasswordResetEmail(to, {
+          name: 'Test User',
+          resetLink: 'https://rezerwacja24.pl/reset-password?token=test123',
+          expiresIn: '1 godzinę',
+        });
+        break;
+
+      case 'invoice':
+        result = await this.emailService.sendInvoiceEmail(to, {
+          name: 'Test User',
+          invoiceNumber: 'FV/2025/12/001',
+          amount: '79,99 zł',
+          invoiceDate: new Date().toLocaleDateString('pl-PL'),
+        });
+        break;
+
+      case 'test':
+        result = await this.emailService.sendTestEmail(to);
+        break;
+
+      default:
+        return { success: false, error: `Unknown email type: ${type}` };
+    }
+
+    return { success: result, type, to };
+  }
+}

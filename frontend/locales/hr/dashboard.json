@@ -1,0 +1,112 @@
+{
+  "nav": {
+    "dashboard": "Nadzorna ploča",
+    "calendar": "Kalendar",
+    "bookings": "Rezervacije",
+    "customers": "Klijenti",
+    "services": "Usluge",
+    "employees": "Zaposlenici",
+    "categories": "Kategorije",
+    "packages": "Paketi",
+    "passes": "Propusnice",
+    "loyalty": "Lojalnost",
+    "groupBookings": "Grupne lekcije",
+    "promotions": "Promocije",
+    "analytics": "Analitika",
+    "settings": "Postavke",
+    "start": "Početak",
+    "more": "Više"
+  },
+  "labels": {
+    "all": "Sve",
+    "confirmed": "Potvrđeno",
+    "pending": "Na čekanju",
+    "completed": "Dovršeno",
+    "cancelled": "Otkazano",
+    "revenue": "Prihodi",
+    "filters": "Filteri",
+    "employee": "Zaposlenik",
+    "period": "Razdoblje",
+    "allTime": "Svo vrijeme",
+    "today": "Danas",
+    "thisWeek": "Ovaj tjedan",
+    "thisMonth": "Ovaj mjesec",
+    "paid": "Plaćeno",
+    "unpaid": "Neplaćeno",
+    "partial": "Djelomično",
+    "cash": "Gotovina",
+    "card": "Kartica",
+    "pass": "Propusnica",
+    "other": "Ostalo"
+  },
+  "common": {
+    "save": "Spremi",
+    "cancel": "Odustani",
+    "delete": "Izbriši",
+    "edit": "Uredi",
+    "add": "Dodaj",
+    "search": "Traži",
+    "loading": "Učitavanje...",
+    "noResults": "Nema rezultata",
+    "confirm": "Potvrdi",
+    "back": "Natrag",
+    "next": "Dalje",
+    "close": "Zatvori",
+    "yes": "Da",
+    "no": "Ne"
+  },
+  "dashboard": {
+    "title": "Nadzorna ploča",
+    "welcome": "Dobrodošli",
+    "todayBookings": "Današnje rezervacije",
+    "upcomingBookings": "Nadolazeće rezervacije",
+    "totalCustomers": "Ukupno klijenata",
+    "totalRevenue": "Ukupni prihodi"
+  },
+  "bookings": {
+    "title": "Rezervacije",
+    "newBooking": "Nova rezervacija",
+    "noBookings": "Nema rezervacija",
+    "createFirst": "Kreirajte svoju prvu rezervaciju"
+  },
+  "customers": {
+    "title": "Klijenti",
+    "newCustomer": "Novi klijent",
+    "noCustomers": "Nema klijenata",
+    "addFirst": "Dodajte svog prvog klijenta"
+  },
+  "services": {
+    "title": "Usluge",
+    "newService": "Nova usluga",
+    "noServices": "Nema usluga",
+    "addFirst": "Dodajte svoju prvu uslugu"
+  },
+  "employees": {
+    "title": "Zaposlenici",
+    "newEmployee": "Novi zaposlenik",
+    "noEmployees": "Nema zaposlenika",
+    "addFirst": "Dodajte svog prvog zaposlenika"
+  },
+  "calendar": {
+    "title": "Kalendar",
+    "day": "Dan",
+    "week": "Tjedan",
+    "month": "Mjesec",
+    "today": "Danas"
+  },
+  "settings": {
+    "title": "Postavke",
+    "general": "Opće",
+    "business": "Tvrtka",
+    "notifications": "Obavijesti",
+    "payments": "Plaćanja"
+  },
+  "errors": {
+    "somethingWentWrong": "Nešto je pošlo po zlu",
+    "tryAgain": "Pokušajte ponovno"
+  },
+  "success": {
+    "saved": "Uspješno spremljeno",
+    "deleted": "Uspješno izbrisano"
+  }
+}

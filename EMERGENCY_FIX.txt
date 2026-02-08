@@ -1,0 +1,33 @@
+NATYCHMIASTOWA NAPRAWA - WYKONAJ TO TERAZ:
+
+1. ZAMKNIJ PRZEGLĄDARKĘ CAŁKOWICIE (wszystkie okna)
+
+2. OTWÓRZ PRZEGLĄDARKĘ W TRYBIE INCOGNITO / PRYWATNYM
+   - Chrome: Ctrl+Shift+N
+   - Firefox: Ctrl+Shift+P
+
+3. WPISZ BEZPOŚREDNIO:
+   https://app.rezerwacja24.pl/login
+
+4. ZALOGUJ SIĘ
+
+5. Po zalogowaniu POWINNO przekierować do dashboard
+
+JEŚLI NADAL NIE DZIAŁA:
+
+1. Otwórz normalną przeglądarkę
+2. Ctrl+Shift+Delete
+3. Zaznacz:
+   - Cookies
+   - Cache/Pamięć podręczna
+   - Dane witryn
+4. USUŃ WSZYSTKO
+5. Zamknij przeglądarkę
+6. Otwórz ponownie
+7. Wpisz: https://app.rezerwacja24.pl/login
+8. Zaloguj się
+
+PROBLEM: Przeglądarka ma stary kod który próbuje otworzyć /subscription/setup
+ROZWIĄZANIE: Tryb incognito lub wyczyść cache
+
+TO MUSI ZADZIAŁAĆ!

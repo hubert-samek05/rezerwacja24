@@ -1,0 +1,13 @@
+import { Module } from '@nestjs/common';
+import { EmployeesController } from './employees.controller';
+import { EmployeesService } from './employees.service';
+import { PrismaModule } from '../common/prisma/prisma.module';
+import { LimitsService } from '../limits/limits.service';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [EmployeesController],
+  providers: [EmployeesService, LimitsService],
+  exports: [EmployeesService],
+})
+export class EmployeesModule {}

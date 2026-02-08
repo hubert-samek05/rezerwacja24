@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Funkce",
+    "pricing": "Ceník",
+    "contact": "Kontakt",
+    "login": "Přihlásit se",
+    "register": "Registrovat se",
+    "dashboard": "Přehled",
+    "logout": "Odhlásit se"
+  },
+  "hero": {
+    "title": "Online rezervační systém pro vaši firmu",
+    "subtitle": "Automatizujte rezervace, spravujte kalendář a rozvíjejte své podnikání",
+    "cta": "Začít zdarma",
+    "demo": "Zobrazit demo"
+  },
+  "features": {
+    "title": "Vše co potřebujete",
+    "subtitle": "Kompletní řešení pro správu rezervací",
+    "calendar": {
+      "title": "Chytrý kalendář",
+      "description": "Spravujte rezervace v intuitivním kalendáři s denním, týdenním a měsíčním zobrazením"
+    },
+    "booking": {
+      "title": "Online rezervace 24/7",
+      "description": "Zákazníci mohou rezervovat kdykoliv, ve dne i v noci"
+    },
+    "notifications": {
+      "title": "SMS a emailová upozornění",
+      "description": "Automatické připomínky snižují počet absencí"
+    },
+    "payments": {
+      "title": "Online platby",
+      "description": "Přijímejte platby kartou přímo při rezervaci"
+    },
+    "employees": {
+      "title": "Správa zaměstnanců",
+      "description": "Každý zaměstnanec má vlastní kalendář a přiřazené služby"
+    },
+    "analytics": {
+      "title": "Statistiky a reporty",
+      "description": "Sledujte tržby, oblíbenost služeb a výkon zaměstnanců"
+    }
+  },
+  "pricing": {
+    "title": "Jednoduchý ceník",
+    "subtitle": "Vyberte si plán podle vašich potřeb",
+    "monthly": "měsíčně",
+    "yearly": "ročně",
+    "popular": "Nejpopulárnější",
+    "cta": "Vybrat plán",
+    "features": "Zahrnuje"
+  },
+  "cta": {
+    "title": "Připraveni automatizovat vaše rezervace?",
+    "subtitle": "Připojte se k tisícům firem, které již používají náš systém",
+    "button": "Začít 14denní zkušební verzi"
+  },
+  "footer": {
+    "description": "Moderní online rezervační systém pro služby",
+    "product": "Produkt",
+    "company": "Společnost",
+    "legal": "Právní informace",
+    "terms": "Podmínky používání",
+    "privacy": "Ochrana soukromí",
+    "about": "O nás",
+    "blog": "Blog",
+    "help": "Nápověda",
+    "copyright": "Všechna práva vyhrazena"
+  },
+  "common": {
+    "loading": "Načítání...",
+    "error": "Došlo k chybě",
+    "success": "Úspěch",
+    "cancel": "Zrušit",
+    "save": "Uložit",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "add": "Přidat",
+    "search": "Hledat",
+    "filter": "Filtrovat",
+    "back": "Zpět",
+    "next": "Další",
+    "submit": "Odeslat",
+    "close": "Zavřít"
+  },
+  "auth": {
+    "login": "Přihlásit se",
+    "register": "Registrovat se",
+    "email": "Email",
+    "password": "Heslo",
+    "confirmPassword": "Potvrdit heslo",
+    "forgotPassword": "Zapomněli jste heslo?",
+    "noAccount": "Nemáte účet?",
+    "hasAccount": "Již máte účet?",
+    "loginSuccess": "Úspěšně přihlášen",
+    "registerSuccess": "Účet byl úspěšně vytvořen",
+    "invalidCredentials": "Neplatný email nebo heslo"
+  },
+  "booking": {
+    "title": "Rezervovat termín",
+    "selectService": "Vybrat službu",
+    "selectEmployee": "Vybrat zaměstnance",
+    "selectDate": "Vybrat datum",
+    "selectTime": "Vybrat čas",
+    "yourDetails": "Vaše údaje",
+    "name": "Celé jméno",
+    "phone": "Telefon",
+    "notes": "Poznámky",
+    "confirm": "Potvrdit rezervaci",
+    "success": "Rezervace potvrzena!",
+    "successMessage": "Obdržíte potvrzovací email",
+    "noSlots": "Žádné dostupné termíny",
+    "price": "Cena",
+    "duration": "Doba trvání",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Přehled",
+    "welcome": "Vítejte",
+    "calendar": "Kalendář",
+    "bookings": "Rezervace",
+    "services": "Služby",
+    "employees": "Zaměstnanci",
+    "customers": "Zákazníci",
+    "settings": "Nastavení",
+    "statistics": "Statistiky"
+  }
+}

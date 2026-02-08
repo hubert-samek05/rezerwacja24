@@ -1,0 +1,30 @@
+module.exports = {
+  apps: [
+    {
+      name: 'bookings24-backend',
+      script: './start-bookings24.sh',
+      cwd: '/root/CascadeProjects/rezerwacja24-saas/backend',
+      interpreter: '/bin/bash',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      error_file: '/root/.pm2/logs/bookings24-backend-error.log',
+      out_file: '/root/.pm2/logs/bookings24-backend-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    },
+    {
+      name: 'bookings24-frontend',
+      script: './start-bookings24.sh',
+      cwd: '/root/CascadeProjects/rezerwacja24-saas/frontend',
+      interpreter: '/bin/bash',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      error_file: '/root/.pm2/logs/bookings24-frontend-error.log',
+      out_file: '/root/.pm2/logs/bookings24-frontend-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    },
+  ],
+};

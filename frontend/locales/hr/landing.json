@@ -1,0 +1,149 @@
+{
+  "nav": {
+    "features": "Značajke",
+    "howItWorks": "Kako funkcionira",
+    "pricing": "Cijene",
+    "contact": "Kontakt",
+    "login": "Prijava",
+    "tryFree": "Isprobaj besplatno"
+  },
+  "hero": {
+    "title": "Online sustav rezervacija",
+    "titleHighlight": "za vaš posao",
+    "subtitle": "Kozmetički salon, frizerski salon, autoservis ili liječnička ordinacija — sustav koji automatizira rezervacije i štedi vaše vrijeme.",
+    "cta": "Isprobajte 7 dana besplatno",
+    "ctaSecondary": "Pogledajte značajke",
+    "benefit1": "Odmah puni pristup",
+    "benefit2": "Postavljanje za 5 minuta",
+    "benefit3": "Otkažite kad god želite"
+  },
+  "stats": {
+    "companies": "Aktivne tvrtke",
+    "bookings": "Rezervacija mjesečno",
+    "uptime": "Dostupnost sustava",
+    "support": "Tehnička podrška"
+  },
+  "features": {
+    "badge": "Kompletan set značajki",
+    "title": "Sve što vam treba",
+    "subtitle": "Profesionalni alati za upravljanje rezervacijama, klijentima i plaćanjima na jednom mjestu.",
+    "calendar": {
+      "title": "Pametni kalendar",
+      "description": "Dnevni, tjedni i mjesečni prikaz. Povuci i ispusti za preraspoređivanje. Automatsko otkrivanje sukoba."
+    },
+    "booking": {
+      "title": "Rezervacije 24/7",
+      "description": "Vaši klijenti mogu rezervirati u bilo koje vrijeme. Automatske potvrde i podsjetnici."
+    },
+    "notifications": {
+      "title": "SMS i email obavijesti",
+      "description": "Automatski podsjetnici smanjuju nedolazak do 70%."
+    },
+    "payments": {
+      "title": "Online plaćanja",
+      "description": "Prihvatite plaćanja karticom i bankovne transfere. Automatske fakture i obračuni."
+    },
+    "employees": {
+      "title": "Upravljanje timom",
+      "description": "Svaki zaposlenik ima vlastiti kalendar, usluge i radno vrijeme. Praćenje učinka."
+    },
+    "analytics": {
+      "title": "Statistike i izvještaji",
+      "description": "Pratite prihode, popularnost usluga i učinak zaposlenika u stvarnom vremenu."
+    }
+  },
+  "howItWorks": {
+    "badge": "Jednostavan proces",
+    "title": "Započnite u 3 koraka",
+    "subtitle": "Postavljanje traje samo nekoliko minuta. Bez kompliciranih postavki.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Kreirajte račun",
+        "description": "Registrirajte se besplatno s osnovnim podacima o vašoj tvrtki.",
+        "details": ["Registracija za 30 sekundi", "Odmah puni pristup", "7 dana besplatno"]
+      },
+      {
+        "num": "02",
+        "title": "Postavite tvrtku",
+        "description": "Dodajte svoje usluge, postavite cijene, radno vrijeme i dodijelite zaposlenike.",
+        "details": ["Dodajte usluge i cijene", "Postavite radno vrijeme", "Dodajte zaposlenike"]
+      },
+      {
+        "num": "03",
+        "title": "Prihvatite rezervacije",
+        "description": "Podijelite link za rezervacije s klijentima i počnite automatizirati svoj posao.",
+        "details": ["Vlastita stranica za rezervacije", "Widget za vašu web stranicu", "Automatske obavijesti"]
+      }
+    ]
+  },
+  "pricing": {
+    "badge": "Jednostavne cijene",
+    "title": "Odaberite svoj plan",
+    "subtitle": "Bez skrivenih troškova. Otkažite kad god želite.",
+    "monthly": "mjesečno",
+    "yearly": "godišnje",
+    "popular": "Najpopularniji",
+    "cta": "Započni besplatno"
+  },
+  "startNow": "Započni sada",
+  "freeTrial": "7 dana besplatno",
+  "testimonials": {
+    "title": "Što kažu naši klijenti",
+    "items": [
+      { "quote": "Sustav mi štedi najmanje 10 sati tjedno. Klijenti sami rezerviraju.", "author": "Ana K.", "role": "Kozmetički salon" },
+      { "quote": "SMS obavijesti su promjena igre. Praktički nemam nedolazaka.", "author": "Marko W.", "role": "Frizerski salon" },
+      { "quote": "Jednostavno za korištenje, ali ima sve što trebam.", "author": "Katarina M.", "role": "Studio za masažu" }
+    ]
+  },
+  "pricingSection": {
+    "title": "Odaberite svoj plan",
+    "subtitle": "7 dana besplatno. Bez obveza.",
+    "freeDays": "7 dana besplatno",
+    "perMonth": "€/mjesec",
+    "startFree": "Započni besplatno",
+    "mostPopular": "Najpopularniji",
+    "starter": {
+      "name": "Starter",
+      "price": "2.99",
+      "features": ["100 rezervacija/mjesec", "1 zaposlenik", "Bez SMS-a", "Stranica za rezervacije"]
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "11.99",
+      "features": ["Neograničene rezervacije", "Do 5 zaposlenika", "100 SMS/mjesec", "Vlastita poddomena", "Analitika"]
+    },
+    "business": {
+      "name": "Business",
+      "price": "24.99",
+      "features": ["Neograničene rezervacije", "Neograničeno zaposlenika", "500 SMS/mjesec", "Vlastita poddomena", "Analitika", "API", "Prioritetna podrška"]
+    }
+  },
+  "cta": {
+    "title": "Spremni automatizirati svoje rezervacije?",
+    "subtitle": "Pridružite se stotinama tvrtki koje već štede vrijeme s našim sustavom.",
+    "button": "Započni 7-dnevnu probu",
+    "note": "Bez kreditne kartice • Puni pristup • Otkažite kad god želite"
+  },
+  "footer": {
+    "brandName": "Bookings24",
+    "description": "Profesionalni online sustav rezervacija za uslužne tvrtke. Automatizirajte rezervacije i uštedite vrijeme.",
+    "product": "Proizvod",
+    "productLinks": {
+      "features": "Značajke sustava",
+      "howItWorks": "Kako funkcionira",
+      "pricing": "Cijene pretplate",
+      "help": "Centar za pomoć"
+    },
+    "company": "Tvrtka",
+    "companyLinks": {
+      "contact": "Kontaktirajte nas",
+      "privacy": "Politika privatnosti",
+      "terms": "Uvjeti korištenja"
+    },
+    "copyright": "Online sustav rezervacija. Sva prava pridržana.",
+    "privacy": "Privatnost",
+    "terms": "Uvjeti",
+    "contact": "Kontakt"
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Functies",
+    "pricing": "Prijzen",
+    "contact": "Contact",
+    "login": "Inloggen",
+    "register": "Registreren",
+    "dashboard": "Dashboard",
+    "logout": "Uitloggen"
+  },
+  "hero": {
+    "title": "Online boekingssysteem voor uw bedrijf",
+    "subtitle": "Automatiseer boekingen, beheer uw agenda en laat uw bedrijf groeien",
+    "cta": "Gratis starten",
+    "demo": "Demo bekijken"
+  },
+  "features": {
+    "title": "Alles wat u nodig heeft",
+    "subtitle": "Complete oplossing voor boekingsbeheer",
+    "calendar": {
+      "title": "Slimme agenda",
+      "description": "Beheer boekingen in een intuïtieve agenda met dag-, week- en maandweergaven"
+    },
+    "booking": {
+      "title": "Online boekingen 24/7",
+      "description": "Klanten kunnen op elk moment boeken, dag en nacht"
+    },
+    "notifications": {
+      "title": "SMS- en e-mailmeldingen",
+      "description": "Automatische herinneringen verminderen no-shows"
+    },
+    "payments": {
+      "title": "Online betalingen",
+      "description": "Accepteer kaartbetalingen direct tijdens het boeken"
+    },
+    "employees": {
+      "title": "Personeelsbeheer",
+      "description": "Elke medewerker heeft een eigen agenda en toegewezen diensten"
+    },
+    "analytics": {
+      "title": "Statistieken en rapporten",
+      "description": "Volg omzet, servicepopulariteit en prestaties van personeel"
+    }
+  },
+  "pricing": {
+    "title": "Eenvoudige prijzen",
+    "subtitle": "Kies het plan dat bij uw behoeften past",
+    "monthly": "maandelijks",
+    "yearly": "jaarlijks",
+    "popular": "Meest populair",
+    "cta": "Plan kiezen",
+    "features": "Inclusief"
+  },
+  "cta": {
+    "title": "Klaar om uw boekingen te automatiseren?",
+    "subtitle": "Sluit u aan bij duizenden bedrijven die ons systeem al gebruiken",
+    "button": "Start 14 dagen gratis proefperiode"
+  },
+  "footer": {
+    "description": "Modern online boekingssysteem voor dienstverlenende bedrijven",
+    "product": "Product",
+    "company": "Bedrijf",
+    "legal": "Juridisch",
+    "terms": "Algemene voorwaarden",
+    "privacy": "Privacybeleid",
+    "about": "Over ons",
+    "blog": "Blog",
+    "help": "Help",
+    "copyright": "Alle rechten voorbehouden"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Er is een fout opgetreden",
+    "success": "Succes",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "add": "Toevoegen",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "back": "Terug",
+    "next": "Volgende",
+    "submit": "Verzenden",
+    "close": "Sluiten"
+  },
+  "auth": {
+    "login": "Inloggen",
+    "register": "Registreren",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "confirmPassword": "Bevestig wachtwoord",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "noAccount": "Nog geen account?",
+    "hasAccount": "Al een account?",
+    "loginSuccess": "Succesvol ingelogd",
+    "registerSuccess": "Account succesvol aangemaakt",
+    "invalidCredentials": "Ongeldige e-mail of wachtwoord"
+  },
+  "booking": {
+    "title": "Afspraak boeken",
+    "selectService": "Selecteer dienst",
+    "selectEmployee": "Selecteer medewerker",
+    "selectDate": "Selecteer datum",
+    "selectTime": "Selecteer tijd",
+    "yourDetails": "Uw gegevens",
+    "name": "Volledige naam",
+    "phone": "Telefoon",
+    "notes": "Opmerkingen",
+    "confirm": "Boeking bevestigen",
+    "success": "Boeking bevestigd!",
+    "successMessage": "U ontvangt een bevestigingsmail",
+    "noSlots": "Geen beschikbare tijdslots",
+    "price": "Prijs",
+    "duration": "Duur",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welkom",
+    "calendar": "Agenda",
+    "bookings": "Boekingen",
+    "services": "Diensten",
+    "employees": "Personeel",
+    "customers": "Klanten",
+    "settings": "Instellingen",
+    "statistics": "Statistieken"
+  }
+}

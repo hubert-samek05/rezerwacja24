@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "contact": "Contact",
+    "login": "Connexion",
+    "register": "Inscription",
+    "dashboard": "Tableau de bord",
+    "logout": "Déconnexion"
+  },
+  "hero": {
+    "title": "Système de réservation en ligne pour votre entreprise",
+    "subtitle": "Automatisez les réservations, gérez votre calendrier et développez votre activité",
+    "cta": "Commencer gratuitement",
+    "demo": "Voir la démo"
+  },
+  "features": {
+    "title": "Tout ce dont vous avez besoin",
+    "subtitle": "Solution complète pour la gestion des réservations",
+    "calendar": {
+      "title": "Calendrier intelligent",
+      "description": "Gérez les réservations dans un calendrier intuitif avec vues quotidienne, hebdomadaire et mensuelle"
+    },
+    "booking": {
+      "title": "Réservations en ligne 24/7",
+      "description": "Les clients peuvent réserver à tout moment, jour et nuit"
+    },
+    "notifications": {
+      "title": "Notifications SMS et email",
+      "description": "Les rappels automatiques réduisent les absences"
+    },
+    "payments": {
+      "title": "Paiements en ligne",
+      "description": "Acceptez les paiements par carte directement lors de la réservation"
+    },
+    "employees": {
+      "title": "Gestion du personnel",
+      "description": "Chaque employé a son propre calendrier et services assignés"
+    },
+    "analytics": {
+      "title": "Statistiques et rapports",
+      "description": "Suivez les revenus, la popularité des services et les performances du personnel"
+    }
+  },
+  "pricing": {
+    "title": "Tarification simple",
+    "subtitle": "Choisissez le plan qui correspond à vos besoins",
+    "monthly": "mensuel",
+    "yearly": "annuel",
+    "popular": "Le plus populaire",
+    "cta": "Choisir ce plan",
+    "features": "Inclus"
+  },
+  "cta": {
+    "title": "Prêt à automatiser vos réservations ?",
+    "subtitle": "Rejoignez des milliers d'entreprises qui utilisent déjà notre système",
+    "button": "Commencer l'essai gratuit de 14 jours"
+  },
+  "footer": {
+    "description": "Système moderne de réservation en ligne pour les entreprises de services",
+    "product": "Produit",
+    "company": "Entreprise",
+    "legal": "Mentions légales",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "about": "À propos",
+    "blog": "Blog",
+    "help": "Aide",
+    "copyright": "Tous droits réservés"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "close": "Fermer"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "hasAccount": "Déjà un compte ?",
+    "loginSuccess": "Connexion réussie",
+    "registerSuccess": "Compte créé avec succès",
+    "invalidCredentials": "Email ou mot de passe invalide"
+  },
+  "booking": {
+    "title": "Réserver un rendez-vous",
+    "selectService": "Sélectionner un service",
+    "selectEmployee": "Sélectionner un employé",
+    "selectDate": "Sélectionner une date",
+    "selectTime": "Sélectionner une heure",
+    "yourDetails": "Vos coordonnées",
+    "name": "Nom complet",
+    "phone": "Téléphone",
+    "notes": "Notes",
+    "confirm": "Confirmer la réservation",
+    "success": "Réservation confirmée !",
+    "successMessage": "Vous recevrez un email de confirmation",
+    "noSlots": "Aucun créneau disponible",
+    "price": "Prix",
+    "duration": "Durée",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue",
+    "calendar": "Calendrier",
+    "bookings": "Réservations",
+    "services": "Services",
+    "employees": "Personnel",
+    "customers": "Clients",
+    "settings": "Paramètres",
+    "statistics": "Statistiques"
+  }
+}

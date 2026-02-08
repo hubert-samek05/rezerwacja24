@@ -1,0 +1,1283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model analytics_events {
+  id        String   @id
+  eventType String
+  eventData Json
+  userId    String?
+  sessionId String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([eventType])
+}
+
+model automations {
+  id             String    @id
+  name           String
+  description    String?
+  trigger        String
+  conditions     Json
+  actions        Json
+  isActive       Boolean   @default(true)
+  executionCount Int       @default(0)
+  lastExecutedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+}
+
+model availability {
+  id           String    @id
+  employeeId   String
+  dayOfWeek    DayOfWeek
+  startTime    String
+  endTime      String
+  specificDate DateTime? @db.Date
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  employees    employees @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([dayOfWeek])
+  @@index([employeeId])
+}
+
+model bookings {
+  id                       String            @id
+  customerId               String
+  serviceId                String
+  employeeId               String?
+  startTime                DateTime
+  endTime                  DateTime
+  basePrice                Decimal           @db.Decimal(10, 2)
+  addonsPrice              Decimal           @default(0) @db.Decimal(10, 2)
+  totalPrice               Decimal           @db.Decimal(10, 2)
+  isPaid                   Boolean           @default(false)
+  paidAt                   DateTime?
+  paymentMethod            String?
+  stripePaymentIntentId    String?
+  status                   BookingStatus     @default(PENDING)
+  customerNotes            String?
+  internalNotes            String?
+  aiSummary                String?
+  reminderSent24h          Boolean           @default(false)
+  reminderSent2h           Boolean           @default(false)
+  cancelledAt              DateTime?
+  cancelledBy              String?
+  cancellationReason       String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime
+  paidAmount               Decimal?          @db.Decimal(10, 2)
+  couponCode               String?           @db.VarChar(50)
+  discountAmount           Decimal?          @db.Decimal(10, 2)
+  google_calendar_event_id String?           @db.VarChar(255)
+  // Tracking who created the booking
+  createdById              String?           @db.VarChar(255)
+  createdByType            String?           @db.VarChar(50) // 'customer', 'employee', 'owner', 'system'
+  createdByName            String?           @db.VarChar(255)
+  customers                customers         @relation(fields: [customerId], references: [id])
+  employees                employees?        @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  services                 services          @relation(fields: [serviceId], references: [id])
+  package_booking          package_bookings?
+
+  @@index([customerId])
+  @@index([employeeId])
+  @@index([serviceId])
+  @@index([startTime])
+  @@index([status])
+  @@index([createdById])
+}
+
+model campaigns {
+  id             String    @id
+  name           String
+  type           String
+  segmentId      String?
+  subject        String?
+  message        String
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  recipientCount Int       @default(0)
+  sentCount      Int       @default(0)
+  deliveredCount Int       @default(0)
+  openedCount    Int       @default(0)
+  clickedCount   Int       @default(0)
+  status         String    @default("draft")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+}
+
+model coupons {
+  id            String    @id
+  code          String    @unique
+  description   String?
+  discountType  String
+  discountValue Decimal   @db.Decimal(10, 2)
+  minPurchase   Decimal?  @db.Decimal(10, 2)
+  maxDiscount   Decimal?  @db.Decimal(10, 2)
+  usageLimit    Int?
+  usageCount    Int       @default(0)
+  validFrom     DateTime
+  validUntil    DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  tenantId      String?   @db.VarChar(255)
+
+  @@unique([tenantId, code], map: "coupons_tenant_code_key")
+  @@index([tenantId], map: "coupons_tenant_idx")
+}
+
+model crm_activities {
+  id           String       @id
+  contactId    String
+  type         String
+  description  String
+  performedBy  String
+  createdAt    DateTime     @default(now())
+  crm_contacts crm_contacts @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([type])
+}
+
+model crm_contacts {
+  id             String           @id
+  customerId     String           @unique
+  source         String?
+  leadScore      Int              @default(0)
+  pipelineStage  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  crm_activities crm_activities[]
+  customers      customers        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  crm_notes      crm_notes[]
+  crm_segments   crm_segments[]   @relation("CRMContactToCRMSegment")
+  crm_tags       crm_tags[]       @relation("CRMContactToCRMTag")
+
+  @@index([customerId])
+}
+
+model crm_notes {
+  id           String       @id
+  contactId    String
+  content      String
+  authorId     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime
+  crm_contacts crm_contacts @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+}
+
+model crm_segments {
+  id           String         @id
+  name         String
+  description  String?
+  filters      Json
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  crm_contacts crm_contacts[] @relation("CRMContactToCRMSegment")
+}
+
+model crm_tags {
+  id           String         @id
+  name         String
+  color        String         @default("#0F6048")
+  createdAt    DateTime       @default(now())
+  crm_contacts crm_contacts[] @relation("CRMContactToCRMTag")
+}
+
+model customers {
+  id                     String               @id
+  firstName              String
+  lastName               String
+  email                  String?
+  phone                  String
+  avatar                 String?
+  address                String?
+  city                   String?
+  postalCode             String?
+  totalBookings          Int                  @default(0)
+  totalSpent             Decimal              @default(0) @db.Decimal(10, 2)
+  noShowCount            Int                  @default(0)
+  customerScore          Int                  @default(0)
+  isBlocked              Boolean              @default(false)
+  blockedUntil           DateTime?
+  blockedReason          String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime
+  marketing_consent      Boolean?             @default(false)
+  marketing_consent_date DateTime?            @db.Timestamp(6)
+  marketing_consent_text String?
+  rodo_consent           Boolean?             @default(false)
+  rodo_consent_date      DateTime?            @db.Timestamp(6)
+  tenantId               String?              @db.VarChar(255)
+  bookings               bookings[]
+  crm_contacts           crm_contacts?
+  customer_loyalty       customer_loyalty[]
+  customer_passes        customer_passes[]
+  tenants                tenants?             @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_customers_tenant")
+  group_participants     group_participants[]
+  loyalty_points         loyalty_points[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([tenantId], map: "idx_customers_tenantid")
+}
+
+model employees {
+  id                String              @id
+  userId            String
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  avatar            String?
+  title             String?
+  bio               String?
+  specialties       String[]
+  color             String              @default("#0F6048")
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  tenantId          String
+  availability      availability[]
+  bookings          bookings[]
+  employee_account  employee_accounts?
+  tenants           tenants             @relation(fields: [tenantId], references: [id])
+  group_bookings    group_bookings[]
+  service_employees service_employees[]
+
+  @@index([userId])
+  @@index([tenantId])
+}
+
+model global_settings {
+  id        String   @id
+  key       String   @unique
+  value     Json
+  updatedAt DateTime
+}
+
+model invoices {
+  id              String    @id
+  tenantId        String
+  stripeInvoiceId String?   @unique
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("PLN")
+  status          String
+  invoiceUrl      String?
+  invoicePdf      String?
+  paidAt          DateTime?
+  dueDate         DateTime?
+  createdAt       DateTime  @default(now())
+  description     String?
+
+  @@index([tenantId])
+}
+
+model loyalty_points {
+  id         String    @id
+  customerId String
+  points     Decimal   @db.Decimal(10, 2)
+  reason     String
+  bookingId  String?
+  createdAt  DateTime  @default(now())
+  customers  customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model loyalty_programs {
+  id                String            @id
+  name              String
+  description       String?
+  pointsPerBooking  Decimal           @db.Decimal(10, 2)
+  pointsPerCurrency Decimal           @db.Decimal(10, 2)
+  rewards           Json
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  tenantId          String?           @unique
+  levels            loyalty_levels[]
+  loyalty_rewards   loyalty_rewards[]
+
+  @@index([tenantId])
+}
+
+model marketplace_listings {
+  id            String    @id
+  tenantId      String    @unique
+  title         String
+  slug          String    @unique
+  description   String
+  shortDesc     String?
+  coverImage    String?
+  gallery       String[]
+  category      String
+  tags          String[]
+  viewCount     Int       @default(0)
+  bookingCount  Int       @default(0)
+  reviewCount   Int       @default(0)
+  averageRating Decimal   @default(0) @db.Decimal(3, 2)
+  rankingScore  Decimal   @default(0) @db.Decimal(10, 2)
+  isPremium     Boolean   @default(false)
+  isFeatured    Boolean   @default(false)
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  tenants       tenants   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reviews       reviews[]
+
+  @@index([category])
+  @@index([rankingScore])
+  @@index([slug])
+}
+
+model notification_logs {
+  id         String    @id
+  type       String
+  recipient  String
+  subject    String?
+  message    String
+  status     String
+  error      String?
+  twilioSid  String?
+  sendgridId String?
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@index([type])
+}
+
+model notification_templates {
+  id        String   @id
+  name      String
+  type      String
+  subject   String?
+  body      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notifications {
+  id        String   @id @db.VarChar(255)
+  tenantId  String   @db.VarChar(255)
+  userId    String   @db.VarChar(255)
+  type      String   @db.VarChar(50)
+  title     String   @db.VarChar(500)
+  message   String
+  read      Boolean  @default(false)
+  actionUrl String?  @db.VarChar(1000)
+  metadata  Json?
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  tenants   tenants  @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_tenant")
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_user")
+
+  @@index([createdAt], map: "idx_notifications_createdat")
+  @@index([read], map: "idx_notifications_read")
+  @@index([tenantId], map: "idx_notifications_tenantid")
+  @@index([userId], map: "idx_notifications_userid")
+}
+
+model reviews {
+  id                   String               @id
+  listingId            String
+  authorName           String
+  authorEmail          String?
+  authorAvatar         String?
+  rating               Int
+  title                String?
+  comment              String
+  isVerified           Boolean              @default(false)
+  bookingId            String?
+  isApproved           Boolean              @default(false)
+  isReported           Boolean              @default(false)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime
+  marketplace_listings marketplace_listings @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([rating])
+}
+
+model service_addons {
+  id          String   @id
+  serviceId   String
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  duration    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  services    services @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+}
+
+model service_categories {
+  id          String     @id
+  name        String
+  description String?
+  icon        String?
+  color       String     @default("#0F6048")
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  services    services[]
+}
+
+model service_employees {
+  id          String    @id
+  serviceId   String
+  employeeId  String
+  customPrice Decimal?  @db.Decimal(10, 2)
+  createdAt   DateTime  @default(now())
+  employees   employees @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  services    services  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, employeeId])
+  @@index([employeeId])
+  @@index([serviceId])
+}
+
+model services {
+  id                    String              @id
+  name                  String
+  description           String?
+  type                  ServiceType         @default(SERVICE)
+  categoryId            String?
+  tenantId              String?             @db.VarChar(255)
+  basePrice             Decimal             @db.Decimal(10, 2)
+  currency              String              @default("PLN")
+  dynamicPricingEnabled Boolean             @default(false)
+  peakHourMultiplier    Decimal             @default(1.0) @db.Decimal(3, 2)
+  weekendMultiplier     Decimal             @default(1.0) @db.Decimal(3, 2)
+  demandMultiplier      Decimal             @default(1.0) @db.Decimal(3, 2)
+  duration              Int
+  bufferBefore          Int                 @default(0)
+  bufferAfter           Int                 @default(0)
+  maxCapacity           Int                 @default(1)
+  image                 String?
+  gallery               String[]
+  requiresDeposit       Boolean             @default(false)
+  depositAmount         Decimal             @default(0) @db.Decimal(10, 2)
+  allowOnlineBooking    Boolean             @default(true)
+  requiresApproval      Boolean             @default(false)
+  isActive              Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime
+  bookingType           String              @default("FIXED") @db.VarChar(20)
+  flexibleDuration      Boolean             @default(false)
+  minDuration           Int?
+  maxDuration           Int?
+  durationStep          Int?                @default(60)
+  allowMultiDay         Boolean             @default(false)
+  pricePerHour          Decimal?            @db.Decimal(10, 2)
+  pricePerDay           Decimal?            @db.Decimal(10, 2)
+  bookings              bookings[]
+  package_items         package_items[]
+  service_addons        service_addons[]
+  service_employees     service_employees[]
+  service_categories    service_categories? @relation(fields: [categoryId], references: [id])
+  tenants               tenants?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([tenantId])
+}
+
+model subscription_plans {
+  id                    String          @id
+  name                  String
+  priceMonthly          Decimal         @db.Decimal(10, 2)
+  stripePriceId         String          @unique
+  features              Json
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime
+  currency              String          @default("PLN")
+  requiresPaymentMethod Boolean         @default(true)
+  slug                  String          @unique
+  stripeProductId       String          @unique
+  trialDays             Int             @default(7)
+  subscriptions         subscriptions[]
+}
+
+model subscriptions {
+  id                    String             @id
+  tenantId              String             @unique
+  planId                String
+  status                SubscriptionStatus @default(TRIALING)
+  stripeCustomerId      String             @unique
+  stripeSubscriptionId  String?            @unique
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean            @default(false)
+  canceledAt            DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime
+  lastPaymentError      String?
+  lastPaymentStatus     String?
+  pausedAt              DateTime?
+  resumedAt             DateTime?
+  stripePaymentMethodId String?
+  trialEnd              DateTime?
+  trialStart            DateTime?
+  previousPlanId        String?
+  subscription_plans    subscription_plans @relation(fields: [planId], references: [id])
+  tenants               tenants            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([stripeCustomerId])
+  @@index([tenantId])
+}
+
+model tenant_users {
+  id        String   @id
+  tenantId  String
+  userId    String
+  role      UserRole @default(TENANT_EMPLOYEE)
+  createdAt DateTime @default(now())
+  tenants   tenants  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model tenants {
+  id                            String                @id
+  name                          String
+  subdomain                     String                @unique
+  customDomain                  String?               @unique
+  logo                          String?
+  primaryColor                  String                @default("#0F6048")
+  accentColor                   String                @default("#41FFBC")
+  email                         String
+  phone                         String?
+  address                       String?
+  city                          String?
+  country                       String                @default("PL")
+  timezone                      String                @default("Europe/Warsaw")
+  language                      String                @default("pl")
+  currency                      String                @default("PLN")
+  whiteLabelEnabled             Boolean               @default(false)
+  customEmailDomain             String?
+  customSMTPHost                String?
+  customSMTPPort                Int?
+  customSMTPUser                String?
+  customSMTPPass                String?
+  marketplaceEnabled            Boolean               @default(false)
+  marketplacePremium            Boolean               @default(false)
+  isActive                      Boolean               @default(true)
+  isSuspended                   Boolean               @default(false)
+  suspendedReason               String?
+  ownerId                       String
+  createdAt                     DateTime              @default(now())
+  updatedAt                     DateTime
+  banner                        String?
+  acceptCashPayment             Boolean?              @default(true)
+  acceptOnlinePayment           Boolean?              @default(false)
+  autoConfirmBookings           Boolean?              @default(true)
+  billing_address               String?               @db.VarChar(255)
+  billing_city                  String?               @db.VarChar(100)
+  billing_company_name          String?               @db.VarChar(255)
+  billing_email                 String?               @db.VarChar(255)
+  billing_first_name            String?               @db.VarChar(100)
+  billing_last_name             String?               @db.VarChar(100)
+  billing_nip                   String?               @db.VarChar(20)
+  billing_vat_id                String?               @db.VarChar(30)
+  billing_postal_code           String?               @db.VarChar(20)
+  billing_type                  String?               @default("company") @db.VarChar(20)
+  billing_country               String?               @db.VarChar(2)
+  platform                      String?               @default("rezerwacja24") @db.VarChar(50)
+  description                   String?
+  google_calendar_access_token  String?
+  google_calendar_connected_at  DateTime?             @db.Timestamp(6)
+  google_calendar_email         String?               @db.VarChar(255)
+  google_calendar_refresh_token String?
+  marketing_consent_enabled     Boolean?              @default(false)
+  marketing_consent_text        String?
+  nip                           String?               @db.VarChar(20)
+  openingHours                  Json?
+  paymentEnabled                Boolean?              @default(false)
+  paymentProvider               String?               @db.VarChar(50)
+  payuEnabled                   Boolean?              @default(false)
+  payuOAuthClientId             String?               @db.VarChar(255)
+  payuOAuthClientSecret         String?               @db.VarChar(255)
+  payuPosId                     String?               @db.VarChar(255)
+  payuSecondKey                 String?               @db.VarChar(255)
+  postal_code                   String?               @db.VarChar(20)
+  przelewy24ApiKey              String?               @db.VarChar(255)
+  przelewy24CrcKey              String?               @db.VarChar(255)
+  przelewy24Enabled             Boolean?              @default(false)
+  przelewy24MerchantId          String?               @db.VarChar(255)
+  przelewy24PosId               String?               @db.VarChar(255)
+  rodo_consent_text             String?
+  smsBalance                    Int?                  @default(0)
+  smsEnabled                    Boolean?              @default(false)
+  smsNotifyOnCancel             Boolean?              @default(true)
+  smsNotifyOnConfirm            Boolean?              @default(true)
+  smsNotifyOnReschedule         Boolean?              @default(true)
+  smsSent                       Int?                  @default(0)
+  sms_settings                  Json?                 @default("{\"reminderEnabled\": true, \"cancelledEnabled\": true, \"confirmedEnabled\": true, \"rescheduledEnabled\": true}")
+  sms_usage                     Json?                 @default("{\"used\": 0, \"limit\": 500, \"lastReset\": \"2025-01-01\"}")
+  socialMedia                   Json?
+  stripeEnabled                 Boolean?              @default(false)
+  stripePublishableKey          String?               @db.VarChar(255)
+  stripeSecretKey               String?               @db.VarChar(255)
+  stripeWebhookSecret           String?               @db.VarChar(255)
+  subdomainLocked               Boolean?              @default(false)
+  want_invoice                  Boolean?              @default(false)
+  widgetConfig                  Json?                 @default("{\"showPrices\": true, \"showServices\": true, \"showEmployees\": true}")
+  pageSettings                  Json?                 @default("{\"heroStyle\": \"banner\", \"accentColor\": \"#41FFBC\", \"primaryColor\": \"#0F6048\", \"servicesLayout\": \"grid\", \"showDescription\": true, \"showSocialMedia\": true, \"showOpeningHours\": true, \"bookingButtonText\": \"Zarezerwuj\", \"showServiceImages\": true, \"showServicePrices\": true, \"showServiceDuration\": true, \"showEmployeeSelection\": true}")
+  referredByPartnerId           String?               @db.VarChar(255)
+  referralDiscountPercent       Decimal?              @db.Decimal(5, 2)
+  referralDiscountEndsAt        DateTime?
+  gallery                       String[]              @default([])
+  flexibleServiceSettings       Json?                 @default("{\"showCouponCode\": false, \"availabilityHours\": {\"friday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"monday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"sunday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": true}, \"tuesday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"saturday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"thursday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"wednesday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}}, \"showPaymentOptions\": false}")
+  api_keys                      api_keys[]
+  customer_loyalty              customer_loyalty[]
+  customer_passes               customer_passes[]
+  customers                     customers[]
+  employee_accounts             employee_accounts[]
+  employees                     employees[]
+  group_booking_types           group_booking_types[]
+  group_bookings                group_bookings[]
+  marketplace_listings          marketplace_listings?
+  notifications                 notifications[]
+  pass_types                    pass_types[]
+  service_packages              service_packages[]
+  services                      services[]
+  subscriptions                 subscriptions?
+  tenant_users                  tenant_users[]
+  users                         users                 @relation(fields: [ownerId], references: [id])
+  push_devices                  push_devices[]
+
+  @@index([customDomain])
+  @@index([ownerId])
+  @@index([subdomain])
+}
+
+model time_blocks {
+  id         String   @id
+  employeeId String
+  startTime  DateTime
+  endTime    DateTime
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([startTime])
+}
+
+model users {
+  id                      String          @id
+  email                   String          @unique
+  phone                   String?         @unique
+  firstName               String?
+  lastName                String?
+  avatar                  String?
+  role                    UserRole        @default(CUSTOMER)
+  emailVerified           Boolean         @default(false)
+  phoneVerified           Boolean         @default(false)
+  googleId                String?         @unique
+  microsoftId             String?         @unique
+  passwordHash            String?
+  twoFactorEnabled        Boolean         @default(false)
+  twoFactorSecret         String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime
+  lastLoginAt             DateTime?
+  two_factor_backup_codes String[]
+  two_factor_enabled      Boolean?        @default(false)
+  two_factor_secret       String?         @db.VarChar(255)
+  notifications           notifications[]
+  tenant_users            tenant_users[]
+  tenants                 tenants[]
+  push_devices            push_devices[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+model api_keys {
+  id        String    @id @db.VarChar(255)
+  tenantId  String    @db.VarChar(255)
+  name      String    @db.VarChar(255)
+  key       String    @unique @db.VarChar(255)
+  createdAt DateTime? @default(now()) @db.Timestamp(6)
+  lastUsed  DateTime? @db.Timestamp(6)
+  tenants   tenants   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_api_keys_tenant")
+
+  @@index([tenantId], map: "idx_api_keys_tenantid")
+  @@index([key], map: "idx_api_keys_key")
+}
+
+model support_tickets {
+  id        String             @id @default(uuid())
+  tenantId  String
+  userId    String
+  userEmail String
+  type      String
+  subject   String
+  message   String
+  priority  String             @default("medium")
+  status    String             @default("open")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  closedAt  DateTime?
+  responses ticket_responses[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ticket_responses {
+  id              String          @id @default(uuid())
+  ticketId        String
+  adminId         String?
+  message         String
+  isAdminResponse Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  ticket          support_tickets @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+model loyalty_levels {
+  id         String             @id @default(uuid())
+  programId  String
+  name       String
+  minPoints  Int
+  multiplier Decimal            @default(1) @db.Decimal(3, 2)
+  color      String             @default("#CD7F32")
+  benefits   Json?
+  createdAt  DateTime           @default(now())
+  customers  customer_loyalty[]
+  program    loyalty_programs   @relation(fields: [programId], references: [id])
+
+  @@index([programId])
+}
+
+model loyalty_rewards {
+  id          String                @id @default(uuid())
+  programId   String
+  name        String
+  description String?
+  pointsCost  Int
+  rewardType  String
+  rewardValue Decimal               @db.Decimal(10, 2)
+  serviceId   String?
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  redemptions loyalty_redemptions[]
+  program     loyalty_programs      @relation(fields: [programId], references: [id])
+
+  @@index([programId])
+}
+
+model customer_loyalty {
+  id              String                 @id @default(uuid())
+  customerId      String
+  tenantId        String
+  totalPoints     Int                    @default(0)
+  availablePoints Int                    @default(0)
+  levelId         String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  customer        customers              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  level           loyalty_levels?        @relation(fields: [levelId], references: [id])
+  tenant          tenants                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions    loyalty_transactions[]
+
+  @@unique([customerId, tenantId])
+  @@index([tenantId])
+}
+
+model loyalty_transactions {
+  id                String           @id @default(uuid())
+  customerLoyaltyId String
+  points            Int
+  type              String
+  description       String?
+  bookingId         String?
+  createdAt         DateTime         @default(now())
+  customerLoyalty   customer_loyalty @relation(fields: [customerLoyaltyId], references: [id], onDelete: Cascade)
+
+  @@index([customerLoyaltyId])
+}
+
+model loyalty_redemptions {
+  id         String          @id @default(uuid())
+  rewardId   String
+  customerId String
+  tenantId   String
+  pointsUsed Int
+  status     String          @default("PENDING")
+  usedAt     DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime        @default(now())
+  reward     loyalty_rewards @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([tenantId])
+}
+
+model pass_types {
+  id           String            @id @default(uuid())
+  tenantId     String
+  name         String
+  description  String?
+  passKind     String
+  visitsCount  Int?
+  validityDays Int
+  price        Decimal           @db.Decimal(10, 2)
+  serviceIds   Json?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  passes       customer_passes[]
+  tenant       tenants           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model customer_passes {
+  id           String        @id @default(uuid())
+  passTypeId   String
+  customerId   String
+  tenantId     String
+  purchaseDate DateTime      @default(now())
+  expiresAt    DateTime
+  visitsUsed   Int           @default(0)
+  visitsTotal  Int?
+  status       String        @default("ACTIVE")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  customer     customers     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  passType     pass_types    @relation(fields: [passTypeId], references: [id], onDelete: Cascade)
+  tenant       tenants       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usages       pass_usages[]
+
+  @@index([customerId])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model pass_usages {
+  id        String          @id @default(uuid())
+  passId    String
+  bookingId String?
+  usedAt    DateTime        @default(now())
+  pass      customer_passes @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@index([passId])
+}
+
+model service_packages {
+  id            String             @id @default(uuid())
+  tenantId      String
+  name          String
+  description   String?
+  price         Decimal            @db.Decimal(10, 2)
+  originalPrice Decimal            @db.Decimal(10, 2)
+  duration      Int
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  bookings      package_bookings[]
+  items         package_items[]
+  tenant        tenants            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model package_items {
+  id        String           @id @default(uuid())
+  packageId String
+  serviceId String
+  order     Int              @default(0)
+  package   service_packages @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  service   services         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([packageId])
+}
+
+model package_bookings {
+  id        String           @id @default(uuid())
+  packageId String
+  bookingId String           @unique
+  booking   bookings         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  package   service_packages @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model group_booking_types {
+  id              String           @id @default(uuid())
+  tenantId        String
+  name            String
+  description     String?
+  maxParticipants Int
+  minParticipants Int              @default(1)
+  pricePerPerson  Decimal          @db.Decimal(10, 2)
+  duration        Int
+  serviceId       String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  tenant          tenants          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  groupBookings   group_bookings[]
+
+  @@index([tenantId])
+}
+
+model group_bookings {
+  id                  String               @id @default(uuid())
+  typeId              String
+  tenantId            String
+  employeeId          String?
+  title               String
+  description         String?
+  startTime           DateTime
+  endTime             DateTime
+  maxParticipants     Int
+  currentParticipants Int                  @default(0)
+  pricePerPerson      Decimal              @db.Decimal(10, 2)
+  status              String               @default("OPEN")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  isPublic            Boolean              @default(true)
+  employee            employees?           @relation(fields: [employeeId], references: [id])
+  tenant              tenants              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type                group_booking_types  @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  participants        group_participants[]
+  waitlist            group_waitlist[]
+
+  @@index([tenantId])
+  @@index([startTime])
+  @@index([status])
+}
+
+model group_participants {
+  id             String         @id @default(uuid())
+  groupBookingId String
+  customerId     String?
+  name           String
+  email          String?
+  phone          String?
+  status         String         @default("CONFIRMED")
+  paidAt         DateTime?
+  createdAt      DateTime       @default(now())
+  customer       customers?     @relation(fields: [customerId], references: [id])
+  groupBooking   group_bookings @relation(fields: [groupBookingId], references: [id], onDelete: Cascade)
+
+  @@index([groupBookingId])
+  @@index([customerId])
+}
+
+model group_waitlist {
+  id             String         @id @default(uuid())
+  groupBookingId String
+  customerId     String?
+  name           String
+  email          String
+  phone          String?
+  position       Int
+  createdAt      DateTime       @default(now())
+  groupBooking   group_bookings @relation(fields: [groupBookingId], references: [id], onDelete: Cascade)
+
+  @@index([groupBookingId])
+}
+
+model partners {
+  id                  String                @id @default(uuid())
+  companyName         String
+  contactName         String
+  email               String                @unique
+  phone               String?
+  passwordHash        String
+  referralCode        String                @unique
+  oneTimeCommission   Decimal               @default(50) @db.Decimal(10, 2)
+  recurringCommission Decimal               @default(10) @db.Decimal(5, 2)
+  recurringMonths     Int                   @default(12)
+  referralDiscount    Decimal               @default(20) @db.Decimal(5, 2)
+  discountMonths      Int                   @default(3)
+  bankAccount         String?
+  bankName            String?
+  taxId               String?
+  totalClicks         Int                   @default(0)
+  totalRegistrations  Int                   @default(0)
+  totalPaidCustomers  Int                   @default(0)
+  totalEarnings       Decimal               @default(0) @db.Decimal(10, 2)
+  pendingPayout       Decimal               @default(0) @db.Decimal(10, 2)
+  status              PartnerStatus         @default(PENDING)
+  approvedAt          DateTime?
+  approvedBy          String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  lastLoginAt         DateTime?
+  clicks              partner_clicks[]
+  conversions         partner_conversions[]
+  payouts             partner_payouts[]
+
+  @@index([referralCode])
+  @@index([email])
+  @@index([status])
+}
+
+model partner_clicks {
+  id          String   @id @default(uuid())
+  partnerId   String
+  ipAddress   String?
+  userAgent   String?
+  referer     String?
+  landingPage String?
+  createdAt   DateTime @default(now())
+  partner     partners @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([createdAt])
+}
+
+model partner_conversions {
+  id                  String                @id @default(uuid())
+  partnerId           String
+  tenantId            String                @unique
+  status              ConversionStatus      @default(REGISTERED)
+  oneTimePaid         Boolean               @default(false)
+  oneTimePaidAt       DateTime?
+  oneTimeAmount       Decimal?              @db.Decimal(10, 2)
+  recurringPaidMonths Int                   @default(0)
+  totalRecurringPaid  Decimal               @default(0) @db.Decimal(10, 2)
+  registeredAt        DateTime              @default(now())
+  firstPaymentAt      DateTime?
+  lastPaymentAt       DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  commissions         partner_commissions[]
+  partner             partners              @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model partner_commissions {
+  id             String              @id @default(uuid())
+  conversionId   String
+  partnerId      String
+  type           CommissionType
+  amount         Decimal             @db.Decimal(10, 2)
+  month          Int?
+  paymentId      String?
+  invoiceId      String?
+  status         CommissionStatus    @default(PENDING)
+  paidInPayoutId String?
+  createdAt      DateTime            @default(now())
+  conversion     partner_conversions @relation(fields: [conversionId], references: [id], onDelete: Cascade)
+  payout         partner_payouts?    @relation(fields: [paidInPayoutId], references: [id])
+
+  @@index([partnerId])
+  @@index([conversionId])
+  @@index([status])
+}
+
+model partner_payouts {
+  id            String                @id @default(uuid())
+  partnerId     String
+  amount        Decimal               @db.Decimal(10, 2)
+  currency      String                @default("PLN")
+  bankAccount   String
+  bankName      String?
+  transferTitle String?
+  status        PayoutStatus          @default(PENDING)
+  requestedAt   DateTime              @default(now())
+  processedAt   DateTime?
+  processedBy   String?
+  transferId    String?
+  notes         String?
+  createdAt     DateTime              @default(now())
+  commissions   partner_commissions[]
+  partner       partners              @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([status])
+}
+
+model employee_accounts {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId       String                @unique @db.VarChar(255)
+  tenantId         String                @db.VarChar(255)
+  email            String                @db.VarChar(255)
+  passwordHash     String                @db.VarChar(255)
+  isActive         Boolean?              @default(true)
+  lastLoginAt      DateTime?             @db.Timestamp(6)
+  invitedAt        DateTime?             @default(now()) @db.Timestamp(6)
+  activatedAt      DateTime?             @db.Timestamp(6)
+  activationToken  String?               @db.VarChar(255)
+  resetToken       String?               @db.VarChar(255)
+  resetTokenExpiry DateTime?             @db.Timestamp(6)
+  createdAt        DateTime?             @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime?             @default(now()) @updatedAt @db.Timestamp(6)
+  employee         employees             @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employee")
+  tenant           tenants               @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tenant")
+  permissions      employee_permissions?
+
+  @@unique([tenantId, email], map: "unique_tenant_email")
+  @@index([email], map: "idx_employee_accounts_email")
+  @@index([tenantId], map: "idx_employee_accounts_tenant")
+}
+
+model employee_permissions {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeAccountId  String            @unique @db.Uuid
+  canViewCalendar    Boolean?          @default(true)
+  canManageBookings  Boolean?          @default(false)
+  canViewCustomers   Boolean?          @default(false)
+  canManageCustomers Boolean?          @default(false)
+  canViewServices    Boolean?          @default(false)
+  canManageServices  Boolean?          @default(false)
+  canViewEmployees   Boolean?          @default(false)
+  canManageEmployees Boolean?          @default(false)
+  canViewAnalytics   Boolean?          @default(false)
+  canViewSettings    Boolean?          @default(false)
+  canManageSettings  Boolean?          @default(false)
+  canViewPayments    Boolean?          @default(false)
+  canManagePayments  Boolean?          @default(false)
+  onlyOwnBookings    Boolean?          @default(true)
+  onlyOwnCalendar    Boolean?          @default(true)
+  createdAt          DateTime?         @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime?         @default(now()) @updatedAt @db.Timestamp(6)
+  employeeAccount    employee_accounts @relation(fields: [employeeAccountId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employee_account")
+}
+
+// Audit log for tracking all actions in the system
+model audit_logs {
+  id           String   @id @default(uuid())
+  tenantId     String   @db.VarChar(255)
+  userId       String?  @db.VarChar(255)
+  userType     String   @db.VarChar(50) // 'owner', 'employee', 'customer', 'system'
+  userName     String?  @db.VarChar(255)
+  action       String   @db.VarChar(100) // 'create', 'update', 'delete', 'cancel', 'confirm', etc.
+  entityType   String   @db.VarChar(100) // 'booking', 'customer', 'service', 'employee', etc.
+  entityId     String   @db.VarChar(255)
+  entityName   String?  @db.VarChar(255) // Human-readable name of the entity
+  changes      Json?    // JSON with old and new values for updates
+  metadata     Json?    // Additional context (IP, user agent, etc.)
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ServiceType {
+  SERVICE
+  RENTAL
+  EVENT
+  MEETING
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  TRIALING
+  INCOMPLETE
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_OWNER
+  TENANT_ADMIN
+  TENANT_EMPLOYEE
+  CUSTOMER
+}
+
+enum PartnerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum ConversionStatus {
+  REGISTERED
+  TRIAL
+  PAID
+  CHURNED
+}
+
+enum CommissionType {
+  ONE_TIME
+  RECURRING
+}
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+
+model push_devices {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  tenantId  String
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant tenants @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId])
+}
+

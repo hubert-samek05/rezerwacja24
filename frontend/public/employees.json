@@ -1,0 +1,35 @@
+[
+  {
+    "id": "emp1",
+    "userId": "demo",
+    "firstName": "Anna",
+    "lastName": "Kowalska",
+    "email": "anna@samek.pl",
+    "phone": "+48 500 100 200",
+    "role": "Stylistka",
+    "services": ["service1", "service2", "service6"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "emp2",
+    "userId": "demo",
+    "firstName": "Maria",
+    "lastName": "Nowak",
+    "email": "maria@samek.pl",
+    "phone": "+48 500 100 201",
+    "role": "Stylistka paznokci",
+    "services": ["service3", "service4"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "emp3",
+    "userId": "demo",
+    "firstName": "Katarzyna",
+    "lastName": "Wiśniewska",
+    "email": "katarzyna@samek.pl",
+    "phone": "+48 500 100 202",
+    "role": "Masażystka",
+    "services": ["service5"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  }
+]

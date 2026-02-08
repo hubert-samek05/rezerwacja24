@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Funkcje",
+    "pricing": "Cennik",
+    "contact": "Kontakt",
+    "login": "Zaloguj się",
+    "register": "Zarejestruj się",
+    "dashboard": "Panel",
+    "logout": "Wyloguj"
+  },
+  "hero": {
+    "title": "System rezerwacji online dla Twojej firmy",
+    "subtitle": "Automatyzuj rezerwacje, zarządzaj kalendarzem i rozwijaj swój biznes",
+    "cta": "Rozpocznij za darmo",
+    "demo": "Zobacz demo"
+  },
+  "features": {
+    "title": "Wszystko czego potrzebujesz",
+    "subtitle": "Kompleksowe rozwiązanie do zarządzania rezerwacjami",
+    "calendar": {
+      "title": "Inteligentny kalendarz",
+      "description": "Zarządzaj rezerwacjami w intuicyjnym kalendarzu z widokiem dziennym, tygodniowym i miesięcznym"
+    },
+    "booking": {
+      "title": "Rezerwacje online 24/7",
+      "description": "Klienci mogą rezerwować wizyty o każdej porze dnia i nocy"
+    },
+    "notifications": {
+      "title": "Powiadomienia SMS i email",
+      "description": "Automatyczne przypomnienia o wizytach zmniejszają liczbę nieobecności"
+    },
+    "payments": {
+      "title": "Płatności online",
+      "description": "Przyjmuj płatności kartą i BLIK bezpośrednio przy rezerwacji"
+    },
+    "employees": {
+      "title": "Zarządzanie pracownikami",
+      "description": "Każdy pracownik ma własny kalendarz i przypisane usługi"
+    },
+    "analytics": {
+      "title": "Statystyki i raporty",
+      "description": "Śledź przychody, popularność usług i wydajność pracowników"
+    }
+  },
+  "pricing": {
+    "title": "Prosty cennik",
+    "subtitle": "Wybierz plan dopasowany do Twoich potrzeb",
+    "monthly": "miesięcznie",
+    "yearly": "rocznie",
+    "popular": "Najpopularniejszy",
+    "cta": "Wybierz plan",
+    "features": "Zawiera"
+  },
+  "cta": {
+    "title": "Gotowy na automatyzację rezerwacji?",
+    "subtitle": "Dołącz do tysięcy firm, które już korzystają z naszego systemu",
+    "button": "Rozpocznij 14-dniowy trial"
+  },
+  "footer": {
+    "description": "Nowoczesny system rezerwacji online dla firm usługowych",
+    "product": "Produkt",
+    "company": "Firma",
+    "legal": "Prawne",
+    "terms": "Regulamin",
+    "privacy": "Polityka prywatności",
+    "about": "O nas",
+    "blog": "Blog",
+    "help": "Pomoc",
+    "copyright": "Wszelkie prawa zastrzeżone"
+  },
+  "common": {
+    "loading": "Ładowanie...",
+    "error": "Wystąpił błąd",
+    "success": "Sukces",
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "add": "Dodaj",
+    "search": "Szukaj",
+    "filter": "Filtruj",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "submit": "Wyślij",
+    "close": "Zamknij"
+  },
+  "auth": {
+    "login": "Zaloguj się",
+    "register": "Zarejestruj się",
+    "email": "Email",
+    "password": "Hasło",
+    "confirmPassword": "Potwierdź hasło",
+    "forgotPassword": "Zapomniałeś hasła?",
+    "noAccount": "Nie masz konta?",
+    "hasAccount": "Masz już konto?",
+    "loginSuccess": "Zalogowano pomyślnie",
+    "registerSuccess": "Konto utworzone pomyślnie",
+    "invalidCredentials": "Nieprawidłowy email lub hasło"
+  },
+  "booking": {
+    "title": "Zarezerwuj wizytę",
+    "selectService": "Wybierz usługę",
+    "selectEmployee": "Wybierz pracownika",
+    "selectDate": "Wybierz datę",
+    "selectTime": "Wybierz godzinę",
+    "yourDetails": "Twoje dane",
+    "name": "Imię i nazwisko",
+    "phone": "Telefon",
+    "notes": "Uwagi",
+    "confirm": "Potwierdź rezerwację",
+    "success": "Rezerwacja potwierdzona!",
+    "successMessage": "Otrzymasz potwierdzenie na podany adres email",
+    "noSlots": "Brak dostępnych terminów",
+    "price": "Cena",
+    "duration": "Czas trwania",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Panel zarządzania",
+    "welcome": "Witaj",
+    "calendar": "Kalendarz",
+    "bookings": "Rezerwacje",
+    "services": "Usługi",
+    "employees": "Pracownicy",
+    "customers": "Klienci",
+    "settings": "Ustawienia",
+    "statistics": "Statystyki"
+  }
+}

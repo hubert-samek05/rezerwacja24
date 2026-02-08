@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "login": "Log in",
+    "register": "Sign up",
+    "dashboard": "Dashboard",
+    "logout": "Log out"
+  },
+  "hero": {
+    "title": "Online booking system for your business",
+    "subtitle": "Automate bookings, manage your calendar and grow your business",
+    "cta": "Start for free",
+    "demo": "See demo"
+  },
+  "features": {
+    "title": "Everything you need",
+    "subtitle": "Complete solution for booking management",
+    "calendar": {
+      "title": "Smart calendar",
+      "description": "Manage bookings in an intuitive calendar with daily, weekly and monthly views"
+    },
+    "booking": {
+      "title": "Online bookings 24/7",
+      "description": "Customers can book appointments anytime, day or night"
+    },
+    "notifications": {
+      "title": "SMS and email notifications",
+      "description": "Automatic appointment reminders reduce no-shows"
+    },
+    "payments": {
+      "title": "Online payments",
+      "description": "Accept card payments directly during booking"
+    },
+    "employees": {
+      "title": "Staff management",
+      "description": "Each employee has their own calendar and assigned services"
+    },
+    "analytics": {
+      "title": "Statistics and reports",
+      "description": "Track revenue, service popularity and staff performance"
+    }
+  },
+  "pricing": {
+    "title": "Simple pricing",
+    "subtitle": "Choose a plan that fits your needs",
+    "monthly": "monthly",
+    "yearly": "yearly",
+    "popular": "Most popular",
+    "cta": "Choose plan",
+    "features": "Includes"
+  },
+  "cta": {
+    "title": "Ready to automate your bookings?",
+    "subtitle": "Join thousands of businesses already using our system",
+    "button": "Start 14-day free trial"
+  },
+  "footer": {
+    "description": "Modern online booking system for service businesses",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "about": "About us",
+    "blog": "Blog",
+    "help": "Help",
+    "copyright": "All rights reserved"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginSuccess": "Logged in successfully",
+    "registerSuccess": "Account created successfully",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "booking": {
+    "title": "Book an appointment",
+    "selectService": "Select service",
+    "selectEmployee": "Select staff member",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "yourDetails": "Your details",
+    "name": "Full name",
+    "phone": "Phone",
+    "notes": "Notes",
+    "confirm": "Confirm booking",
+    "success": "Booking confirmed!",
+    "successMessage": "You will receive a confirmation email",
+    "noSlots": "No available slots",
+    "price": "Price",
+    "duration": "Duration",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "calendar": "Calendar",
+    "bookings": "Bookings",
+    "services": "Services",
+    "employees": "Staff",
+    "customers": "Customers",
+    "settings": "Settings",
+    "statistics": "Statistics"
+  }
+}

@@ -1,0 +1,76 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  Req,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { BookingsService } from './bookings.service';
+
+@ApiTags('bookings')
+@Controller('bookings')
+export class BookingsController {
+  constructor(private readonly bookingsService: BookingsService) {}
+
+  @Post('public')
+  @ApiOperation({ summary: 'Utwórz rezerwację publiczną (z landing page)' })
+  createPublic(@Body() createBookingDto: any) {
+    return this.bookingsService.createPublicBooking(createBookingDto);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Utwórz rezerwację' })
+  create(@Body() createBookingDto: any, @Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || 'default';
+    return this.bookingsService.create(tenantId, createBookingDto);
+  }
+
+  @Get('availability')
+  @ApiOperation({ summary: 'Sprawdź dostępność dla rezerwacji publicznej' })
+  checkAvailability(
+    @Query('tenantId') tenantId: string,
+    @Query('serviceId') serviceId: string,
+    @Query('employeeId') employeeId: string,
+    @Query('date') date: string,
+  ) {
+    return this.bookingsService.checkAvailability(tenantId, serviceId, employeeId, date);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Pobierz rezerwacje' })
+  findAll(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('employeeId') employeeId?: string,
+    @Req() req?: any,
+  ) {
+    const tenantId = req?.headers['x-tenant-id'] || 'default';
+    return this.bookingsService.findAll(tenantId, { startDate, endDate, employeeId });
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Pobierz rezerwację' })
+  findOne(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || 'default';
+    return this.bookingsService.findOne(tenantId, id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Zaktualizuj rezerwację' })
+  update(@Param('id') id: string, @Body() updateBookingDto: any, @Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || 'default';
+    return this.bookingsService.update(tenantId, id, updateBookingDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Usuń rezerwację' })
+  remove(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || 'default';
+    return this.bookingsService.remove(tenantId, id);
+  }
+}

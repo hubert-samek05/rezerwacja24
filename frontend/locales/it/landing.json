@@ -1,0 +1,232 @@
+{
+  "nav": {
+    "features": "Funzionalità",
+    "howItWorks": "Come funziona",
+    "pricing": "Prezzi",
+    "contact": "Contatti",
+    "login": "Accedi",
+    "tryFree": "Prova gratis"
+  },
+  "hero": {
+    "title": "Sistema di prenotazione online",
+    "titleHighlight": "per la tua azienda",
+    "subtitle": "Salone di bellezza, parrucchiere, officina auto o studio medico — un sistema che automatizza le prenotazioni e ti fa risparmiare tempo.",
+    "cta": "Prova 7 giorni gratis",
+    "ctaSecondary": "Scopri le funzionalità",
+    "benefit1": "Accesso completo immediato",
+    "benefit2": "Configurazione in 5 minuti",
+    "benefit3": "Annulla quando vuoi"
+  },
+  "stats": {
+    "companies": "Aziende attive",
+    "bookings": "Prenotazioni al mese",
+    "uptime": "Uptime del sistema",
+    "support": "Supporto tecnico"
+  },
+  "features": {
+    "badge": "Set completo di funzionalità",
+    "title": "Tutto ciò di cui hai bisogno",
+    "subtitle": "Strumenti professionali per gestire prenotazioni, clienti e pagamenti in un unico posto.",
+    "list": [
+      "Pannello di gestione intuitivo",
+      "Tutti i dati in un unico posto",
+      "Accesso rapido alle statistiche"
+    ],
+    "calendar": {
+      "title": "Calendario intelligente",
+      "description": "Vista giornaliera, settimanale e mensile. Drag & drop per riprogrammare. Rilevamento automatico dei conflitti."
+    },
+    "booking": {
+      "title": "Prenotazioni 24/7",
+      "description": "I tuoi clienti possono prenotare in qualsiasi momento. Conferme e promemoria automatici."
+    },
+    "notifications": {
+      "title": "Notifiche SMS ed email",
+      "description": "I promemoria automatici riducono le assenze fino al 70%."
+    },
+    "payments": {
+      "title": "Pagamenti online",
+      "description": "Accetta pagamenti con carta e bonifici bancari. Fatture e contabilità automatiche."
+    },
+    "employees": {
+      "title": "Gestione del team",
+      "description": "Ogni dipendente ha il proprio calendario, servizi e orari di lavoro. Monitoraggio delle prestazioni."
+    },
+    "analytics": {
+      "title": "Statistiche e report",
+      "description": "Monitora ricavi, popolarità dei servizi e prestazioni dei dipendenti in tempo reale."
+    },
+    "packages": {
+      "title": "Pacchetti di servizi",
+      "description": "Crea pacchetti attraenti combinando più servizi a un prezzo promozionale."
+    },
+    "passes": {
+      "title": "Abbonamenti e pass",
+      "description": "Vendi pass per un numero specifico di visite o abbonamenti a tempo."
+    },
+    "promotions": {
+      "title": "Promozioni e coupon",
+      "description": "Crea codici sconto e promozioni stagionali per attirare nuovi clienti."
+    },
+    "groups": {
+      "title": "Lezioni di gruppo",
+      "description": "Organizza workshop, corsi e lezioni di gruppo con gestione automatica dei partecipanti."
+    },
+    "api": {
+      "title": "API e integrazioni",
+      "description": "Integra il sistema con le tue applicazioni usando REST API e webhook."
+    },
+    "security": {
+      "title": "Sicurezza dei dati",
+      "description": "Crittografia SSL, conformità GDPR e backup regolari."
+    },
+    "allFeatures": [
+      { "icon": "calendar", "title": "Calendario prenotazioni", "description": "Calendario avanzato con viste giornaliere, settimanali e mensili. Supporto drag & drop." },
+      { "icon": "users", "title": "CRM e database clienti", "description": "Database clienti completo con storico visite, note e preferenze." },
+      { "icon": "bell", "title": "Notifiche SMS", "description": "Promemoria SMS automatici 24h e 2h prima degli appuntamenti. Riduci le assenze." },
+      { "icon": "creditCard", "title": "Pagamenti online", "description": "Stripe, PayPal, carte di credito. Accetta pagamenti online dai clienti." },
+      { "icon": "barChart", "title": "Analisi e report", "description": "Statistiche sui ricavi, heatmap delle prenotazioni e indicatori KPI." },
+      { "icon": "usersRound", "title": "Gestione del team", "description": "Dipendenti, orari, ferie e permessi in un unico posto." },
+      { "icon": "palette", "title": "Pagina di prenotazione personalizzata", "description": "Pagina professionale tua-azienda.bookings24.eu con colori, logo e aspetto personalizzabili." },
+      { "icon": "globe", "title": "Pagina multilingue", "description": "Pagina di prenotazione disponibile in inglese, tedesco e polacco. Rilevamento automatico della lingua." },
+      { "icon": "gift", "title": "Programma fedeltà", "description": "Premia i clienti abituali con punti per le visite. Livelli fedeltà e premi da riscattare." },
+      { "icon": "package", "title": "Pacchetti di servizi", "description": "Crea pacchetti combinando più servizi a prezzi vantaggiosi." },
+      { "icon": "ticket", "title": "Pass", "description": "Vendi pass per più visite dei clienti." },
+      { "icon": "star", "title": "Promozioni e sconti", "description": "Codici sconto, promozioni stagionali e offerte speciali." },
+      { "icon": "layers", "title": "Prenotazioni di gruppo", "description": "Accetta prenotazioni per gruppi ed eventi." },
+      { "icon": "code", "title": "Widget per sito web", "description": "Incorpora il modulo di prenotazione nel tuo sito." },
+      { "icon": "refresh", "title": "Sincronizzazione calendario", "description": "Integrazione con Google Calendar e Apple Calendar." },
+      { "icon": "shield", "title": "Conformità GDPR", "description": "Elaborazione e archiviazione sicura dei dati dei clienti." },
+      { "icon": "lock", "title": "Sicurezza 2FA", "description": "Autenticazione a due fattori per la sicurezza dell'account." },
+      { "icon": "zap", "title": "REST API", "description": "API completa per l'integrazione con i tuoi sistemi." },
+      { "icon": "clock", "title": "Gestione del tempo", "description": "Orari di lavoro, pause e disponibilità dei dipendenti." }
+    ],
+    "tryAllFeatures": "Prova tutte le funzionalità gratis",
+    "quickAccess": "Accesso rapido",
+    "toAllFeatures": "A tutte le funzionalità"
+  },
+  "howItWorks": {
+    "badge": "Processo semplice",
+    "title": "Inizia in 3 passaggi",
+    "subtitle": "La configurazione richiede solo pochi minuti. Nessuna impostazione complicata.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Crea un account",
+        "description": "Registrati gratuitamente con le informazioni di base della tua azienda. Ci vuole solo un momento.",
+        "details": ["Registrazione in 30 secondi", "Accesso completo immediato", "7 giorni gratis"]
+      },
+      {
+        "num": "02",
+        "title": "Configura l'azienda",
+        "description": "Aggiungi i tuoi servizi, imposta i prezzi, gli orari di lavoro e assegna i dipendenti.",
+        "details": ["Aggiungi servizi e prezzi", "Imposta gli orari di lavoro", "Aggiungi dipendenti"]
+      },
+      {
+        "num": "03",
+        "title": "Accetta prenotazioni",
+        "description": "Condividi il link di prenotazione con i clienti e inizia ad automatizzare la tua attività.",
+        "details": ["Pagina di prenotazione personalizzata", "Widget per il tuo sito", "Notifiche automatiche"]
+      }
+    ]
+  },
+  "pricing": {
+    "badge": "Prezzi semplici",
+    "title": "Scegli il tuo piano",
+    "subtitle": "Nessun costo nascosto. Annulla quando vuoi.",
+    "monthly": "mensile",
+    "yearly": "annuale",
+    "popular": "Più popolare",
+    "cta": "Inizia gratis",
+    "features": {
+      "bookings": "prenotazioni al mese",
+      "unlimited": "Illimitate",
+      "employees": "dipendenti",
+      "sms": "Notifiche SMS",
+      "support": "Supporto",
+      "email": "Email",
+      "priority": "Prioritario",
+      "dedicated": "Dedicato",
+      "api": "Accesso API",
+      "branding": "Logo e colori personalizzati"
+    },
+    "plans": {
+      "starter": "Starter",
+      "professional": "Professional",
+      "business": "Business"
+    }
+  },
+  "startNow": "Inizia ora",
+  "freeTrial": "Prova gratuita di 7 giorni",
+  "testimonials": {
+    "title": "Cosa dicono i nostri clienti",
+    "items": [
+      { "quote": "Il sistema mi fa risparmiare almeno 10 ore a settimana. I clienti prenotano da soli.", "author": "Anna K.", "role": "Salone di bellezza" },
+      { "quote": "Le notifiche SMS sono una svolta. Non ho praticamente più assenze.", "author": "Marco W.", "role": "Parrucchiere" },
+      { "quote": "Facile da usare, ma ha tutto ciò di cui ho bisogno.", "author": "Caterina M.", "role": "Studio massaggi" }
+    ]
+  },
+  "pricingSection": {
+    "title": "Scegli il tuo piano",
+    "subtitle": "7 giorni gratis. Senza impegno.",
+    "freeDays": "7 giorni gratis",
+    "perMonth": "€/mese",
+    "startFree": "Inizia gratis",
+    "mostPopular": "Più popolare",
+    "starter": {
+      "name": "Starter",
+      "price": "2.99",
+      "features": ["100 prenotazioni/mese", "1 dipendente", "Nessun SMS", "Pagina di prenotazione"]
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "11.99",
+      "features": ["Prenotazioni illimitate", "Fino a 5 dipendenti", "100 SMS/mese", "Sottodominio personalizzato", "Analisi"]
+    },
+    "business": {
+      "name": "Business",
+      "price": "24.99",
+      "features": ["Prenotazioni illimitate", "Dipendenti illimitati", "500 SMS/mese", "Sottodominio personalizzato", "Analisi", "API", "Supporto prioritario"]
+    }
+  },
+  "cta": {
+    "title": "Pronto ad automatizzare le tue prenotazioni?",
+    "subtitle": "Unisciti a centinaia di aziende che già risparmiano tempo con il nostro sistema.",
+    "button": "Inizia la prova di 7 giorni",
+    "note": "Nessuna carta di credito • Accesso completo • Annulla quando vuoi"
+  },
+  "footer": {
+    "brandName": "Bookings24",
+    "description": "Sistema professionale di prenotazione online per aziende di servizi. Automatizza le prenotazioni e risparmia tempo.",
+    "product": "Prodotto",
+    "productLinks": {
+      "features": "Funzionalità del sistema",
+      "howItWorks": "Come funziona",
+      "pricing": "Prezzi abbonamento",
+      "help": "Centro assistenza"
+    },
+    "industries": "Settori",
+    "industryLinks": {
+      "beauty": "Saloni di bellezza",
+      "hair": "Parrucchieri",
+      "massage": "Studi massaggi",
+      "auto": "Officine auto"
+    },
+    "company": "Azienda",
+    "companyLinks": {
+      "contact": "Contattaci",
+      "privacy": "Privacy Policy",
+      "terms": "Termini di servizio"
+    },
+    "developers": "Sviluppatori",
+    "developerLinks": {
+      "api": "Documentazione API",
+      "widget": "Widget prenotazioni",
+      "integrations": "Integrazioni"
+    },
+    "copyright": "Sistema di prenotazione online. Tutti i diritti riservati.",
+    "privacy": "Privacy",
+    "terms": "Termini",
+    "contact": "Contatti"
+  }
+}

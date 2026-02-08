@@ -1,0 +1,105 @@
+import { Controller, Get, Post, Patch, Delete, Param, Query, Req, Body } from '@nestjs/common';
+import { NotificationsService } from './notifications.service';
+
+@Controller('notifications')
+export class NotificationsController {
+  constructor(private readonly notificationsService: NotificationsService) {}
+
+  /**
+   * Pobiera powiadomienia dla zalogowanego użytkownika
+   */
+  @Get()
+  async findAll(
+    @Req() req: any,
+    @Query('unreadOnly') unreadOnly?: string,
+  ) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    const userId = req.user?.id || req.headers['x-user-id'];
+
+    if (!tenantId || !userId) {
+      throw new Error('Brak tenant ID lub user ID');
+    }
+
+    return this.notificationsService.findAll(
+      tenantId,
+      userId,
+      unreadOnly === 'true',
+    );
+  }
+
+  /**
+   * Pobiera liczbę nieprzeczytanych powiadomień
+   */
+  @Get('unread-count')
+  async getUnreadCount(@Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    const userId = req.user?.id || req.headers['x-user-id'];
+
+    if (!tenantId || !userId) {
+      throw new Error('Brak tenant ID lub user ID');
+    }
+
+    const count = await this.notificationsService.getUnreadCount(tenantId, userId);
+    return { count };
+  }
+
+  /**
+   * Oznacza powiadomienie jako przeczytane
+   */
+  @Patch(':id/read')
+  async markAsRead(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    const userId = req.user?.id || req.headers['x-user-id'];
+
+    if (!tenantId || !userId) {
+      throw new Error('Brak tenant ID lub user ID');
+    }
+
+    return this.notificationsService.markAsRead(id, tenantId, userId);
+  }
+
+  /**
+   * Oznacza wszystkie powiadomienia jako przeczytane
+   */
+  @Post('mark-all-read')
+  async markAllAsRead(@Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    const userId = req.user?.id || req.headers['x-user-id'];
+
+    if (!tenantId || !userId) {
+      throw new Error('Brak tenant ID lub user ID');
+    }
+
+    return this.notificationsService.markAllAsRead(tenantId, userId);
+  }
+
+  /**
+   * Usuwa powiadomienie
+   */
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    const userId = req.user?.id || req.headers['x-user-id'];
+
+    if (!tenantId || !userId) {
+      throw new Error('Brak tenant ID lub user ID');
+    }
+
+    return this.notificationsService.remove(id, tenantId, userId);
+  }
+
+  /**
+   * Usuwa wszystkie powiadomienia
+   */
+  @Delete()
+  async clearAll(@Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    const userId = req.user?.id || req.headers['x-user-id'];
+
+    if (!tenantId || !userId) {
+      throw new Error('Brak tenant ID lub user ID');
+    }
+
+    return this.notificationsService.clearAll(tenantId, userId);
+  }
+}

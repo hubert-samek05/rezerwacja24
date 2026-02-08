@@ -1,0 +1,22 @@
+# robots.txt dla rezerwacja24.pl
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://rezerwacja24.pl/sitemap.xml
+
+# Zezwól na indeksowanie favicon
+Allow: /favicon.ico
+Allow: /favicon-16x16.png
+Allow: /favicon-32x32.png
+Allow: /icon-192.png
+Allow: /icon-512.png
+Allow: /apple-touch-icon.png
+
+# Blokuj ścieżki prywatne
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /admin/
+
+# Zezwól na statyczne zasoby Next.js (CSS, JS, obrazy)
+Allow: /_next/static/

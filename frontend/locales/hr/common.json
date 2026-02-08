@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Značajke",
+    "pricing": "Cijene",
+    "contact": "Kontakt",
+    "login": "Prijava",
+    "register": "Registracija",
+    "dashboard": "Nadzorna ploča",
+    "logout": "Odjava"
+  },
+  "hero": {
+    "title": "Online sustav rezervacija za vaše poslovanje",
+    "subtitle": "Automatizirajte rezervacije, upravljajte kalendarom i razvijajte svoje poslovanje",
+    "cta": "Započnite besplatno",
+    "demo": "Pogledajte demo"
+  },
+  "features": {
+    "title": "Sve što vam treba",
+    "subtitle": "Kompletno rješenje za upravljanje rezervacijama",
+    "calendar": {
+      "title": "Pametni kalendar",
+      "description": "Upravljajte rezervacijama u intuitivnom kalendaru s dnevnim, tjednim i mjesečnim prikazom"
+    },
+    "booking": {
+      "title": "Online rezervacije 24/7",
+      "description": "Klijenti mogu rezervirati u bilo koje vrijeme, danju i noću"
+    },
+    "notifications": {
+      "title": "SMS i email obavijesti",
+      "description": "Automatski podsjetnici smanjuju izostanke"
+    },
+    "payments": {
+      "title": "Online plaćanja",
+      "description": "Prihvatite kartična plaćanja izravno tijekom rezervacije"
+    },
+    "employees": {
+      "title": "Upravljanje osobljem",
+      "description": "Svaki zaposlenik ima vlastiti kalendar i dodijeljene usluge"
+    },
+    "analytics": {
+      "title": "Statistike i izvještaji",
+      "description": "Pratite prihode, popularnost usluga i učinkovitost osoblja"
+    }
+  },
+  "pricing": {
+    "title": "Jednostavne cijene",
+    "subtitle": "Odaberite plan koji odgovara vašim potrebama",
+    "monthly": "mjesečno",
+    "yearly": "godišnje",
+    "popular": "Najpopularniji",
+    "cta": "Odaberi plan",
+    "features": "Uključuje"
+  },
+  "cta": {
+    "title": "Spremni automatizirati svoje rezervacije?",
+    "subtitle": "Pridružite se tisućama tvrtki koje već koriste naš sustav",
+    "button": "Započnite 14-dnevno probno razdoblje"
+  },
+  "footer": {
+    "description": "Moderan online sustav rezervacija za uslužne djelatnosti",
+    "product": "Proizvod",
+    "company": "Tvrtka",
+    "legal": "Pravne informacije",
+    "terms": "Uvjeti korištenja",
+    "privacy": "Politika privatnosti",
+    "about": "O nama",
+    "blog": "Blog",
+    "help": "Pomoć",
+    "copyright": "Sva prava pridržana"
+  },
+  "common": {
+    "loading": "Učitavanje...",
+    "error": "Došlo je do pogreške",
+    "success": "Uspjeh",
+    "cancel": "Odustani",
+    "save": "Spremi",
+    "delete": "Obriši",
+    "edit": "Uredi",
+    "add": "Dodaj",
+    "search": "Pretraži",
+    "filter": "Filtriraj",
+    "back": "Natrag",
+    "next": "Dalje",
+    "submit": "Pošalji",
+    "close": "Zatvori"
+  },
+  "auth": {
+    "login": "Prijava",
+    "register": "Registracija",
+    "email": "Email",
+    "password": "Lozinka",
+    "confirmPassword": "Potvrdi lozinku",
+    "forgotPassword": "Zaboravili ste lozinku?",
+    "noAccount": "Nemate račun?",
+    "hasAccount": "Već imate račun?",
+    "loginSuccess": "Uspješna prijava",
+    "registerSuccess": "Račun uspješno kreiran",
+    "invalidCredentials": "Nevažeći email ili lozinka"
+  },
+  "booking": {
+    "title": "Rezerviraj termin",
+    "selectService": "Odaberi uslugu",
+    "selectEmployee": "Odaberi zaposlenika",
+    "selectDate": "Odaberi datum",
+    "selectTime": "Odaberi vrijeme",
+    "yourDetails": "Vaši podaci",
+    "name": "Puno ime",
+    "phone": "Telefon",
+    "notes": "Napomene",
+    "confirm": "Potvrdi rezervaciju",
+    "success": "Rezervacija potvrđena!",
+    "successMessage": "Primit ćete email potvrdu",
+    "noSlots": "Nema dostupnih termina",
+    "price": "Cijena",
+    "duration": "Trajanje",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Nadzorna ploča",
+    "welcome": "Dobrodošli",
+    "calendar": "Kalendar",
+    "bookings": "Rezervacije",
+    "services": "Usluge",
+    "employees": "Zaposlenici",
+    "customers": "Klijenti",
+    "settings": "Postavke",
+    "statistics": "Statistike"
+  }
+}

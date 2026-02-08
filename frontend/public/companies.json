@@ -1,0 +1,30 @@
+[
+  {
+    "id": "demo1",
+    "userId": "demo",
+    "businessName": "Samek Beauty Studio",
+    "subdomain": "samek",
+    "subdomainLocked": true,
+    "email": "kontakt@samek.pl",
+    "phone": "+48 123 456 789",
+    "address": "ul. Piękna 15",
+    "city": "Warszawa",
+    "postalCode": "00-001",
+    "description": "Profesjonalny salon kosmetyczny oferujący najwyższej jakości usługi beauty. Zapraszamy!",
+    "openingHours": {
+      "monday": { "open": "09:00", "close": "18:00", "closed": false },
+      "tuesday": { "open": "09:00", "close": "18:00", "closed": false },
+      "wednesday": { "open": "09:00", "close": "18:00", "closed": false },
+      "thursday": { "open": "09:00", "close": "18:00", "closed": false },
+      "friday": { "open": "09:00", "close": "18:00", "closed": false },
+      "saturday": { "open": "10:00", "close": "16:00", "closed": false },
+      "sunday": { "open": "10:00", "close": "14:00", "closed": true }
+    },
+    "socialMedia": {
+      "facebook": "https://facebook.com/samekbeauty",
+      "instagram": "https://instagram.com/samekbeauty"
+    },
+    "createdAt": "2024-12-04T20:00:00.000Z",
+    "updatedAt": "2024-12-04T20:00:00.000Z"
+  }
+]

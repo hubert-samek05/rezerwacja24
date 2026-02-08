@@ -1,0 +1,232 @@
+{
+  "nav": {
+    "features": "Functies",
+    "howItWorks": "Hoe het werkt",
+    "pricing": "Prijzen",
+    "contact": "Contact",
+    "login": "Inloggen",
+    "tryFree": "Gratis proberen"
+  },
+  "hero": {
+    "title": "Online reserveringssysteem",
+    "titleHighlight": "voor uw bedrijf",
+    "subtitle": "Schoonheidssalon, kapper, autogarage of medische praktijk — een systeem dat reserveringen automatiseert en u tijd bespaart.",
+    "cta": "Probeer 7 dagen gratis",
+    "ctaSecondary": "Bekijk functies",
+    "benefit1": "Direct volledige toegang",
+    "benefit2": "Configuratie in 5 minuten",
+    "benefit3": "Annuleer wanneer u wilt"
+  },
+  "stats": {
+    "companies": "Actieve bedrijven",
+    "bookings": "Reserveringen per maand",
+    "uptime": "Systeembeschikbaarheid",
+    "support": "Technische ondersteuning"
+  },
+  "features": {
+    "badge": "Compleet functiepakket",
+    "title": "Alles wat u nodig heeft",
+    "subtitle": "Professionele tools om reserveringen, klanten en betalingen op één plek te beheren.",
+    "list": [
+      "Intuïtief beheerpaneel",
+      "Alle gegevens op één plek",
+      "Snelle toegang tot statistieken"
+    ],
+    "calendar": {
+      "title": "Slimme kalender",
+      "description": "Dag-, week- en maandweergave. Slepen en neerzetten om te herplannen. Automatische conflictdetectie."
+    },
+    "booking": {
+      "title": "24/7 reserveringen",
+      "description": "Uw klanten kunnen op elk moment reserveren. Automatische bevestigingen en herinneringen."
+    },
+    "notifications": {
+      "title": "SMS- en e-mailmeldingen",
+      "description": "Automatische herinneringen verminderen no-shows tot 70%."
+    },
+    "payments": {
+      "title": "Online betalingen",
+      "description": "Accepteer kaartbetalingen en bankoverschrijvingen. Automatische facturen en afrekeningen."
+    },
+    "employees": {
+      "title": "Teambeheer",
+      "description": "Elke medewerker heeft zijn eigen kalender, diensten en werktijden. Prestatiemonitoring."
+    },
+    "analytics": {
+      "title": "Statistieken en rapporten",
+      "description": "Volg inkomsten, dienstpopulariteit en medewerkersprestaties in realtime."
+    },
+    "packages": {
+      "title": "Servicepakketten",
+      "description": "Maak aantrekkelijke pakketten door meerdere diensten te combineren tegen een promotieprijs."
+    },
+    "passes": {
+      "title": "Abonnementen en passen",
+      "description": "Verkoop passen voor een specifiek aantal bezoeken of tijdgebonden abonnementen."
+    },
+    "promotions": {
+      "title": "Promoties en coupons",
+      "description": "Maak kortingscodes en seizoenspromoties om nieuwe klanten aan te trekken."
+    },
+    "groups": {
+      "title": "Groepslessen",
+      "description": "Organiseer workshops, trainingen en groepslessen met automatisch deelnemersbeheer."
+    },
+    "api": {
+      "title": "API en integraties",
+      "description": "Integreer het systeem met uw eigen applicaties via REST API en webhooks."
+    },
+    "security": {
+      "title": "Gegevensbeveiliging",
+      "description": "SSL-encryptie, AVG-naleving en regelmatige back-ups."
+    },
+    "allFeatures": [
+      { "icon": "calendar", "title": "Reserveringskalender", "description": "Geavanceerde kalender met dag-, week- en maandweergaven. Ondersteuning voor slepen en neerzetten." },
+      { "icon": "users", "title": "CRM en klantendatabase", "description": "Volledige klantendatabase met bezoekgeschiedenis, notities en voorkeuren." },
+      { "icon": "bell", "title": "SMS-meldingen", "description": "Automatische SMS-herinneringen 24u en 2u voor afspraken. Verminder no-shows." },
+      { "icon": "creditCard", "title": "Online betalingen", "description": "Stripe, PayPal, creditcards. Accepteer online betalingen van klanten." },
+      { "icon": "barChart", "title": "Analyses en rapporten", "description": "Inkomstenstatistieken, reserveringsheatmaps en KPI-indicatoren." },
+      { "icon": "usersRound", "title": "Teambeheer", "description": "Medewerkers, roosters, verlof en rechten op één plek." },
+      { "icon": "palette", "title": "Aangepaste reserveringspagina", "description": "Professionele pagina uw-bedrijf.bookings24.eu met aanpasbare kleuren, logo en uiterlijk." },
+      { "icon": "globe", "title": "Meertalige pagina", "description": "Reserveringspagina beschikbaar in Engels, Duits en Pools. Automatische taaldetectie." },
+      { "icon": "gift", "title": "Loyaliteitsprogramma", "description": "Beloon vaste klanten met punten voor bezoeken. Loyaliteitsniveaus en inwisselbare beloningen." },
+      { "icon": "package", "title": "Servicepakketten", "description": "Maak pakketten door meerdere diensten te combineren tegen aantrekkelijke prijzen." },
+      { "icon": "ticket", "title": "Passen", "description": "Verkoop passen voor meerdere klantbezoeken." },
+      { "icon": "star", "title": "Promoties en kortingen", "description": "Kortingscodes, seizoenspromoties en speciale aanbiedingen." },
+      { "icon": "layers", "title": "Groepsreserveringen", "description": "Accepteer reserveringen voor groepen en evenementen." },
+      { "icon": "code", "title": "Widget voor website", "description": "Integreer het reserveringsformulier op uw website." },
+      { "icon": "refresh", "title": "Kalendersynchronisatie", "description": "Integratie met Google Calendar en Apple Calendar." },
+      { "icon": "shield", "title": "AVG-naleving", "description": "Veilige verwerking en opslag van klantgegevens." },
+      { "icon": "lock", "title": "2FA-beveiliging", "description": "Tweefactorauthenticatie voor accountbeveiliging." },
+      { "icon": "zap", "title": "REST API", "description": "Volledige API voor integratie met uw eigen systemen." },
+      { "icon": "clock", "title": "Tijdbeheer", "description": "Werktijden, pauzes en medewerkerbeschikbaarheid." }
+    ],
+    "tryAllFeatures": "Probeer alle functies gratis",
+    "quickAccess": "Snelle toegang",
+    "toAllFeatures": "Naar alle functies"
+  },
+  "howItWorks": {
+    "badge": "Eenvoudig proces",
+    "title": "Start in 3 stappen",
+    "subtitle": "De configuratie duurt slechts enkele minuten. Geen ingewikkelde instellingen.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Maak een account",
+        "description": "Registreer gratis met basisinformatie over uw bedrijf. Het duurt slechts een moment.",
+        "details": ["Registratie in 30 seconden", "Direct volledige toegang", "7 dagen gratis"]
+      },
+      {
+        "num": "02",
+        "title": "Configureer het bedrijf",
+        "description": "Voeg uw diensten toe, stel prijzen, werktijden in en wijs medewerkers toe.",
+        "details": ["Voeg diensten en prijzen toe", "Stel werktijden in", "Voeg medewerkers toe"]
+      },
+      {
+        "num": "03",
+        "title": "Accepteer reserveringen",
+        "description": "Deel de reserveringslink met klanten en begin met het automatiseren van uw bedrijf.",
+        "details": ["Aangepaste reserveringspagina", "Widget voor uw website", "Automatische meldingen"]
+      }
+    ]
+  },
+  "pricing": {
+    "badge": "Eenvoudige prijzen",
+    "title": "Kies uw plan",
+    "subtitle": "Geen verborgen kosten. Annuleer wanneer u wilt.",
+    "monthly": "maandelijks",
+    "yearly": "jaarlijks",
+    "popular": "Meest populair",
+    "cta": "Gratis starten",
+    "features": {
+      "bookings": "reserveringen per maand",
+      "unlimited": "Onbeperkt",
+      "employees": "medewerkers",
+      "sms": "SMS-meldingen",
+      "support": "Ondersteuning",
+      "email": "E-mail",
+      "priority": "Prioriteit",
+      "dedicated": "Toegewijd",
+      "api": "API-toegang",
+      "branding": "Aangepast logo en kleuren"
+    },
+    "plans": {
+      "starter": "Starter",
+      "professional": "Professional",
+      "business": "Business"
+    }
+  },
+  "startNow": "Nu starten",
+  "freeTrial": "7 dagen gratis proefperiode",
+  "testimonials": {
+    "title": "Wat onze klanten zeggen",
+    "items": [
+      { "quote": "Het systeem bespaart me minstens 10 uur per week. Klanten reserveren zelf.", "author": "Anna K.", "role": "Schoonheidssalon" },
+      { "quote": "SMS-meldingen zijn een gamechanger. Ik heb bijna geen no-shows meer.", "author": "Mark W.", "role": "Kapper" },
+      { "quote": "Eenvoudig te gebruiken, maar heeft alles wat ik nodig heb.", "author": "Katrien M.", "role": "Massagestudio" }
+    ]
+  },
+  "pricingSection": {
+    "title": "Kies uw plan",
+    "subtitle": "7 dagen gratis. Geen verplichtingen.",
+    "freeDays": "7 dagen gratis",
+    "perMonth": "€/maand",
+    "startFree": "Gratis starten",
+    "mostPopular": "Meest populair",
+    "starter": {
+      "name": "Starter",
+      "price": "2.99",
+      "features": ["100 reserveringen/maand", "1 medewerker", "Geen SMS", "Reserveringspagina"]
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "11.99",
+      "features": ["Onbeperkte reserveringen", "Tot 5 medewerkers", "100 SMS/maand", "Aangepast subdomein", "Analyses"]
+    },
+    "business": {
+      "name": "Business",
+      "price": "24.99",
+      "features": ["Onbeperkte reserveringen", "Onbeperkte medewerkers", "500 SMS/maand", "Aangepast subdomein", "Analyses", "API", "Prioriteitsondersteuning"]
+    }
+  },
+  "cta": {
+    "title": "Klaar om uw reserveringen te automatiseren?",
+    "subtitle": "Sluit u aan bij honderden bedrijven die al tijd besparen met ons systeem.",
+    "button": "Start 7-daagse proefperiode",
+    "note": "Geen creditcard nodig • Volledige toegang • Annuleer wanneer u wilt"
+  },
+  "footer": {
+    "brandName": "Bookings24",
+    "description": "Professioneel online reserveringssysteem voor dienstverlenende bedrijven. Automatiseer reserveringen en bespaar tijd.",
+    "product": "Product",
+    "productLinks": {
+      "features": "Systeemfuncties",
+      "howItWorks": "Hoe het werkt",
+      "pricing": "Abonnementsprijzen",
+      "help": "Helpcentrum"
+    },
+    "industries": "Sectoren",
+    "industryLinks": {
+      "beauty": "Schoonheidssalons",
+      "hair": "Kappers",
+      "massage": "Massagestudio's",
+      "auto": "Autogarages"
+    },
+    "company": "Bedrijf",
+    "companyLinks": {
+      "contact": "Neem contact op",
+      "privacy": "Privacybeleid",
+      "terms": "Servicevoorwaarden"
+    },
+    "developers": "Ontwikkelaars",
+    "developerLinks": {
+      "api": "API-documentatie",
+      "widget": "Reserveringswidget",
+      "integrations": "Integraties"
+    },
+    "copyright": "Online reserveringssysteem. Alle rechten voorbehouden.",
+    "privacy": "Privacy",
+    "terms": "Voorwaarden",
+    "contact": "Contact"
+  }
+}

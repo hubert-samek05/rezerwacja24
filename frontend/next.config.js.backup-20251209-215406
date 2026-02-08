@@ -1,0 +1,17 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+  images: {
+    domains: ['source.unsplash.com', 'images.unsplash.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.unsplash.com',
+      },
+    ],
+  },
+  // Usunięto rewrites - lokalne API routes będą działać normalnie
+  // Backend API jest dostępny bezpośrednio przez NEXT_PUBLIC_API_URL
+}
+
+module.exports = nextConfig

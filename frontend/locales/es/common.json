@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Características",
+    "pricing": "Precios",
+    "contact": "Contacto",
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "dashboard": "Panel",
+    "logout": "Cerrar sesión"
+  },
+  "hero": {
+    "title": "Sistema de reservas online para tu negocio",
+    "subtitle": "Automatiza las reservas, gestiona tu calendario y haz crecer tu negocio",
+    "cta": "Empezar gratis",
+    "demo": "Ver demo"
+  },
+  "features": {
+    "title": "Todo lo que necesitas",
+    "subtitle": "Solución completa para la gestión de reservas",
+    "calendar": {
+      "title": "Calendario inteligente",
+      "description": "Gestiona las reservas en un calendario intuitivo con vistas diarias, semanales y mensuales"
+    },
+    "booking": {
+      "title": "Reservas online 24/7",
+      "description": "Los clientes pueden reservar en cualquier momento, día y noche"
+    },
+    "notifications": {
+      "title": "Notificaciones SMS y email",
+      "description": "Los recordatorios automáticos reducen las ausencias"
+    },
+    "payments": {
+      "title": "Pagos online",
+      "description": "Acepta pagos con tarjeta directamente durante la reserva"
+    },
+    "employees": {
+      "title": "Gestión de personal",
+      "description": "Cada empleado tiene su propio calendario y servicios asignados"
+    },
+    "analytics": {
+      "title": "Estadísticas e informes",
+      "description": "Rastrea ingresos, popularidad de servicios y rendimiento del personal"
+    }
+  },
+  "pricing": {
+    "title": "Precios simples",
+    "subtitle": "Elige el plan que se adapte a tus necesidades",
+    "monthly": "mensual",
+    "yearly": "anual",
+    "popular": "Más popular",
+    "cta": "Elegir plan",
+    "features": "Incluye"
+  },
+  "cta": {
+    "title": "¿Listo para automatizar tus reservas?",
+    "subtitle": "Únete a miles de empresas que ya usan nuestro sistema",
+    "button": "Comenzar prueba gratuita de 14 días"
+  },
+  "footer": {
+    "description": "Sistema moderno de reservas online para empresas de servicios",
+    "product": "Producto",
+    "company": "Empresa",
+    "legal": "Legal",
+    "terms": "Términos de servicio",
+    "privacy": "Política de privacidad",
+    "about": "Sobre nosotros",
+    "blog": "Blog",
+    "help": "Ayuda",
+    "copyright": "Todos los derechos reservados"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ha ocurrido un error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "close": "Cerrar"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "email": "Email",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "loginSuccess": "Sesión iniciada correctamente",
+    "registerSuccess": "Cuenta creada correctamente",
+    "invalidCredentials": "Email o contraseña inválidos"
+  },
+  "booking": {
+    "title": "Reservar cita",
+    "selectService": "Seleccionar servicio",
+    "selectEmployee": "Seleccionar empleado",
+    "selectDate": "Seleccionar fecha",
+    "selectTime": "Seleccionar hora",
+    "yourDetails": "Tus datos",
+    "name": "Nombre completo",
+    "phone": "Teléfono",
+    "notes": "Notas",
+    "confirm": "Confirmar reserva",
+    "success": "¡Reserva confirmada!",
+    "successMessage": "Recibirás un email de confirmación",
+    "noSlots": "No hay horarios disponibles",
+    "price": "Precio",
+    "duration": "Duración",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido",
+    "calendar": "Calendario",
+    "bookings": "Reservas",
+    "services": "Servicios",
+    "employees": "Personal",
+    "customers": "Clientes",
+    "settings": "Configuración",
+    "statistics": "Estadísticas"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "nav": {
+    "dashboard": "Přehled",
+    "calendar": "Kalendář",
+    "bookings": "Rezervace",
+    "customers": "Zákazníci",
+    "services": "Služby",
+    "employees": "Zaměstnanci",
+    "categories": "Kategorie",
+    "packages": "Balíčky",
+    "passes": "Permanentky",
+    "loyalty": "Věrnost",
+    "groupBookings": "Skupinové lekce",
+    "promotions": "Akce",
+    "analytics": "Analýzy",
+    "settings": "Nastavení",
+    "start": "Start",
+    "more": "Více"
+  },
+  "labels": {
+    "all": "Všechny",
+    "confirmed": "Potvrzené",
+    "pending": "Čekající",
+    "completed": "Dokončené",
+    "cancelled": "Zrušené",
+    "revenue": "Příjmy",
+    "filters": "Filtry",
+    "employee": "Zaměstnanec",
+    "period": "Období",
+    "allTime": "Celé období",
+    "today": "Dnes",
+    "thisWeek": "Tento týden",
+    "thisMonth": "Tento měsíc",
+    "paid": "Zaplaceno",
+    "unpaid": "Nezaplaceno",
+    "partial": "Částečně",
+    "cash": "Hotovost",
+    "card": "Karta",
+    "pass": "Permanentka",
+    "other": "Jiné"
+  },
+  "common": {
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "add": "Přidat",
+    "search": "Hledat",
+    "loading": "Načítání...",
+    "noResults": "Žádné výsledky",
+    "confirm": "Potvrdit",
+    "back": "Zpět",
+    "next": "Další",
+    "close": "Zavřít",
+    "yes": "Ano",
+    "no": "Ne"
+  },
+  "dashboard": {
+    "title": "Přehled",
+    "welcome": "Vítejte",
+    "todayBookings": "Dnešní rezervace",
+    "upcomingBookings": "Nadcházející rezervace",
+    "totalCustomers": "Celkem zákazníků",
+    "totalRevenue": "Celkové příjmy"
+  },
+  "bookings": {
+    "title": "Rezervace",
+    "newBooking": "Nová rezervace",
+    "noBookings": "Žádné rezervace",
+    "createFirst": "Vytvořte svou první rezervaci"
+  },
+  "customers": {
+    "title": "Zákazníci",
+    "newCustomer": "Nový zákazník",
+    "noCustomers": "Žádní zákazníci",
+    "addFirst": "Přidejte svého prvního zákazníka"
+  },
+  "services": {
+    "title": "Služby",
+    "newService": "Nová služba",
+    "noServices": "Žádné služby",
+    "addFirst": "Přidejte svou první službu"
+  },
+  "employees": {
+    "title": "Zaměstnanci",
+    "newEmployee": "Nový zaměstnanec",
+    "noEmployees": "Žádní zaměstnanci",
+    "addFirst": "Přidejte svého prvního zaměstnance"
+  },
+  "calendar": {
+    "title": "Kalendář",
+    "day": "Den",
+    "week": "Týden",
+    "month": "Měsíc",
+    "today": "Dnes"
+  },
+  "settings": {
+    "title": "Nastavení",
+    "general": "Obecné",
+    "business": "Firma",
+    "notifications": "Notifikace",
+    "payments": "Platby"
+  },
+  "errors": {
+    "somethingWentWrong": "Něco se pokazilo",
+    "tryAgain": "Zkuste to znovu"
+  },
+  "success": {
+    "saved": "Úspěšně uloženo",
+    "deleted": "Úspěšně smazáno"
+  }
+}

@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark Background Circle -->
+  <circle cx="32" cy="32" r="32" fill="#0A0A0A"/>
+  
+  <!-- Calendar Icon (centered) -->
+  <g stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(16, 14)">
+    <!-- Calendar body -->
+    <rect x="0" y="6" width="32" height="32" rx="3"/>
+    <!-- Calendar top hooks -->
+    <line x1="22" y1="0" x2="22" y2="10"/>
+    <line x1="10" y1="0" x2="10" y2="10"/>
+    <!-- Calendar line -->
+    <line x1="0" y1="16" x2="32" y2="16"/>
+  </g>
+</svg>

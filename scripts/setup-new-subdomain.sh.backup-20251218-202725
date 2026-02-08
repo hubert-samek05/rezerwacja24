@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# Skrypt do automatycznego dodawania nowej subdomeny z SSL
+# Użycie: ./setup-new-subdomain.sh <subdomain>
+
+set -e
+
+if [ -z "$1" ]; then
+    echo "Użycie: $0 <subdomain>"
+    echo "Przykład: $0 demo"
+    exit 1
+fi
+
+SUBDOMAIN="$1"
+FULL_DOMAIN="${SUBDOMAIN}.rezerwacja24.pl"
+NGINX_CONF="/etc/nginx/sites-available/${FULL_DOMAIN}.conf"
+
+echo "=== Konfiguracja nowej subdomeny: ${FULL_DOMAIN} ==="
+
+# 1. Sprawdź czy konfiguracja już istnieje
+if [ -f "${NGINX_CONF}" ]; then
+    echo "⚠️  Konfiguracja dla ${FULL_DOMAIN} już istnieje"
+    exit 0
+fi
+
+# 2. Utwórz konfigurację nginx
+echo "📝 Tworzenie konfiguracji nginx..."
+cat > "${NGINX_CONF}" << EOF
+# ${FULL_DOMAIN} - Subdomain configuration
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${FULL_DOMAIN};
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/rezerwacja24;
+    }
+    
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${FULL_DOMAIN};
+    
+    ssl_certificate /etc/letsencrypt/live/${FULL_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${FULL_DOMAIN}/privkey.pem;
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers off;
+    
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+
+# 3. Aktywuj konfigurację
+echo "🔗 Aktywowanie konfiguracji..."
+ln -sf "${NGINX_CONF}" "/etc/nginx/sites-enabled/${FULL_DOMAIN}.conf"
+
+# 4. Wygeneruj certyfikat SSL
+echo "🔐 Generowanie certyfikatu SSL..."
+/root/CascadeProjects/rezerwacja24-saas/scripts/add-subdomain-ssl.sh "${SUBDOMAIN}"
+
+# 5. Test i reload nginx
+echo "🔄 Testowanie i przeładowywanie nginx..."
+nginx -t && systemctl reload nginx
+
+echo ""
+echo "✅ Subdomena ${FULL_DOMAIN} została skonfigurowana!"
+echo "   - HTTP: http://${FULL_DOMAIN}"
+echo "   - HTTPS: https://${FULL_DOMAIN}"
+echo ""

@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Funzionalità",
+    "pricing": "Prezzi",
+    "contact": "Contatti",
+    "login": "Accedi",
+    "register": "Registrati",
+    "dashboard": "Dashboard",
+    "logout": "Esci"
+  },
+  "hero": {
+    "title": "Sistema di prenotazione online per la tua azienda",
+    "subtitle": "Automatizza le prenotazioni, gestisci il tuo calendario e fai crescere la tua attività",
+    "cta": "Inizia gratis",
+    "demo": "Guarda la demo"
+  },
+  "features": {
+    "title": "Tutto ciò di cui hai bisogno",
+    "subtitle": "Soluzione completa per la gestione delle prenotazioni",
+    "calendar": {
+      "title": "Calendario intelligente",
+      "description": "Gestisci le prenotazioni in un calendario intuitivo con viste giornaliere, settimanali e mensili"
+    },
+    "booking": {
+      "title": "Prenotazioni online 24/7",
+      "description": "I clienti possono prenotare in qualsiasi momento, giorno e notte"
+    },
+    "notifications": {
+      "title": "Notifiche SMS ed email",
+      "description": "I promemoria automatici riducono le assenze"
+    },
+    "payments": {
+      "title": "Pagamenti online",
+      "description": "Accetta pagamenti con carta direttamente durante la prenotazione"
+    },
+    "employees": {
+      "title": "Gestione del personale",
+      "description": "Ogni dipendente ha il proprio calendario e servizi assegnati"
+    },
+    "analytics": {
+      "title": "Statistiche e report",
+      "description": "Monitora i ricavi, la popolarità dei servizi e le prestazioni del personale"
+    }
+  },
+  "pricing": {
+    "title": "Prezzi semplici",
+    "subtitle": "Scegli il piano adatto alle tue esigenze",
+    "monthly": "mensile",
+    "yearly": "annuale",
+    "popular": "Più popolare",
+    "cta": "Scegli piano",
+    "features": "Include"
+  },
+  "cta": {
+    "title": "Pronto ad automatizzare le tue prenotazioni?",
+    "subtitle": "Unisciti a migliaia di aziende che già utilizzano il nostro sistema",
+    "button": "Inizia la prova gratuita di 14 giorni"
+  },
+  "footer": {
+    "description": "Sistema moderno di prenotazione online per aziende di servizi",
+    "product": "Prodotto",
+    "company": "Azienda",
+    "legal": "Legale",
+    "terms": "Termini di servizio",
+    "privacy": "Privacy Policy",
+    "about": "Chi siamo",
+    "blog": "Blog",
+    "help": "Aiuto",
+    "copyright": "Tutti i diritti riservati"
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Si è verificato un errore",
+    "success": "Successo",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "back": "Indietro",
+    "next": "Avanti",
+    "submit": "Invia",
+    "close": "Chiudi"
+  },
+  "auth": {
+    "login": "Accedi",
+    "register": "Registrati",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Conferma password",
+    "forgotPassword": "Password dimenticata?",
+    "noAccount": "Non hai un account?",
+    "hasAccount": "Hai già un account?",
+    "loginSuccess": "Accesso effettuato",
+    "registerSuccess": "Account creato con successo",
+    "invalidCredentials": "Email o password non validi"
+  },
+  "booking": {
+    "title": "Prenota un appuntamento",
+    "selectService": "Seleziona servizio",
+    "selectEmployee": "Seleziona dipendente",
+    "selectDate": "Seleziona data",
+    "selectTime": "Seleziona orario",
+    "yourDetails": "I tuoi dati",
+    "name": "Nome completo",
+    "phone": "Telefono",
+    "notes": "Note",
+    "confirm": "Conferma prenotazione",
+    "success": "Prenotazione confermata!",
+    "successMessage": "Riceverai un'email di conferma",
+    "noSlots": "Nessuno slot disponibile",
+    "price": "Prezzo",
+    "duration": "Durata",
+    "minutes": "min"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Benvenuto",
+    "calendar": "Calendario",
+    "bookings": "Prenotazioni",
+    "services": "Servizi",
+    "employees": "Personale",
+    "customers": "Clienti",
+    "settings": "Impostazioni",
+    "statistics": "Statistiche"
+  }
+}

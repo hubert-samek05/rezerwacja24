@@ -1,0 +1,122 @@
+import { Controller, Post, Get, Body } from '@nestjs/common';
+import { FlySMSService } from './flysms.service';
+
+@Controller('sms')
+export class SMSController {
+  constructor(private readonly flySMSService: FlySMSService) {}
+
+  /**
+   * Wysyła testowy SMS
+   */
+  @Post('send')
+  async sendSMS(
+    @Body() body: { to: string; message: string; from?: string },
+  ) {
+    return this.flySMSService.sendSMS({
+      to: body.to,
+      message: body.message,
+      from: body.from,
+    });
+  }
+
+  /**
+   * Wysyła SMS z potwierdzeniem rezerwacji
+   */
+  @Post('booking/confirmation')
+  async sendBookingConfirmation(
+    @Body()
+    body: {
+      phoneNumber: string;
+      customerName: string;
+      serviceName: string;
+      date: string;
+      time: string;
+    },
+  ) {
+    return this.flySMSService.sendBookingConfirmation(
+      body.phoneNumber,
+      body.customerName,
+      body.serviceName,
+      body.date,
+      body.time,
+    );
+  }
+
+  /**
+   * Wysyła SMS z przypomnieniem o rezerwacji
+   */
+  @Post('booking/reminder')
+  async sendBookingReminder(
+    @Body()
+    body: {
+      phoneNumber: string;
+      customerName: string;
+      serviceName: string;
+      date: string;
+      time: string;
+    },
+  ) {
+    return this.flySMSService.sendBookingReminder(
+      body.phoneNumber,
+      body.customerName,
+      body.serviceName,
+      body.date,
+      body.time,
+    );
+  }
+
+  /**
+   * Wysyła SMS z anulowaniem rezerwacji
+   */
+  @Post('booking/cancellation')
+  async sendBookingCancellation(
+    @Body()
+    body: {
+      phoneNumber: string;
+      customerName: string;
+      serviceName: string;
+      date: string;
+      time: string;
+    },
+  ) {
+    return this.flySMSService.sendBookingCancellation(
+      body.phoneNumber,
+      body.customerName,
+      body.serviceName,
+      body.date,
+      body.time,
+    );
+  }
+
+  /**
+   * Sprawdza saldo konta FlySMS
+   */
+  @Get('balance')
+  async getBalance() {
+    const balance = await this.flySMSService.getBalance();
+    
+    if (!balance) {
+      return {
+        success: false,
+        message: 'Failed to get balance',
+      };
+    }
+
+    return {
+      success: true,
+      balance: balance.balance,
+      currency: balance.currency,
+    };
+  }
+
+  /**
+   * Sprawdza status konfiguracji FlySMS
+   */
+  @Get('status')
+  async getStatus() {
+    return {
+      configured: this.flySMSService.isConfigured(),
+      provider: 'FlySMS',
+    };
+  }
+}

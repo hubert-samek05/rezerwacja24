@@ -1,0 +1,232 @@
+{
+  "nav": {
+    "features": "Funktionen",
+    "howItWorks": "So funktioniert's",
+    "pricing": "Preise",
+    "contact": "Kontakt",
+    "login": "Anmelden",
+    "tryFree": "Kostenlos testen"
+  },
+  "hero": {
+    "title": "Online-Buchungssystem",
+    "titleHighlight": "für Ihr Unternehmen",
+    "subtitle": "Schönheitssalon, Friseur, Autowerkstatt oder Arztpraxis — ein System, das Buchungen automatisiert und Ihre Zeit spart.",
+    "cta": "7 Tage kostenlos testen",
+    "ctaSecondary": "Funktionen ansehen",
+    "benefit1": "Sofortiger Vollzugriff",
+    "benefit2": "Einrichtung in 5 Minuten",
+    "benefit3": "Jederzeit kündbar"
+  },
+  "stats": {
+    "companies": "Aktive Unternehmen",
+    "bookings": "Buchungen pro Monat",
+    "uptime": "System-Verfügbarkeit",
+    "support": "Technischer Support"
+  },
+  "features": {
+    "badge": "Komplettes Funktionspaket",
+    "title": "Alles was Sie brauchen",
+    "subtitle": "Professionelle Tools zur Verwaltung von Buchungen, Kunden und Zahlungen an einem Ort.",
+    "list": [
+      "Intuitives Management-Panel",
+      "Alle Daten an einem Ort",
+      "Schneller Zugriff auf Statistiken"
+    ],
+    "calendar": {
+      "title": "Intelligenter Kalender",
+      "description": "Tages-, Wochen- und Monatsansicht. Drag & Drop zum Verschieben. Automatische Konflikterkennung."
+    },
+    "booking": {
+      "title": "Buchungen 24/7",
+      "description": "Ihre Kunden können jederzeit Termine buchen. Automatische Bestätigungen und Erinnerungen."
+    },
+    "notifications": {
+      "title": "SMS- und E-Mail-Benachrichtigungen",
+      "description": "Automatische Erinnerungen reduzieren No-Shows um bis zu 70%."
+    },
+    "payments": {
+      "title": "Online-Zahlungen",
+      "description": "Akzeptieren Sie Kartenzahlungen und Überweisungen. Automatische Rechnungen."
+    },
+    "employees": {
+      "title": "Teamverwaltung",
+      "description": "Jeder Mitarbeiter hat eigenen Kalender, Dienste und Arbeitszeiten. Leistungsverfolgung."
+    },
+    "analytics": {
+      "title": "Statistiken und Berichte",
+      "description": "Verfolgen Sie Umsatz, Dienstbeliebtheit und Mitarbeiterleistung in Echtzeit."
+    },
+    "packages": {
+      "title": "Service-Pakete",
+      "description": "Erstellen Sie attraktive Pakete, die mehrere Dienste zu Aktionspreisen kombinieren."
+    },
+    "passes": {
+      "title": "Pässe und Abonnements",
+      "description": "Verkaufen Sie Pässe für eine bestimmte Anzahl von Besuchen oder zeitbasierte Abonnements."
+    },
+    "promotions": {
+      "title": "Aktionen und Gutscheine",
+      "description": "Erstellen Sie Rabattcodes und saisonale Aktionen, um neue Kunden zu gewinnen."
+    },
+    "groups": {
+      "title": "Gruppenkurse",
+      "description": "Organisieren Sie Workshops, Schulungen und Gruppenkurse mit automatischer Teilnehmerverwaltung."
+    },
+    "api": {
+      "title": "API und Integrationen",
+      "description": "Integrieren Sie das System mit Ihren eigenen Anwendungen über REST API und Webhooks."
+    },
+    "security": {
+      "title": "Datensicherheit",
+      "description": "SSL-Verschlüsselung, DSGVO-Konformität und regelmäßige Backups."
+    },
+    "allFeatures": [
+      { "icon": "calendar", "title": "Buchungskalender", "description": "Erweiterter Kalender mit Tages-, Wochen- und Monatsansicht. Drag & Drop-Unterstützung." },
+      { "icon": "users", "title": "CRM & Kundendatenbank", "description": "Vollständige Kundendatenbank mit Besuchshistorie, Notizen und Präferenzen." },
+      { "icon": "bell", "title": "SMS-Benachrichtigungen", "description": "Automatische SMS-Erinnerungen 24h und 2h vor Terminen. Reduzieren Sie No-Shows." },
+      { "icon": "creditCard", "title": "Online-Zahlungen", "description": "Stripe, PayPal, Kreditkarten. Akzeptieren Sie Online-Zahlungen von Kunden." },
+      { "icon": "barChart", "title": "Analysen & Berichte", "description": "Umsatzstatistiken, Buchungs-Heatmaps und KPI-Indikatoren." },
+      { "icon": "usersRound", "title": "Teamverwaltung", "description": "Mitarbeiter, Zeitpläne, Urlaub und Berechtigungen an einem Ort." },
+      { "icon": "palette", "title": "Eigene Buchungsseite mit Personalisierung", "description": "Professionelle Seite ihr-unternehmen.bookings24.eu mit anpassbaren Farben, Logo und Aussehen." },
+      { "icon": "globe", "title": "Mehrsprachige Buchungsseite", "description": "Buchungsseite verfügbar auf Deutsch, Englisch und Polnisch. Automatische Spracherkennung für Kunden." },
+      { "icon": "gift", "title": "Treueprogramm", "description": "Belohnen Sie Stammkunden mit Punkten für Besuche. Treuestufen und einlösbare Prämien." },
+      { "icon": "package", "title": "Service-Pakete", "description": "Erstellen Sie Pakete, die mehrere Dienste zu attraktiven Preisen kombinieren." },
+      { "icon": "ticket", "title": "Pässe", "description": "Verkaufen Sie Pässe für mehrere Kundenbesuche." },
+      { "icon": "star", "title": "Aktionen & Rabatte", "description": "Rabattcodes, saisonale Aktionen und Sonderangebote." },
+      { "icon": "layers", "title": "Gruppenbuchungen", "description": "Akzeptieren Sie Buchungen für Gruppen und Veranstaltungen." },
+      { "icon": "code", "title": "Website-Widget", "description": "Betten Sie das Buchungsformular auf Ihrer Website ein." },
+      { "icon": "refresh", "title": "Kalender-Sync", "description": "Integration mit Google Calendar und Apple Calendar." },
+      { "icon": "shield", "title": "DSGVO-Konformität", "description": "Sichere Verarbeitung und Speicherung von Kundendaten." },
+      { "icon": "lock", "title": "2FA-Sicherheit", "description": "Zwei-Faktor-Authentifizierung für Kontosicherheit." },
+      { "icon": "zap", "title": "REST API", "description": "Vollständige API zur Integration mit Ihren eigenen Systemen." },
+      { "icon": "clock", "title": "Zeitmanagement", "description": "Arbeitszeiten, Pausen und Mitarbeiterverfügbarkeit." }
+    ],
+    "tryAllFeatures": "Alle Funktionen kostenlos testen",
+    "quickAccess": "Schnellzugriff",
+    "toAllFeatures": "Zu allen Funktionen"
+  },
+  "howItWorks": {
+    "badge": "Einfacher Prozess",
+    "title": "In 3 Schritten starten",
+    "subtitle": "Die Einrichtung dauert nur wenige Minuten. Keine komplizierten Einstellungen.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Konto erstellen",
+        "description": "Registrieren Sie sich kostenlos mit grundlegenden Unternehmensinformationen. Dauert nur einen Moment.",
+        "details": ["Registrierung in 30 Sekunden", "Sofortiger Vollzugriff", "7 Tage kostenlos"]
+      },
+      {
+        "num": "02",
+        "title": "Unternehmen konfigurieren",
+        "description": "Fügen Sie Ihre Dienste hinzu, legen Sie Preise, Arbeitszeiten fest und weisen Sie Mitarbeiter zu.",
+        "details": ["Dienste und Preise hinzufügen", "Arbeitszeiten festlegen", "Mitarbeiter hinzufügen"]
+      },
+      {
+        "num": "03",
+        "title": "Buchungen annehmen",
+        "description": "Teilen Sie den Buchungslink mit Kunden und beginnen Sie, Ihr Geschäft zu automatisieren.",
+        "details": ["Eigene Buchungsseite", "Widget für Ihre Website", "Automatische Benachrichtigungen"]
+      }
+    ]
+  },
+  "pricing": {
+    "badge": "Einfache Preise",
+    "title": "Wählen Sie Ihren Plan",
+    "subtitle": "Keine versteckten Gebühren. Jederzeit kündbar.",
+    "monthly": "monatlich",
+    "yearly": "jährlich",
+    "popular": "Am beliebtesten",
+    "cta": "Kostenlos starten",
+    "features": {
+      "bookings": "Buchungen pro Monat",
+      "unlimited": "Unbegrenzt",
+      "employees": "Mitarbeiter",
+      "sms": "SMS-Benachrichtigungen",
+      "support": "Support",
+      "email": "E-Mail",
+      "priority": "Priorität",
+      "dedicated": "Dediziert",
+      "api": "API-Zugang",
+      "branding": "Eigenes Logo und Farben"
+    },
+    "plans": {
+      "starter": "Starter",
+      "professional": "Professional",
+      "business": "Business"
+    }
+  },
+  "startNow": "Jetzt starten",
+  "freeTrial": "Kostenlose 7-Tage-Testversion",
+  "testimonials": {
+    "title": "Was unsere Kunden sagen",
+    "items": [
+      { "quote": "Das System spart mir mindestens 10 Stunden pro Woche. Kunden buchen selbst Termine.", "author": "Anna K.", "role": "Schönheitssalon" },
+      { "quote": "SMS-Benachrichtigungen sind ein Game Changer. Ich habe praktisch keine No-Shows mehr.", "author": "Markus W.", "role": "Friseur" },
+      { "quote": "Einfach zu bedienen und hat trotzdem alles, was ich brauche.", "author": "Katja M.", "role": "Massagestudio" }
+    ]
+  },
+  "pricingSection": {
+    "title": "Wählen Sie Ihren Plan",
+    "subtitle": "7 Tage kostenlos. Keine Verpflichtung.",
+    "freeDays": "7 Tage kostenlos",
+    "perMonth": "€/Monat",
+    "startFree": "Kostenlos starten",
+    "mostPopular": "Am beliebtesten",
+    "starter": {
+      "name": "Starter",
+      "price": "2,99",
+      "features": ["50 Buchungen/Monat", "1 Mitarbeiter", "Keine SMS", "Eigene Subdomain"]
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "11,99",
+      "features": ["Unbegrenzte Buchungen", "Bis zu 5 Mitarbeiter", "100 SMS/Monat", "Eigene Subdomain", "Analysen"]
+    },
+    "business": {
+      "name": "Business",
+      "price": "24,99",
+      "features": ["Unbegrenzte Buchungen", "Unbegrenzte Mitarbeiter", "500 SMS/Monat", "Eigene Subdomain", "Analysen", "API", "Prioritäts-Support"]
+    }
+  },
+  "cta": {
+    "title": "Bereit, Ihre Buchungen zu automatisieren?",
+    "subtitle": "Schließen Sie sich Hunderten von Unternehmen an, die bereits Zeit mit unserem System sparen.",
+    "button": "7-Tage-Testversion starten",
+    "note": "Keine Kreditkarte • Vollzugriff • Jederzeit kündbar"
+  },
+  "footer": {
+    "brandName": "Bookings24",
+    "description": "Professionelles Online-Buchungssystem für Dienstleistungsunternehmen. Automatisieren Sie Buchungen und sparen Sie Zeit.",
+    "product": "Produkt",
+    "productLinks": {
+      "features": "Systemfunktionen",
+      "howItWorks": "So funktioniert's",
+      "pricing": "Abo-Preise",
+      "help": "Hilfezentrum"
+    },
+    "industries": "Branchen",
+    "industryLinks": {
+      "beauty": "Schönheitssalons",
+      "hair": "Friseure",
+      "massage": "Massagestudios",
+      "auto": "Autowerkstätten"
+    },
+    "company": "Unternehmen",
+    "companyLinks": {
+      "contact": "Kontaktieren Sie uns",
+      "privacy": "Datenschutzrichtlinie",
+      "terms": "Nutzungsbedingungen"
+    },
+    "developers": "Entwickler",
+    "developerLinks": {
+      "api": "API-Dokumentation",
+      "widget": "Buchungs-Widget",
+      "integrations": "Integrationen"
+    },
+    "copyright": "Online-Buchungssystem. Alle Rechte vorbehalten.",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "contact": "Kontakt"
+  }
+}

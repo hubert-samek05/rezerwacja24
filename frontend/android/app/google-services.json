@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "792466335830",
+    "project_id": "rezerwacja24-4b6d2",
+    "storage_bucket": "rezerwacja24-4b6d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792466335830:android:8a4574725220bab31133f7",
+        "android_client_info": {
+          "package_name": "pl.rezerwacja24.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr3Sjl5JGI8KA6wVz05ma9PFhPcFqZ72o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

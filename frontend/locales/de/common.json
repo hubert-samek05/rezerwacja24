@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "features": "Funktionen",
+    "pricing": "Preise",
+    "contact": "Kontakt",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "dashboard": "Dashboard",
+    "logout": "Abmelden"
+  },
+  "hero": {
+    "title": "Online-Buchungssystem für Ihr Unternehmen",
+    "subtitle": "Automatisieren Sie Buchungen, verwalten Sie Ihren Kalender und wachsen Sie Ihr Geschäft",
+    "cta": "Kostenlos starten",
+    "demo": "Demo ansehen"
+  },
+  "features": {
+    "title": "Alles was Sie brauchen",
+    "subtitle": "Komplettlösung für Buchungsverwaltung",
+    "calendar": {
+      "title": "Intelligenter Kalender",
+      "description": "Verwalten Sie Buchungen in einem intuitiven Kalender mit Tages-, Wochen- und Monatsansicht"
+    },
+    "booking": {
+      "title": "Online-Buchungen 24/7",
+      "description": "Kunden können jederzeit Termine buchen, Tag und Nacht"
+    },
+    "notifications": {
+      "title": "SMS- und E-Mail-Benachrichtigungen",
+      "description": "Automatische Terminerinnerungen reduzieren No-Shows"
+    },
+    "payments": {
+      "title": "Online-Zahlungen",
+      "description": "Akzeptieren Sie Kartenzahlungen direkt bei der Buchung"
+    },
+    "employees": {
+      "title": "Mitarbeiterverwaltung",
+      "description": "Jeder Mitarbeiter hat seinen eigenen Kalender und zugewiesene Dienste"
+    },
+    "analytics": {
+      "title": "Statistiken und Berichte",
+      "description": "Verfolgen Sie Umsatz, Dienstbeliebtheit und Mitarbeiterleistung in Echtzeit"
+    }
+  },
+  "pricing": {
+    "title": "Einfache Preise",
+    "subtitle": "Wählen Sie einen Plan, der zu Ihren Bedürfnissen passt",
+    "monthly": "monatlich",
+    "yearly": "jährlich",
+    "popular": "Am beliebtesten",
+    "cta": "Plan wählen",
+    "features": "Enthält"
+  },
+  "cta": {
+    "title": "Bereit, Ihre Buchungen zu automatisieren?",
+    "subtitle": "Schließen Sie sich Tausenden von Unternehmen an, die bereits unser System nutzen",
+    "button": "14-tägige Testversion starten"
+  },
+  "footer": {
+    "description": "Modernes Online-Buchungssystem für Dienstleistungsunternehmen",
+    "product": "Produkt",
+    "company": "Unternehmen",
+    "legal": "Rechtliches",
+    "terms": "Nutzungsbedingungen",
+    "privacy": "Datenschutzrichtlinie",
+    "about": "Über uns",
+    "blog": "Blog",
+    "help": "Hilfe",
+    "copyright": "Alle Rechte vorbehalten"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "back": "Zurück",
+    "next": "Weiter",
+    "submit": "Absenden",
+    "close": "Schließen"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "loginSuccess": "Erfolgreich angemeldet",
+    "registerSuccess": "Konto erfolgreich erstellt",
+    "invalidCredentials": "Ungültige E-Mail oder Passwort"
+  },
+  "booking": {
+    "title": "Termin buchen",
+    "selectService": "Dienst auswählen",
+    "selectEmployee": "Mitarbeiter auswählen",
+    "selectDate": "Datum auswählen",
+    "selectTime": "Uhrzeit auswählen",
+    "yourDetails": "Ihre Daten",
+    "name": "Vollständiger Name",
+    "phone": "Telefon",
+    "notes": "Anmerkungen",
+    "confirm": "Buchung bestätigen",
+    "success": "Buchung bestätigt!",
+    "successMessage": "Sie erhalten eine Bestätigungs-E-Mail",
+    "noSlots": "Keine verfügbaren Termine",
+    "price": "Preis",
+    "duration": "Dauer",
+    "minutes": "Min"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Willkommen",
+    "calendar": "Kalender",
+    "bookings": "Buchungen",
+    "services": "Dienste",
+    "employees": "Mitarbeiter",
+    "customers": "Kunden",
+    "settings": "Einstellungen",
+    "statistics": "Statistiken"
+  }
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "service1",
+    "userId": "demo",
+    "name": "Strzyżenie damskie",
+    "description": "Profesjonalne strzyżenie z modelowaniem i stylizacją",
+    "category": "Fryzjerstwo",
+    "price": 120,
+    "duration": 60,
+    "employees": ["emp1"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "service2",
+    "userId": "demo",
+    "name": "Koloryzacja",
+    "description": "Pełna koloryzacja włosów najlepszymi produktami",
+    "category": "Fryzjerstwo",
+    "price": 250,
+    "duration": 120,
+    "employees": ["emp1"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "service3",
+    "userId": "demo",
+    "name": "Manicure hybrydowy",
+    "description": "Manicure hybrydowy z malowaniem",
+    "category": "Paznokcie",
+    "price": 80,
+    "duration": 60,
+    "employees": ["emp2"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "service4",
+    "userId": "demo",
+    "name": "Pedicure",
+    "description": "Pedicure klasyczny z malowaniem",
+    "category": "Paznokcie",
+    "price": 100,
+    "duration": 75,
+    "employees": ["emp2"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "service5",
+    "userId": "demo",
+    "name": "Masaż relaksacyjny",
+    "description": "Masaż całego ciała - 90 minut relaksu",
+    "category": "SPA",
+    "price": 180,
+    "duration": 90,
+    "employees": ["emp3"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  },
+  {
+    "id": "service6",
+    "userId": "demo",
+    "name": "Makijaż ślubny",
+    "description": "Profesjonalny makijaż ślubny z próbą",
+    "category": "Makijaż",
+    "price": 300,
+    "duration": 120,
+    "employees": ["emp1"],
+    "createdAt": "2024-12-04T20:00:00.000Z"
+  }
+]

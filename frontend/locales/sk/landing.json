@@ -1,0 +1,149 @@
+{
+  "nav": {
+    "features": "Funkcie",
+    "howItWorks": "Ako to funguje",
+    "pricing": "Cenník",
+    "contact": "Kontakt",
+    "login": "Prihlásiť sa",
+    "tryFree": "Vyskúšať zadarmo"
+  },
+  "hero": {
+    "title": "Online rezervačný systém",
+    "titleHighlight": "pre váš biznis",
+    "subtitle": "Kozmetický salón, kaderníctvo, autoservis alebo lekárska ordinácia — systém, ktorý automatizuje rezervácie a šetrí váš čas.",
+    "cta": "Vyskúšajte 7 dní zadarmo",
+    "ctaSecondary": "Pozrite si funkcie",
+    "benefit1": "Okamžitý plný prístup",
+    "benefit2": "Nastavenie za 5 minút",
+    "benefit3": "Zrušte kedykoľvek"
+  },
+  "stats": {
+    "companies": "Aktívne firmy",
+    "bookings": "Rezervácií mesačne",
+    "uptime": "Dostupnosť systému",
+    "support": "Technická podpora"
+  },
+  "features": {
+    "badge": "Kompletná sada funkcií",
+    "title": "Všetko, čo potrebujete",
+    "subtitle": "Profesionálne nástroje na správu rezervácií, zákazníkov a platieb na jednom mieste.",
+    "calendar": {
+      "title": "Inteligentný kalendár",
+      "description": "Denný, týždenný a mesačný pohľad. Presúvanie myšou na preplánovanie. Automatická detekcia konfliktov."
+    },
+    "booking": {
+      "title": "Rezervácie 24/7",
+      "description": "Vaši zákazníci môžu rezervovať kedykoľvek. Automatické potvrdenia a pripomienky."
+    },
+    "notifications": {
+      "title": "SMS a emailové notifikácie",
+      "description": "Automatické pripomienky znižujú neúčasť až o 70%."
+    },
+    "payments": {
+      "title": "Online platby",
+      "description": "Prijímajte platby kartou a bankovými prevodmi. Automatické faktúry a vyúčtovania."
+    },
+    "employees": {
+      "title": "Správa tímu",
+      "description": "Každý zamestnanec má vlastný kalendár, služby a pracovnú dobu. Sledovanie výkonu."
+    },
+    "analytics": {
+      "title": "Štatistiky a reporty",
+      "description": "Sledujte príjmy, obľúbenosť služieb a výkon zamestnancov v reálnom čase."
+    }
+  },
+  "howItWorks": {
+    "badge": "Jednoduchý proces",
+    "title": "Začnite v 3 krokoch",
+    "subtitle": "Nastavenie trvá len niekoľko minút. Žiadne komplikované nastavenia.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Vytvorte účet",
+        "description": "Zaregistrujte sa zadarmo so základnými informáciami o vašej firme.",
+        "details": ["Registrácia za 30 sekúnd", "Okamžitý plný prístup", "7 dní zadarmo"]
+      },
+      {
+        "num": "02",
+        "title": "Nastavte firmu",
+        "description": "Pridajte svoje služby, nastavte ceny, pracovnú dobu a priraďte zamestnancov.",
+        "details": ["Pridajte služby a ceny", "Nastavte pracovnú dobu", "Pridajte zamestnancov"]
+      },
+      {
+        "num": "03",
+        "title": "Prijímajte rezervácie",
+        "description": "Zdieľajte rezervačný odkaz so zákazníkmi a začnite automatizovať svoj biznis.",
+        "details": ["Vlastná rezervačná stránka", "Widget pre váš web", "Automatické notifikácie"]
+      }
+    ]
+  },
+  "pricing": {
+    "badge": "Jednoduché ceny",
+    "title": "Vyberte si plán",
+    "subtitle": "Žiadne skryté poplatky. Zrušte kedykoľvek.",
+    "monthly": "mesačne",
+    "yearly": "ročne",
+    "popular": "Najpopulárnejší",
+    "cta": "Začať zadarmo"
+  },
+  "startNow": "Začať teraz",
+  "freeTrial": "7 dní zadarmo",
+  "testimonials": {
+    "title": "Čo hovoria naši zákazníci",
+    "items": [
+      { "quote": "Systém mi šetrí minimálne 10 hodín týždenne. Zákazníci si rezervujú sami.", "author": "Anna K.", "role": "Kozmetický salón" },
+      { "quote": "SMS notifikácie sú zmena. Prakticky nemám neúčasť.", "author": "Marek W.", "role": "Kaderníctvo" },
+      { "quote": "Jednoduché na používanie, ale má všetko, čo potrebujem.", "author": "Katarína M.", "role": "Masážne štúdio" }
+    ]
+  },
+  "pricingSection": {
+    "title": "Vyberte si plán",
+    "subtitle": "7 dní zadarmo. Bez záväzkov.",
+    "freeDays": "7 dní zadarmo",
+    "perMonth": "€/mesiac",
+    "startFree": "Začať zadarmo",
+    "mostPopular": "Najpopulárnejší",
+    "starter": {
+      "name": "Starter",
+      "price": "2.99",
+      "features": ["100 rezervácií/mesiac", "1 zamestnanec", "Bez SMS", "Rezervačná stránka"]
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "11.99",
+      "features": ["Neobmedzené rezervácie", "Až 5 zamestnancov", "100 SMS/mesiac", "Vlastná subdoména", "Analýzy"]
+    },
+    "business": {
+      "name": "Business",
+      "price": "24.99",
+      "features": ["Neobmedzené rezervácie", "Neobmedzení zamestnanci", "500 SMS/mesiac", "Vlastná subdoména", "Analýzy", "API", "Prioritná podpora"]
+    }
+  },
+  "cta": {
+    "title": "Pripravení automatizovať vaše rezervácie?",
+    "subtitle": "Pridajte sa k stovkám firiem, ktoré už šetria čas s naším systémom.",
+    "button": "Začať 7-dňovú skúšku",
+    "note": "Bez kreditnej karty • Plný prístup • Zrušte kedykoľvek"
+  },
+  "footer": {
+    "brandName": "Bookings24",
+    "description": "Profesionálny online rezervačný systém pre servisné firmy. Automatizujte rezervácie a šetrite čas.",
+    "product": "Produkt",
+    "productLinks": {
+      "features": "Funkcie systému",
+      "howItWorks": "Ako to funguje",
+      "pricing": "Cenník predplatného",
+      "help": "Centrum pomoci"
+    },
+    "company": "Spoločnosť",
+    "companyLinks": {
+      "contact": "Kontaktujte nás",
+      "privacy": "Zásady ochrany súkromia",
+      "terms": "Podmienky služby"
+    },
+    "copyright": "Online rezervačný systém. Všetky práva vyhradené.",
+    "privacy": "Súkromie",
+    "terms": "Podmienky",
+    "contact": "Kontakt"
+  }
+}
