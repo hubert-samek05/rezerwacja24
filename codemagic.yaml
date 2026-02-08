@@ -93,29 +93,27 @@ workflows:
           echo "Using profile: $PROFILE_NAME"
           
           # Create export options
-          cat > ExportOptions.plist << PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>app-store-connect</string>
-  <key>teamID</key>
-  <string>$TEAM_ID</string>
-  <key>signingStyle</key>
-  <string>manual</string>
-  <key>signingCertificate</key>
-  <string>Apple Distribution</string>
-  <key>provisioningProfiles</key>
-  <dict>
-    <key>pl.rezerwacja24.app</key>
-    <string>$PROFILE_NAME</string>
-  </dict>
-  <key>uploadSymbols</key>
-  <true/>
-</dict>
-</plist>
-PLIST
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > ExportOptions.plist
+          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ExportOptions.plist
+          echo '<plist version="1.0">' >> ExportOptions.plist
+          echo '<dict>' >> ExportOptions.plist
+          echo '  <key>method</key>' >> ExportOptions.plist
+          echo '  <string>app-store-connect</string>' >> ExportOptions.plist
+          echo '  <key>teamID</key>' >> ExportOptions.plist
+          echo "  <string>$TEAM_ID</string>" >> ExportOptions.plist
+          echo '  <key>signingStyle</key>' >> ExportOptions.plist
+          echo '  <string>manual</string>' >> ExportOptions.plist
+          echo '  <key>signingCertificate</key>' >> ExportOptions.plist
+          echo '  <string>Apple Distribution</string>' >> ExportOptions.plist
+          echo '  <key>provisioningProfiles</key>' >> ExportOptions.plist
+          echo '  <dict>' >> ExportOptions.plist
+          echo '    <key>pl.rezerwacja24.app</key>' >> ExportOptions.plist
+          echo "    <string>$PROFILE_NAME</string>" >> ExportOptions.plist
+          echo '  </dict>' >> ExportOptions.plist
+          echo '  <key>uploadSymbols</key>' >> ExportOptions.plist
+          echo '  <true/>' >> ExportOptions.plist
+          echo '</dict>' >> ExportOptions.plist
+          echo '</plist>' >> ExportOptions.plist
           
           cat ExportOptions.plist
           
