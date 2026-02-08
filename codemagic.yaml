@@ -6,19 +6,31 @@ workflows:
     integrations:
       app_store_connect: Rezerwacja24
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: pl.rezerwacja24.app
       vars:
         BUNDLE_ID: pl.rezerwacja24.app
       node: 18
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Set up keychain and fetch signing files
+      - name: Set up signing
         script: |
           keychain initialize
+          
+          # Create certificate if needed
+          app-store-connect certificates create --type IOS_DISTRIBUTION --save || echo "Certificate exists"
+          
+          # Create profile if needed  
+          app-store-connect profiles create \
+            --name "Rezerwacja24 AppStore" \
+            --type IOS_APP_STORE \
+            --bundle-id-identifier $BUNDLE_ID \
+            --certificate-key-id $(app-store-connect certificates list --type IOS_DISTRIBUTION | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4) \
+            --save || echo "Profile exists"
+          
+          # Download everything
           app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          
+          # Add to keychain
           keychain add-certificates
           xcode-project use-profiles
       - name: Install dependencies
