@@ -29,6 +29,8 @@ workflows:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" ~/Library/codemagic-cli-tools/keychains/*.keychain-db
           
           # Fetch profile from Apple
+          app-store-connect profiles list --type IOS_APP_STORE
+          app-store-connect profiles download --bundle-id-identifier $BUNDLE_ID --type IOS_APP_STORE --save || \
           app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create || true
           
           # Use profiles
