@@ -78,21 +78,16 @@ workflows:
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
           echo "Profile UUID: $PROFILE_UUID"
           
-          # Build with manual signing for App target only
+          # Build with manual signing
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath build/App.xcarchive \
             -destination 'generic/platform=iOS' \
             archive \
-            CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="$CERT_NAME" \
             PROVISIONING_PROFILE="$PROFILE_UUID" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            'CODE_SIGN_STYLE[sdk=*][arch=*]=Manual' \
-            'PROVISIONING_PROFILE[sdk=*][arch=*]=' \
-            -allowProvisioningUpdates
+            DEVELOPMENT_TEAM="$TEAM_ID"
           
           # Create export options
           /usr/libexec/PlistBuddy -c "Clear dict" ExportOptions.plist 2>/dev/null || true
