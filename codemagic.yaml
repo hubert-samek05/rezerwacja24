@@ -7,7 +7,7 @@ workflows:
       app_store_connect: Rezerwacja24
     environment:
       groups:
-        - app_store_credentials
+        - signing
       vars:
         BUNDLE_ID: pl.rezerwacja24.app
         TEAM_ID: "22MYTLYQ6T"
