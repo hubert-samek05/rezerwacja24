@@ -3,24 +3,37 @@ workflows:
     name: iOS Build
     max_build_duration: 120
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Rezerwacja24
     
     environment:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: pl.rezerwacja24.app
-      groups:
-        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
+        BUNDLE_ID: "pl.rezerwacja24.app"
       node: 18
       xcode: latest
       cocoapods: default
     
     scripts:
+      - name: Set up keychain
+        script: |
+          keychain initialize
+      
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      
+      - name: Set up signing
+        script: |
+          keychain add-certificates
+          xcode-project use-profiles
+      
       - name: Install dependencies
         script: |
           cd frontend
@@ -36,10 +49,6 @@ workflows:
         script: |
           cd frontend/ios/App
           pod install
-      
-      - name: Set up code signing
-        script: |
-          xcode-project use-profiles
       
       - name: Build iOS app
         script: |
