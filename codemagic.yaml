@@ -11,6 +11,7 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "pl.rezerwacja24.app"
+        TEAM_ID: "22MYTLYQ6T"
       node: 18
       xcode: latest
       cocoapods: default
@@ -85,6 +86,8 @@ workflows:
           <dict>
             <key>method</key>
             <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>22MYTLYQ6T</string>
             <key>signingStyle</key>
             <string>automatic</string>
             <key>uploadSymbols</key>
