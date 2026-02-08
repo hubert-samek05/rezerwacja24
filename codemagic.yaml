@@ -35,7 +35,42 @@ workflows:
       - name: Build IPA
         script: |
           cd frontend/ios/App
-          xcode-project build-ipa --workspace App.xcworkspace --scheme App
+          
+          # Get certificate and profile info
+          CERT_NAME=$(security find-identity -v -p codesigning | grep "Apple Distribution" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+          
+          if [ -z "$PROFILE_PATH" ]; then
+            echo "ERROR: No provisioning profile found!"
+            exit 1
+          fi
+          
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
+          
+          echo "Certificate: $CERT_NAME"
+          echo "Profile: $PROFILE_NAME"
+          echo "Team: $TEAM_ID"
+          
+          # Build with signing
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination 'generic/platform=iOS' \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$CERT_NAME" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            DEVELOPMENT_TEAM="$TEAM_ID"
+          
+          # Export
+          xcode-project build-ipa \
+            --archive-path build/App.xcarchive \
+            --export-options-plist=/Users/builder/export_options.plist || \
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /Users/builder/export_options.plist
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
     publishing:
