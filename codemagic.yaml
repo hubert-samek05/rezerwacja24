@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: Rezerwacja24
     environment:
+      groups:
+        - app_store_credentials
       vars:
         BUNDLE_ID: pl.rezerwacja24.app
         TEAM_ID: "22MYTLYQ6T"
@@ -16,9 +18,17 @@ workflows:
       - name: Set up signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
-          keychain add-certificates
-          xcode-project use-profiles
+          
+          # Decode and import certificate
+          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password $CM_CERTIFICATE_PASSWORD
+          
+          # Fetch profile from Apple
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create || true
+          
+          # Use profiles
+          xcode-project use-profiles || true
+          
           echo "=== Certificates ==="
           security find-identity -v -p codesigning
           echo "=== Profiles ==="
