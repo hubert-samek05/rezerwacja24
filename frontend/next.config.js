@@ -45,6 +45,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '**.unsplash.com' },
       { protocol: 'https', hostname: 'api.rezerwacja24.pl' },
+      { protocol: 'https', hostname: 'play.google.com' },
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24,

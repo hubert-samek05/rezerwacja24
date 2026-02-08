@@ -374,6 +374,24 @@ export default function HomePage() {
                 </Link>
               </div>
               
+              {/* Google Play Badge */}
+              <div className="flex justify-center sm:justify-start mb-8 sm:mb-10">
+                <a 
+                  href="https://play.google.com/store/apps/details?id=pl.rezerwacja24.app" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block transition-transform hover:scale-105"
+                >
+                  <Image 
+                    src="https://play.google.com/intl/en_us/badges/static/images/badges/pl_badge_web_generic.png"
+                    alt={locale === 'pl' ? 'Pobierz z Google Play' : 'Get it on Google Play'}
+                    width={200}
+                    height={60}
+                    className="h-14 sm:h-16 w-auto"
+                  />
+                </a>
+              </div>
+              
               <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-6 text-sm sm:text-base text-white/70 justify-center sm:justify-start">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400" />
