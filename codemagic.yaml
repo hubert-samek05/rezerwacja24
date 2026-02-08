@@ -16,62 +16,26 @@ workflows:
       - name: Set up signing
         script: |
           keychain initialize
-          # Try to fetch, but don't fail if no private key
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create || true
-          keychain add-certificates || true
-          xcode-project use-profiles || true
-          echo "=== Installed profiles ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          echo "=== Certificates in keychain ==="
-          security find-identity -v -p codesigning || true
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+          echo "=== Certificates ==="
+          security find-identity -v -p codesigning
+          echo "=== Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
       - name: Install dependencies
         script: |
-          cd frontend
-          npm install
+          cd frontend && npm install
       - name: Build web assets
         script: |
-          cd frontend
-          npm run build
-          npx cap sync ios
+          cd frontend && npm run build && npx cap sync ios
       - name: Install CocoaPods
         script: |
-          cd frontend/ios/App
-          pod install
+          cd frontend/ios/App && pod install
       - name: Build IPA
         script: |
           cd frontend/ios/App
-          
-          # Build archive without signing
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            -destination 'generic/platform=iOS' \
-            archive \
-            CODE_SIGNING_ALLOWED=NO
-          
-          # Create export options for automatic signing
-          /usr/libexec/PlistBuddy -c "Clear dict" ExportOptions.plist 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :method string app-store-connect" ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" ExportOptions.plist
-          cat ExportOptions.plist
-          
-          # Export with automatic signing
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
-            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID || \
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist ExportOptions.plist \
-            -allowProvisioningUpdates
+          xcode-project build-ipa --workspace App.xcworkspace --scheme App
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
     publishing:
