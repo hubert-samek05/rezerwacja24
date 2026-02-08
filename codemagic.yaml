@@ -28,10 +28,13 @@ workflows:
           # Allow codesign to access keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" ~/Library/codemagic-cli-tools/keychains/*.keychain-db
           
-          # Fetch profile from Apple
-          app-store-connect profiles list --type IOS_APP_STORE
-          app-store-connect profiles download --bundle-id-identifier $BUNDLE_ID --type IOS_APP_STORE --save || \
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create || true
+          # Fetch profile from Apple - get profile content and save it
+          PROFILE_ID=$(app-store-connect profiles list --type IOS_APP_STORE | grep "^Id:" | head -1 | awk '{print $2}')
+          echo "Profile ID: $PROFILE_ID"
+          
+          # Get profile and save to file
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          app-store-connect profiles get $PROFILE_ID --save --path ~/Library/MobileDevice/Provisioning\ Profiles/
           
           # Use profiles
           xcode-project use-profiles || true
