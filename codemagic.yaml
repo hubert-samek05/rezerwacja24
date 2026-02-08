@@ -8,9 +8,14 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: pl.rezerwacja24.app
+      groups:
+        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
       node: 18
       xcode: latest
       cocoapods: default
