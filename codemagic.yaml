@@ -20,14 +20,10 @@ workflows:
         script: |
           keychain initialize
       
-      - name: Create certificate and profile
+      - name: Fetch signing files
         script: |
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save || true
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+            --type IOS_APP_STORE
       
       - name: Set up signing
         script: |
