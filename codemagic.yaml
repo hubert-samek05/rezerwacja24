@@ -20,18 +20,23 @@ workflows:
         script: |
           keychain initialize
       
-      - name: Fetch signing files
+      - name: Create provisioning profile
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          app-store-connect profiles create \
+            --name "Rezerwacja24 AppStore" \
             --type IOS_APP_STORE \
-            --create
+            --bundle-id "$BUNDLE_ID" || true
+          app-store-connect profiles list --bundle-id "$BUNDLE_ID" --type IOS_APP_STORE
       
       - name: Add certificates to keychain
         script: |
           keychain add-certificates
       
-      - name: Set up profiles
+      - name: Download and use profile
         script: |
+          app-store-connect profiles download \
+            --bundle-id "$BUNDLE_ID" \
+            --type IOS_APP_STORE
           xcode-project use-profiles
       
       - name: Install dependencies
