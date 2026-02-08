@@ -45,56 +45,9 @@ workflows:
       - name: Build iOS app
         script: |
           cd frontend/ios/App
-          
-          # Get provisioning profile info
-          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
-          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
-          TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
-          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH"))
-          
-          echo "Profile UUID: $PROFILE_UUID"
-          echo "Team ID: $TEAM_ID"
-          echo "Profile Name: $PROFILE_NAME"
-          
-          # Update project.pbxproj with correct values
-          sed -i '' "s/DEVELOPMENT_TEAM = \"\"/DEVELOPMENT_TEAM = $TEAM_ID/g" App.xcodeproj/project.pbxproj
-          sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = \"\"/PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\"/g" App.xcodeproj/project.pbxproj
-          
-          # Create export options plist
-          cat > ExportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>teamID</key>
-              <string>$TEAM_ID</string>
-              <key>uploadSymbols</key>
-              <true/>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>pl.rezerwacja24.app</key>
-                  <string>$PROFILE_NAME</string>
-              </dict>
-          </dict>
-          </plist>
-          EOF
-          
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
-            CODE_SIGN_IDENTITY="Apple Distribution"
-          
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist ExportOptions.plist
+          xcode-project build-ipa \
+            --workspace App.xcworkspace \
+            --scheme App
     
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
