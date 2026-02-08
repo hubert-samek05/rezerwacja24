@@ -42,9 +42,6 @@ workflows:
             app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create || true
           fi
           
-          # Use profiles
-          xcode-project use-profiles || true
-          
           echo "=== Certificates ==="
           security find-identity -v -p codesigning
           echo "=== Profiles ==="
@@ -77,26 +74,29 @@ workflows:
           echo "Profile: $PROFILE_NAME"
           echo "Team: $TEAM_ID"
           
-          # Build with signing
+          # Build with automatic signing (Xcode will use the profile for App target only)
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath build/App.xcarchive \
             -destination 'generic/platform=iOS' \
             archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="$CERT_NAME" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
             DEVELOPMENT_TEAM="$TEAM_ID"
           
+          # Create export options
+          /usr/libexec/PlistBuddy -c "Clear dict" ExportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :method string app-store-connect" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string manual" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingCertificate string $CERT_NAME" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:$BUNDLE_ID string $PROFILE_NAME" ExportOptions.plist
+          
           # Export
-          xcode-project build-ipa \
-            --archive-path build/App.xcarchive \
-            --export-options-plist=/Users/builder/export_options.plist || \
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist /Users/builder/export_options.plist
+            -exportOptionsPlist ExportOptions.plist
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
     publishing:
