@@ -5,127 +5,41 @@ workflows:
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: Rezerwacja24
-    
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: pl.rezerwacja24.app
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
-        BUNDLE_ID: "pl.rezerwacja24.app"
-        TEAM_ID: "22MYTLYQ6T"
+        BUNDLE_ID: pl.rezerwacja24.app
       node: 18
       xcode: latest
       cocoapods: default
-    
     scripts:
-      - name: Set up keychain
+      - name: Set up keychain and fetch signing files
         script: |
           keychain initialize
-      
-      - name: Fetch signing files
-        script: |
-          # List available certificates
-          echo "=== Certificates available ==="
-          app-store-connect certificates list --type IOS_DISTRIBUTION --save || true
-          
-          # List available profiles  
-          echo "=== Profiles available ==="
-          app-store-connect profiles list --type IOS_APP_STORE || true
-          
-          # Download profile
-          echo "=== Downloading profile ==="
-          app-store-connect profiles download \
-            --bundle-id-identifier "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --save || true
-          
-          # Show downloaded files
-          echo "=== Downloaded certificates ==="
-          ls -la ~/Library/MobileDevice/Certificates/ || true
-          
-          echo "=== Downloaded profiles ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          
-          # Add certs to keychain
-          keychain add-certificates || true
-      
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Install dependencies
         script: |
           cd frontend
           npm install
-      
       - name: Build web assets
         script: |
           cd frontend
           npm run build
           npx cap sync ios
-      
-      - name: Install CocoaPods dependencies
+      - name: Install CocoaPods
         script: |
           cd frontend/ios/App
           pod install
-      
-      - name: Build iOS app
+      - name: Build IPA
         script: |
           cd frontend/ios/App
-          
-          # Build without signing first
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            -destination 'generic/platform=iOS' \
-            archive \
-            CODE_SIGNING_ALLOWED=NO
-          
-          # Show what we have
-          echo "=== Certificates in keychain ==="
-          security find-identity -v -p codesigning || true
-          
-          echo "=== Profiles available ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          
-          # Get profile path and extract name
-          PROFILE_PATH=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
-          if [ -n "$PROFILE_PATH" ]; then
-            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i "$PROFILE_PATH") 2>/dev/null)
-          fi
-          PROFILE_NAME=${PROFILE_NAME:-"Rezerwacja24 AppStore"}
-          echo "Using profile: $PROFILE_NAME"
-          
-          # Create export options
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > ExportOptions.plist
-          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ExportOptions.plist
-          echo '<plist version="1.0">' >> ExportOptions.plist
-          echo '<dict>' >> ExportOptions.plist
-          echo '  <key>method</key>' >> ExportOptions.plist
-          echo '  <string>app-store-connect</string>' >> ExportOptions.plist
-          echo '  <key>teamID</key>' >> ExportOptions.plist
-          echo "  <string>$TEAM_ID</string>" >> ExportOptions.plist
-          echo '  <key>signingStyle</key>' >> ExportOptions.plist
-          echo '  <string>manual</string>' >> ExportOptions.plist
-          echo '  <key>signingCertificate</key>' >> ExportOptions.plist
-          echo '  <string>Apple Distribution</string>' >> ExportOptions.plist
-          echo '  <key>provisioningProfiles</key>' >> ExportOptions.plist
-          echo '  <dict>' >> ExportOptions.plist
-          echo '    <key>pl.rezerwacja24.app</key>' >> ExportOptions.plist
-          echo "    <string>$PROFILE_NAME</string>" >> ExportOptions.plist
-          echo '  </dict>' >> ExportOptions.plist
-          echo '  <key>uploadSymbols</key>' >> ExportOptions.plist
-          echo '  <true/>' >> ExportOptions.plist
-          echo '</dict>' >> ExportOptions.plist
-          echo '</plist>' >> ExportOptions.plist
-          
-          cat ExportOptions.plist
-          
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist ExportOptions.plist
-    
+          xcode-project build-ipa --workspace App.xcworkspace --scheme App
     artifacts:
       - frontend/ios/App/build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-    
     publishing:
       email:
         recipients:
