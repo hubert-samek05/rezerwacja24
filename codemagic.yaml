@@ -20,8 +20,8 @@ workflows:
           keychain initialize
           
           # Decode and import certificate
-          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
-          keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password $CM_CERTIFICATE_PASSWORD
+          echo "$CM_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password "$CM_CERTIFICATE_PASSWORD"
           
           # Fetch profile from Apple
           app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create || true
