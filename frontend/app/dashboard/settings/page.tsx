@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users } from 'lucide-react'
+import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { 
   getCompanyData, 
   updateCompanyData,
@@ -31,6 +32,7 @@ import ImportDataTab from '@/components/settings/ImportDataTab'
 import GalleryTab from '@/components/settings/GalleryTab'
 import FlexibleServicesTab from '@/components/settings/FlexibleServicesTab'
 import AccountTypesTab from '@/components/settings/AccountTypesTab'
+import DepositsTab from '@/components/settings/DepositsTab'
 import { useDashboardTranslation } from '@/hooks/useDashboardTranslation'
 
 export default function SettingsPage() {
@@ -43,6 +45,14 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const { isSuspended, suspendedReason } = useAccountStatus()
+  
+  // Stan zmiany hasła
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [passwordLoading, setPasswordLoading] = useState(false)
   
   useEffect(() => {
     const tabParam = searchParams.get('tab')
@@ -212,27 +222,72 @@ export default function SettingsPage() {
       const userId = getCurrentUserId()
       if (!userId) throw new Error('Brak ID użytkownika')
 
-      const p24 = companyData.paymentMethods?.przelewy24 as any
-      const paymentSettings = {
+      const pm = companyData.paymentMethods as any
+      const p24 = pm?.przelewy24
+      const stripe = pm?.stripe
+      const payu = pm?.payu
+      const tpay = pm?.tpay
+      const autopay = pm?.autopay
+      
+      const paymentSettings: any = {
         paymentEnabled: true,
-        acceptCashPayment: companyData.paymentMethods?.cash?.enabled !== false,
-        acceptOnlinePayment: companyData.paymentMethods?.stripe?.enabled || p24?.enabled,
-        // Przelewy24
-        przelewy24: {
+        acceptCashPayment: pm?.cash?.enabled !== false,
+        acceptOnlinePayment: stripe?.enabled || p24?.enabled || payu?.enabled || tpay?.enabled || autopay?.enabled,
+        // Gotówka
+        cash: {
+          enabled: pm?.cash?.enabled !== false,
+        },
+      }
+      
+      // Przelewy24 - tylko jeśli włączone lub ma dane
+      if (p24?.enabled || p24?.merchantId) {
+        paymentSettings.przelewy24 = {
           enabled: p24?.enabled || false,
           merchantId: p24?.merchantId || '',
           posId: p24?.posId || '',
           crcKey: p24?.crcKey && !p24.crcKey.includes('•') ? p24.crcKey : undefined,
           apiKey: p24?.apiKey && !p24.apiKey.includes('•') ? p24.apiKey : undefined,
-        },
-        // Stripe
-        stripe: {
-          enabled: companyData.paymentMethods?.stripe?.enabled || false,
-        },
-        // Gotówka
-        cash: {
-          enabled: companyData.paymentMethods?.cash?.enabled !== false,
-        },
+        }
+      }
+      
+      // Stripe - tylko jeśli włączone lub ma dane
+      if (stripe?.enabled || stripe?.publicKey) {
+        paymentSettings.stripe = {
+          enabled: stripe?.enabled || false,
+          publicKey: stripe?.publicKey && !stripe.publicKey.includes('•') ? stripe.publicKey : undefined,
+          secretKey: stripe?.secretKey && !stripe.secretKey.includes('•') ? stripe.secretKey : undefined,
+        }
+      }
+      
+      // PayU - tylko jeśli włączone lub ma dane
+      if (payu?.enabled || payu?.posId) {
+        paymentSettings.payu = {
+          enabled: payu?.enabled || false,
+          posId: payu?.posId || '',
+          secondKey: payu?.secondKey && !payu.secondKey.includes('•') ? payu.secondKey : undefined,
+          clientId: payu?.clientId || '',
+          clientSecret: payu?.clientSecret && !payu.clientSecret.includes('•') ? payu.clientSecret : undefined,
+        }
+      }
+      
+      // Tpay - tylko jeśli włączone lub ma dane
+      if (tpay?.enabled || tpay?.clientId) {
+        paymentSettings.tpay = {
+          enabled: tpay?.enabled || false,
+          clientId: tpay?.clientId || '',
+          clientSecret: tpay?.clientSecret && !tpay.clientSecret.includes('•') ? tpay.clientSecret : undefined,
+          merchantId: tpay?.merchantId || '',
+          securityCode: tpay?.securityCode && !tpay.securityCode.includes('•') ? tpay.securityCode : undefined,
+        }
+      }
+      
+      // Autopay - tylko jeśli włączone lub ma dane
+      if (autopay?.enabled || autopay?.serviceId) {
+        paymentSettings.autopay = {
+          enabled: autopay?.enabled || false,
+          serviceId: autopay?.serviceId || '',
+          sharedKey: autopay?.sharedKey && !autopay.sharedKey.includes('•') ? autopay.sharedKey : undefined,
+        }
       }
 
       const API_URL = getApiUrl()
@@ -242,12 +297,19 @@ export default function SettingsPage() {
         body: JSON.stringify(paymentSettings),
       })
       
-      if (!response.ok) throw new Error('Błąd zapisu')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Błąd zapisu')
+      }
       
-      updateCompanyData(companyData)
+      // Odśwież dane po zapisie
+      await loadCompanyData()
+      toast.success('Ustawienia płatności zapisane')
       setShowSaveSuccess(true)
       setTimeout(() => setShowSaveSuccess(false), 3000)
     } catch (error: any) {
+      console.error('Payment settings save error:', error)
+      toast.error(error.message || 'Błąd zapisu ustawień płatności')
       setShowError(`Błąd: ${error.message}`)
     } finally {
       setIsLoading(false)
@@ -298,6 +360,83 @@ export default function SettingsPage() {
     }
   }
 
+  // Funkcja zmiany hasła
+  const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error('Wypełnij wszystkie pola')
+      return
+    }
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Nowe hasła nie są identyczne')
+      return
+    }
+    
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Hasło musi mieć minimum 6 znaków')
+      return
+    }
+    
+    setPasswordLoading(true)
+    try {
+      const API_URL = getApiUrl()
+      const token = localStorage.getItem('token')
+      
+      // Sprawdź czy to konto pracownika
+      const employeeUser = localStorage.getItem('employee_user')
+      
+      if (employeeUser) {
+        // Zmiana hasła dla pracownika
+        const empData = JSON.parse(employeeUser)
+        const response = await fetch(`${API_URL}/api/employee-accounts/change-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            accountId: empData.accountId || empData.id,
+            oldPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword,
+          }),
+        })
+        
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.message || 'Błąd zmiany hasła')
+        }
+        
+        toast.success('Hasło zostało zmienione')
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      } else {
+        // Zmiana hasła dla właściciela konta
+        const response = await fetch(`${API_URL}/api/auth/change-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            currentPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword,
+          }),
+        })
+        
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.message || 'Błąd zmiany hasła')
+        }
+        
+        toast.success('Hasło zostało zmienione')
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Nie udało się zmienić hasła')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   if (!companyData) {
     return (
       <div className="p-8 flex items-center justify-center h-96">
@@ -323,6 +462,7 @@ export default function SettingsPage() {
       title: 'Płatności i rozliczenia',
       items: [
         { id: 'payments', icon: CreditCard, label: 'Metody płatności', desc: 'Gotówka, karty, przelewy' },
+        { id: 'deposits', icon: Wallet, label: 'Zaliczki', desc: 'Pobieranie zaliczek za rezerwacje' },
         { id: 'subscription', icon: Receipt, label: 'Subskrypcja', desc: 'Plan i fakturowanie' },
         { id: 'billing-data', icon: FileText, label: 'Dane do faktury', desc: 'NIP, adres rozliczeniowy' },
       ]
@@ -501,6 +641,8 @@ export default function SettingsPage() {
             <PaymentsTab companyData={companyData} setCompanyData={setCompanyData} onSave={handleSavePayments} isLoading={isLoading} />
           )}
 
+          {activeTab === 'deposits' && <DepositsTab />}
+
           {activeTab === 'subscription' && <SubscriptionTab />}
           {activeTab === 'billing-data' && <BillingDataTab />}
           {activeTab === 'notifications' && <NotificationsTab />}
@@ -554,6 +696,8 @@ export default function SettingsPage() {
                       <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Obecne hasło</label>
                       <input 
                         type="password" 
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                         className="w-full px-4 py-3.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 focus:border-[var(--text-primary)] transition-all" 
                         placeholder="••••••••" 
                       />
@@ -563,6 +707,8 @@ export default function SettingsPage() {
                         <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Nowe hasło</label>
                         <input 
                           type="password" 
+                          value={passwordForm.newPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                           className="w-full px-4 py-3.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 focus:border-[var(--text-primary)] transition-all" 
                           placeholder="••••••••" 
                         />
@@ -571,14 +717,21 @@ export default function SettingsPage() {
                         <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Potwierdź nowe hasło</label>
                         <input 
                           type="password" 
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                           className="w-full px-4 py-3.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 focus:border-[var(--text-primary)] transition-all" 
                           placeholder="••••••••" 
                         />
                       </div>
                     </div>
                     <div className="pt-2">
-                      <button className="px-8 py-3.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-full font-medium hover:opacity-90 transition-all duration-200 shadow-sm">
-                        Zmień hasło
+                      <button 
+                        onClick={handleChangePassword}
+                        disabled={passwordLoading}
+                        className="px-8 py-3.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-full font-medium hover:opacity-90 transition-all duration-200 shadow-sm disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {passwordLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {passwordLoading ? 'Zmieniam...' : 'Zmień hasło'}
                       </button>
                     </div>
                   </div>

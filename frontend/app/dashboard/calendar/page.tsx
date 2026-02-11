@@ -615,7 +615,7 @@ export default function CalendarPage() {
     }
   }
 
-  const handleStatusChange = async (bookingId: string, newStatus: 'confirmed' | 'pending' | 'cancelled' | 'completed') => {
+  const handleStatusChange = async (bookingId: string, newStatus: 'confirmed' | 'pending' | 'cancelled' | 'completed' | 'no_show') => {
     try {
       await axios.patch(`${API_URL}/api/bookings/${bookingId}`, 
         { status: newStatus.toUpperCase() },
@@ -1365,11 +1365,9 @@ export default function CalendarPage() {
           {showAddModal && (
             <div
               className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-              onClick={() => setShowAddModal(false)}
             >
               <div
                 className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-2xl w-full max-h-[calc(100vh-120px)] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-[var(--text-primary)]">
@@ -1809,12 +1807,14 @@ export default function CalendarPage() {
                           selectedBooking.status === 'confirmed' ? 'bg-[var(--text-primary)]/20 text-[var(--text-primary)] border-[var(--text-primary)]/30' :
                           selectedBooking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
                           selectedBooking.status === 'cancelled' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                          selectedBooking.status === 'no_show' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
                           'bg-blue-500/20 text-blue-400 border-blue-500/30'
                         } focus:outline-none focus:ring-2 focus:ring-accent-neon`}
                       >
                         <option value="pending">Oczekująca</option>
                         <option value="confirmed">Potwierdzona</option>
                         <option value="completed">Zakończona</option>
+                        <option value="no_show">Nie przyszedł</option>
                         <option value="cancelled">Anulowana</option>
                       </select>
                     </div>
@@ -1940,6 +1940,18 @@ export default function CalendarPage() {
                       <span>Zakończ</span>
                     </button>
                   )}
+                  {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'no_show' && (
+                    <button
+                      onClick={() => {
+                        handleStatusChange(selectedBooking.id, 'no_show')
+                      }}
+                      className="flex-1 min-w-[90px] px-3 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-1.5 text-sm"
+                      title="Oznacz jako nieobecność klienta"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Nie przyszedł</span>
+                    </button>
+                  )}
                   {selectedBooking.status !== 'cancelled' && (
                     <button
                       onClick={() => {
@@ -1976,11 +1988,9 @@ export default function CalendarPage() {
           {showAllBookingsModal && (
             <div
               className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-              onClick={() => setShowAllBookingsModal(false)}
             >
               <div
                 className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-2xl w-full max-h-[calc(100vh-120px)] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div>
@@ -2092,11 +2102,9 @@ export default function CalendarPage() {
           {showAddCustomerModal && (
             <div
               className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-              onClick={() => setShowAddCustomerModal(false)}
             >
               <div
                 className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-md w-full max-h-[calc(100vh-120px)] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-[var(--text-primary)]">Dodaj nowego klienta</h3>
@@ -2303,11 +2311,9 @@ export default function CalendarPage() {
         {showPaymentMethodModal && paymentMethodModalBooking && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
-            onClick={() => setShowPaymentMethodModal(false)}
           >
             <div
               className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[calc(100vh-120px)] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-[var(--text-primary)]">Wybierz formę płatności</h3>

@@ -274,4 +274,52 @@ export class FlySMSService {
     this.logger.log(`⚙️ Updated SMS settings for tenant ${tenantId}`);
     return { success: true };
   }
+
+  /**
+   * 📝 Pobierz szablony SMS dla tenanta
+   */
+  async getSMSTemplates(tenantId: string): Promise<any> {
+    const result = await this.prisma.$queryRaw<any[]>`
+      SELECT sms_templates FROM tenants WHERE id = ${tenantId}
+    `;
+
+    this.logger.log(`📝 getSMSTemplates for ${tenantId}: raw result = ${JSON.stringify(result)}`);
+
+    if (!result || result.length === 0) {
+      this.logger.log(`📝 No templates found, using defaults`);
+      return {
+        confirmed: 'Rezerwacja potwierdzona! {usługa} w {firma} - {data}, godz. {godzina}. Dziękujemy!',
+        cancelled: 'Rezerwacja odwołana: {usługa} w {firma} - {data}, godz. {godzina}.',
+        rescheduled: 'Rezerwacja przesunięta: {usługa} w {firma} - nowy termin: {data}, godz. {godzina}.',
+        reminder: 'Przypomnienie: {usługa} w {firma} jutro o godz. {godzina}. Do zobaczenia!',
+      };
+    }
+
+    const templates = result[0].sms_templates || {};
+    this.logger.log(`📝 Templates from DB: ${JSON.stringify(templates)}`);
+    
+    // Zwróć szablony z domyślnymi wartościami
+    const finalTemplates = {
+      confirmed: templates.confirmed || 'Rezerwacja potwierdzona! {usługa} w {firma} - {data}, godz. {godzina}. Dziękujemy!',
+      cancelled: templates.cancelled || 'Rezerwacja odwołana: {usługa} w {firma} - {data}, godz. {godzina}.',
+      rescheduled: templates.rescheduled || 'Rezerwacja przesunięta: {usługa} w {firma} - nowy termin: {data}, godz. {godzina}.',
+      reminder: templates.reminder || 'Przypomnienie: {usługa} w {firma} jutro o godz. {godzina}. Do zobaczenia!',
+    };
+    this.logger.log(`📝 Final templates: ${JSON.stringify(finalTemplates)}`);
+    return finalTemplates;
+  }
+
+  /**
+   * 📝 Zapisz szablony SMS dla tenanta
+   */
+  async updateSMSTemplates(tenantId: string, templates: any): Promise<{ success: boolean }> {
+    await this.prisma.$executeRaw`
+      UPDATE tenants 
+      SET sms_templates = ${JSON.stringify(templates)}::jsonb
+      WHERE id = ${tenantId}
+    `;
+
+    this.logger.log(`📝 Updated SMS templates for tenant ${tenantId}`);
+    return { success: true };
+  }
 }

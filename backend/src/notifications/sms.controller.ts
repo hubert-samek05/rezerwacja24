@@ -99,4 +99,42 @@ export class SMSController {
 
     return this.flySMSService.sendSMS(tenantId, body.phone, body.message, 'confirmed');
   }
+
+  /**
+   * 📝 Pobierz szablony SMS
+   */
+  @Get('templates')
+  @ApiOperation({ summary: 'Pobierz szablony SMS' })
+  async getTemplates(@Req() req: any) {
+    const tenantId = req.headers['x-tenant-id'];
+    
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+
+    return this.flySMSService.getSMSTemplates(tenantId);
+  }
+
+  /**
+   * 📝 Zapisz szablony SMS
+   */
+  @Post('templates')
+  @ApiOperation({ summary: 'Zapisz szablony SMS' })
+  async updateTemplates(
+    @Body() templates: {
+      confirmed?: string;
+      cancelled?: string;
+      rescheduled?: string;
+      reminder?: string;
+    },
+    @Req() req: any,
+  ) {
+    const tenantId = req.headers['x-tenant-id'];
+    
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+
+    return this.flySMSService.updateSMSTemplates(tenantId, templates);
+  }
 }

@@ -198,19 +198,22 @@ export class BookingsService {
       });
       const businessName = tenant?.name || 'Firma';
       
+      // Pobierz custom szablony SMS
+      const customTemplates = await this.flySMSService.getSMSTemplates(tenantId);
+      
       // Wykryj region i formatuj datę/godzinę
       const region = this.getRegion();
       const bookingDate = new Date(booking.startTime);
       const dateStr = this.formatDate(bookingDate, region);
       const timeStr = this.formatTime(bookingDate, region);
       
-      // Użyj szablonu SMS dla odpowiedniego regionu
+      // Użyj szablonu SMS dla odpowiedniego regionu z custom szablonami
       const message = this.smsTemplatesService.getConfirmedTemplate({
         serviceName: booking.services?.name,
         businessName,
         date: dateStr,
         time: timeStr,
-      }, region);
+      }, region, customTemplates);
       
       this.flySMSService.sendSMS(tenantId, booking.customers.phone, message, 'confirmed').catch(err => {
         this.logger.error('SMS sending failed:', err);
@@ -493,6 +496,9 @@ export class BookingsService {
     });
     const businessName = tenant?.name || 'Firma';
 
+    // Pobierz custom szablony SMS
+    const customTemplates = await this.flySMSService.getSMSTemplates(tenantId);
+
     // Wykryj region dla SMS
     const region = this.getRegion();
 
@@ -508,7 +514,7 @@ export class BookingsService {
           businessName,
           date: dateStr,
           time: timeStr,
-        }, region);
+        }, region, customTemplates);
         
         this.flySMSService.sendSMS(tenantId, updatedBooking.customers.phone, message, 'cancelled').catch(err => {
           this.logger.error('SMS sending failed:', err);
@@ -528,7 +534,7 @@ export class BookingsService {
           businessName,
           date: dateStr,
           time: timeStr,
-        }, region);
+        }, region, customTemplates);
         
         this.flySMSService.sendSMS(tenantId, updatedBooking.customers.phone, message, 'rescheduled').catch(err => {
           this.logger.error('SMS sending failed:', err);
@@ -624,7 +630,7 @@ export class BookingsService {
           businessName,
           date: dateStr,
           time: timeStr,
-        }, region);
+        }, region, customTemplates);
         
         this.flySMSService.sendSMS(tenantId, updatedBooking.customers.phone, message, 'confirmed').catch(err => {
           this.logger.error('SMS sending failed:', err);
@@ -1460,7 +1466,7 @@ export class BookingsService {
     this.logger.log(`Creating booking with coupon: ${data.couponCode}, discount: ${discountAmount}, basePrice: ${basePrice}`);
     
     // Utwórz rezerwację
-    return this.create(tenantId, {
+    const booking = await this.create(tenantId, {
       customerId: customer.id,
       serviceId: data.serviceId,
       employeeId: data.employeeId,
@@ -1476,6 +1482,20 @@ export class BookingsService {
       createdByType: 'customer',
       createdByName: `${firstName} ${lastName}`.trim() || 'Klient',
     });
+    
+    // Jeśli wymagana jest zaliczka, zaktualizuj rezerwację
+    if (data.depositRequired && data.depositAmount > 0) {
+      await this.prisma.$executeRaw`
+        UPDATE bookings 
+        SET deposit_required = true,
+            deposit_amount = ${data.depositAmount},
+            deposit_status = 'pending'
+        WHERE id = ${booking.id}
+      `;
+      this.logger.log(`Deposit required for booking ${booking.id}: ${data.depositAmount} PLN`);
+    }
+    
+    return booking;
   }
 
   private getDayOfWeek(date: Date): string {

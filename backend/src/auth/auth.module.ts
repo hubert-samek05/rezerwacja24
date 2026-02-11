@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { TwoFactorService } from './two-factor.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { AppleStrategy } from './strategies/apple.strategy';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { SubdomainSetupService } from '../common/services/subdomain-setup.service';
 import { EmailModule } from '../email/email.module';
@@ -26,7 +27,7 @@ import { EmailModule } from '../email/email.module';
     EmailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, TwoFactorService, PrismaService, JwtStrategy, GoogleStrategy, SubdomainSetupService],
+  providers: [AuthService, TwoFactorService, PrismaService, JwtStrategy, GoogleStrategy, AppleStrategy, SubdomainSetupService],
   exports: [AuthService, TwoFactorService, JwtModule],
 })
 export class AuthModule {}

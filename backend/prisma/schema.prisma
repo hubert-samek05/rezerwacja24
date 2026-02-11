@@ -78,10 +78,23 @@ model bookings {
   couponCode               String?           @db.VarChar(50)
   discountAmount           Decimal?          @db.Decimal(10, 2)
   google_calendar_event_id String?           @db.VarChar(255)
-  // Tracking who created the booking
   createdById              String?           @db.VarChar(255)
-  createdByType            String?           @db.VarChar(50) // 'customer', 'employee', 'owner', 'system'
+  createdByType            String?           @db.VarChar(50)
   createdByName            String?           @db.VarChar(255)
+  autopayOrderId           String?           @db.VarChar(255)
+  paymentStatus            String?           @db.VarChar(50)
+  payuOrderId              String?           @db.VarChar(255)
+  tpayTransactionId        String?           @db.VarChar(255)
+  // Kolumny zaliczek
+  deposit_required         Boolean?          @default(false)
+  deposit_amount           Decimal?          @db.Decimal(10, 2)
+  deposit_status           String?           @default("not_required") @db.VarChar(50)
+  deposit_paid_at          DateTime?
+  deposit_payment_id       String?           @db.VarChar(255)
+  deposit_payment_method   String?           @db.VarChar(50)
+  deposit_deadline         DateTime?
+  deposit_refunded_at      DateTime?
+  deposit_refund_amount    Decimal?          @db.Decimal(10, 2)
   customers                customers         @relation(fields: [customerId], references: [id])
   employees                employees?        @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   services                 services          @relation(fields: [serviceId], references: [id])
@@ -600,11 +613,8 @@ model tenants {
   billing_first_name            String?               @db.VarChar(100)
   billing_last_name             String?               @db.VarChar(100)
   billing_nip                   String?               @db.VarChar(20)
-  billing_vat_id                String?               @db.VarChar(30)
   billing_postal_code           String?               @db.VarChar(20)
   billing_type                  String?               @default("company") @db.VarChar(20)
-  billing_country               String?               @db.VarChar(2)
-  platform                      String?               @default("rezerwacja24") @db.VarChar(50)
   description                   String?
   google_calendar_access_token  String?
   google_calendar_connected_at  DateTime?             @db.Timestamp(6)
@@ -635,6 +645,7 @@ model tenants {
   smsNotifyOnReschedule         Boolean?              @default(true)
   smsSent                       Int?                  @default(0)
   sms_settings                  Json?                 @default("{\"reminderEnabled\": true, \"cancelledEnabled\": true, \"confirmedEnabled\": true, \"rescheduledEnabled\": true}")
+  sms_templates                 Json?                 @default("{}")
   sms_usage                     Json?                 @default("{\"used\": 0, \"limit\": 500, \"lastReset\": \"2025-01-01\"}")
   socialMedia                   Json?
   stripeEnabled                 Boolean?              @default(false)
@@ -650,6 +661,29 @@ model tenants {
   referralDiscountEndsAt        DateTime?
   gallery                       String[]              @default([])
   flexibleServiceSettings       Json?                 @default("{\"showCouponCode\": false, \"availabilityHours\": {\"friday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"monday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"sunday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": true}, \"tuesday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"saturday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"thursday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}, \"wednesday\": {\"open\": \"08:00\", \"close\": \"20:00\", \"closed\": false}}, \"showPaymentOptions\": false}")
+  billing_country               String?               @db.VarChar(2)
+  billing_vat_id                String?               @db.VarChar(30)
+  platform                      String?               @default("rezerwacja24") @db.VarChar(50)
+  autopayEnabled                Boolean?              @default(false)
+  autopayServiceId              String?               @db.VarChar(255)
+  autopaySharedKey              String?               @db.VarChar(255)
+  tpayClientId                  String?               @db.VarChar(255)
+  tpayClientSecret              String?               @db.VarChar(255)
+  tpayEnabled                   Boolean?              @default(false)
+  tpayMerchantId                String?               @db.VarChar(255)
+  tpaySecurityCode              String?               @db.VarChar(255)
+  // Ustawienia zaliczek
+  deposit_enabled               Boolean?              @default(false)
+  deposit_mode                  String?               @default("always") @db.VarChar(50)
+  deposit_type                  String?               @default("percentage") @db.VarChar(50)
+  deposit_value                 Decimal?              @default(30) @db.Decimal(10, 2)
+  deposit_min_amount            Decimal?              @db.Decimal(10, 2)
+  deposit_max_amount            Decimal?              @db.Decimal(10, 2)
+  deposit_exempt_after_visits   Int?
+  deposit_exempt_after_spent    Decimal?              @db.Decimal(10, 2)
+  deposit_refund_policy         String?               @default("non_refundable") @db.VarChar(50)
+  deposit_refund_hours_before   Int?                  @default(24)
+  deposit_payment_deadline_hours Int?                 @default(24)
   api_keys                      api_keys[]
   customer_loyalty              customer_loyalty[]
   customer_passes               customer_passes[]
@@ -661,12 +695,12 @@ model tenants {
   marketplace_listings          marketplace_listings?
   notifications                 notifications[]
   pass_types                    pass_types[]
+  push_devices                  push_devices[]
   service_packages              service_packages[]
   services                      services[]
   subscriptions                 subscriptions?
   tenant_users                  tenant_users[]
   users                         users                 @relation(fields: [ownerId], references: [id])
-  push_devices                  push_devices[]
 
   @@index([customDomain])
   @@index([ownerId])
@@ -707,9 +741,9 @@ model users {
   two_factor_enabled      Boolean?        @default(false)
   two_factor_secret       String?         @db.VarChar(255)
   notifications           notifications[]
+  push_devices            push_devices[]
   tenant_users            tenant_users[]
   tenants                 tenants[]
-  push_devices            push_devices[]
 
   @@index([email])
   @@index([phone])
@@ -1167,20 +1201,19 @@ model employee_permissions {
   employeeAccount    employee_accounts @relation(fields: [employeeAccountId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employee_account")
 }
 
-// Audit log for tracking all actions in the system
 model audit_logs {
-  id           String   @id @default(uuid())
-  tenantId     String   @db.VarChar(255)
-  userId       String?  @db.VarChar(255)
-  userType     String   @db.VarChar(50) // 'owner', 'employee', 'customer', 'system'
-  userName     String?  @db.VarChar(255)
-  action       String   @db.VarChar(100) // 'create', 'update', 'delete', 'cancel', 'confirm', etc.
-  entityType   String   @db.VarChar(100) // 'booking', 'customer', 'service', 'employee', etc.
-  entityId     String   @db.VarChar(255)
-  entityName   String?  @db.VarChar(255) // Human-readable name of the entity
-  changes      Json?    // JSON with old and new values for updates
-  metadata     Json?    // Additional context (IP, user agent, etc.)
-  createdAt    DateTime @default(now())
+  id         String   @id @default(uuid())
+  tenantId   String   @db.VarChar(255)
+  entityType String   @db.VarChar(100)
+  entityId   String   @db.VarChar(255)
+  action     String   @db.VarChar(100)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  changes    Json?
+  entityName String?  @db.VarChar(255)
+  userId     String?  @db.VarChar(255)
+  userName   String?  @db.VarChar(255)
+  userType   String   @db.VarChar(50)
 
   @@index([tenantId])
   @@index([userId])
@@ -1188,6 +1221,21 @@ model audit_logs {
   @@index([entityId])
   @@index([action])
   @@index([createdAt])
+}
+
+model push_devices {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  tenantId  String
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    tenants  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId])
 }
 
 enum BookingStatus {
@@ -1263,21 +1311,3 @@ enum PayoutStatus {
   COMPLETED
   FAILED
 }
-
-
-model push_devices {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  tenantId  String
-  platform  String   @default("android")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   users   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant tenants @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([tenantId])
-}
-

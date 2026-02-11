@@ -74,7 +74,7 @@ export class PaymentsController {
       throw new Error(`Nieprawidłowa kwota: ${amount} (type: ${typeof amount}, parsed: ${numericAmount})`);
     }
 
-    if (!['przelewy24', 'stripe', 'payu'].includes(provider)) {
+    if (!['przelewy24', 'stripe', 'payu', 'tpay', 'autopay'].includes(provider)) {
       throw new Error('Nieprawidłowy provider płatności');
     }
 
@@ -102,6 +102,22 @@ export class PaymentsController {
         );
       case 'payu':
         return this.paymentsService.createPayUPayment(
+          userId,
+          bookingId,
+          numericAmount,
+          customerEmail,
+          customerName
+        );
+      case 'tpay':
+        return this.paymentsService.createTpayPayment(
+          userId,
+          bookingId,
+          numericAmount,
+          customerEmail,
+          customerName
+        );
+      case 'autopay':
+        return this.paymentsService.createAutopayPayment(
           userId,
           bookingId,
           numericAmount,
@@ -137,5 +153,19 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Webhook PayU' })
   handlePayUWebhook(@Body() data: any) {
     return this.paymentsService.handlePayUWebhook(data);
+  }
+
+  @Public()
+  @Post('tpay/webhook')
+  @ApiOperation({ summary: 'Webhook Tpay' })
+  handleTpayWebhook(@Body() data: any) {
+    return this.paymentsService.handleTpayWebhook(data);
+  }
+
+  @Public()
+  @Post('autopay/webhook')
+  @ApiOperation({ summary: 'Webhook Autopay (Blue Media)' })
+  handleAutopayWebhook(@Body() data: any) {
+    return this.paymentsService.handleAutopayWebhook(data);
   }
 }

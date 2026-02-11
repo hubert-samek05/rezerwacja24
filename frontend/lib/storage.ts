@@ -47,10 +47,16 @@ export interface Booking {
   status: 'confirmed' | 'pending' | 'cancelled' | 'completed'
   paymentStatus: 'paid' | 'unpaid' | 'partial'
   paidAmount?: number
-  paymentMethod?: 'cash' | 'card' | 'przelewy24' | 'payu' | 'stripe' | 'other'
+  paymentMethod?: 'cash' | 'card' | 'przelewy24' | 'payu' | 'stripe' | 'tpay' | 'autopay' | 'other'
   notes?: string
   createdAt: string
   isPaid?: boolean
+  // Pola zaliczek
+  depositRequired?: boolean
+  depositAmount?: number
+  depositStatus?: 'not_required' | 'pending' | 'paid' | 'refunded'
+  depositPaidAt?: string
+  depositPaymentMethod?: string
 }
 
 export interface Customer {
@@ -71,6 +77,7 @@ export interface Customer {
   createdAt?: string
   updatedAt?: string
   bookings?: any[]
+  noShowCount?: number
 }
 
 // Pobierz ID zalogowanego użytkownika

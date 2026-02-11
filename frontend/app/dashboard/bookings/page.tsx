@@ -68,7 +68,7 @@ export default function BookingsPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null)
   const [paymentAmount, setPaymentAmount] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'przelewy24' | 'payu' | 'stripe' | 'pass' | 'other'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'przelewy24' | 'payu' | 'stripe' | 'tpay' | 'autopay' | 'pass' | 'other'>('cash')
   const [customerPasses, setCustomerPasses] = useState<any[]>([])
   const [selectedPassId, setSelectedPassId] = useState<string>('')
   const [customerLoyalty, setCustomerLoyalty] = useState<any>(null)
@@ -130,7 +130,13 @@ export default function BookingsPage() {
             ? 'partial' 
             : 'unpaid',
           paymentMethod: booking.paymentMethod,
-          notes: booking.customerNotes || ''
+          notes: booking.customerNotes || '',
+          // Pola zaliczek
+          depositRequired: booking.deposit_required || false,
+          depositAmount: booking.deposit_amount ? parseFloat(booking.deposit_amount) : 0,
+          depositStatus: booking.deposit_status || 'not_required',
+          depositPaidAt: booking.deposit_paid_at,
+          depositPaymentMethod: booking.deposit_payment_method
         }
       })
 
@@ -309,7 +315,7 @@ export default function BookingsPage() {
   const handleOpenPaymentModal = async (booking: Booking) => {
     setPaymentBooking(booking)
     setPaymentAmount(booking.paidAmount?.toString() || '')
-    setPaymentMethod(booking.paymentMethod || 'cash')
+    setPaymentMethod((booking.paymentMethod as any) || 'cash')
     setSelectedPassId('')
     setSelectedRewardId('')
     setLoyaltyDiscount(0)
@@ -531,6 +537,8 @@ export default function BookingsPage() {
       case 'przelewy24': return 'Przelewy24'
       case 'payu': return 'PayU'
       case 'stripe': return 'Stripe'
+      case 'tpay': return 'Tpay'
+      case 'autopay': return 'Autopay'
       case 'pass': return t.labels.pass
       case 'other': return t.labels.other
       default: return t.labels.notSpecified
@@ -872,6 +880,20 @@ export default function BookingsPage() {
                          booking.paymentStatus === 'partial' ? `Częściowo ${booking.paidAmount}/${booking.price} zł` : 
                          'Nieopłacone'}
                       </span>
+                      {/* Znacznik zaliczki */}
+                      {booking.depositRequired && booking.depositAmount && booking.depositAmount > 0 && (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+                          booking.depositStatus === 'paid' 
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
+                            : booking.depositStatus === 'pending'
+                            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}>
+                          <Wallet className="w-3 h-3" />
+                          {booking.depositStatus === 'paid' ? `Zaliczka ${booking.depositAmount} zł ✓` : 
+                           booking.depositStatus === 'pending' ? `Zaliczka ${booking.depositAmount} zł` : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -1025,18 +1047,33 @@ export default function BookingsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => handleOpenPaymentModal(booking)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80 ${
-                              booking.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                              booking.paymentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                              'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                            }`}
-                          >
-                            {booking.paymentStatus === 'paid' ? '✓ Opłacone' : 
-                             booking.paymentStatus === 'partial' ? 'Częściowo' : 
-                             'Nieopłacone'}
-                          </button>
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => handleOpenPaymentModal(booking)}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80 ${
+                                booking.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                booking.paymentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              }`}
+                            >
+                              {booking.paymentStatus === 'paid' ? '✓ Opłacone' : 
+                               booking.paymentStatus === 'partial' ? 'Częściowo' : 
+                               'Nieopłacone'}
+                            </button>
+                            {/* Znacznik zaliczki */}
+                            {booking.depositRequired && booking.depositAmount && booking.depositAmount > 0 && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
+                                booking.depositStatus === 'paid' 
+                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
+                                  : booking.depositStatus === 'pending'
+                                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                              }`}>
+                                <Wallet className="w-3 h-3" />
+                                {booking.depositAmount} zł {booking.depositStatus === 'paid' ? '✓' : ''}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
@@ -1226,6 +1263,49 @@ export default function BookingsPage() {
                   </div>
                 </div>
 
+                {/* Informacja o zaliczce */}
+                {selectedBooking.depositRequired && selectedBooking.depositAmount && selectedBooking.depositAmount > 0 && (
+                  <div className={`rounded-lg p-3 ${
+                    selectedBooking.depositStatus === 'paid' 
+                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                      : selectedBooking.depositStatus === 'pending'
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+                      : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className={`w-4 h-4 ${
+                          selectedBooking.depositStatus === 'paid' ? 'text-green-600' : 
+                          selectedBooking.depositStatus === 'pending' ? 'text-amber-600' : 'text-slate-500'
+                        }`} />
+                        <div>
+                          <p className="text-xs text-[var(--text-muted)]">Zaliczka</p>
+                          <p className="font-medium text-[var(--text-primary)]">{selectedBooking.depositAmount} zł</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedBooking.depositStatus === 'paid' 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                          : selectedBooking.depositStatus === 'pending'
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                          : selectedBooking.depositStatus === 'refunded'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {selectedBooking.depositStatus === 'paid' ? '✓ Opłacona' : 
+                         selectedBooking.depositStatus === 'pending' ? 'Oczekuje' : 
+                         selectedBooking.depositStatus === 'refunded' ? 'Zwrócona' : 'Niewymagana'}
+                      </span>
+                    </div>
+                    {selectedBooking.depositStatus === 'paid' && selectedBooking.depositPaidAt && (
+                      <p className="text-xs text-[var(--text-muted)] mt-2">
+                        Opłacona: {new Date(selectedBooking.depositPaidAt).toLocaleString('pl-PL')}
+                        {selectedBooking.depositPaymentMethod && ` (${selectedBooking.depositPaymentMethod})`}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {selectedBooking.notes && (
                   <div className="bg-[var(--bg-primary)] rounded-lg p-3">
                     <p className="text-xs text-[var(--text-muted)] mb-1">Notatki</p>
@@ -1332,6 +1412,8 @@ export default function BookingsPage() {
                     <option value="przelewy24">Przelewy24</option>
                     <option value="payu">PayU</option>
                     <option value="stripe">Stripe</option>
+                    <option value="tpay">Tpay</option>
+                    <option value="autopay">Autopay</option>
                     <option value="other">Inne</option>
                   </select>
                 </div>

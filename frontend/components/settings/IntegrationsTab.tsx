@@ -1,28 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Check, Loader2, ExternalLink, Copy } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
-// SVG Loga inline
+// Loga integracji
 const GoogleCalendarLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-7 h-7">
-    <path fill="#4285F4" d="M22 5.5H2v13c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-13z"/>
-    <path fill="#EA4335" d="M22 5.5V4c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v1.5h20z"/>
-    <path fill="#FBBC05" d="M6 2v4"/>
-    <path fill="#34A853" d="M18 2v4"/>
-    <rect fill="#fff" x="5" y="9" width="14" height="9" rx="1"/>
-    <path fill="#4285F4" d="M7 11h4v1H7zM7 13h4v1H7zM7 15h3v1H7z"/>
-    <path fill="#EA4335" d="M13 11h4v1h-4zM13 13h4v1h-4z"/>
-  </svg>
+  <img 
+    src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/500px-Google_Calendar_icon_%282020%29.svg.png" 
+    alt="Google Calendar" 
+    className="w-7 h-7 object-contain"
+  />
 )
 
 const OutlookLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-7 h-7">
-    <path fill="#0078D4" d="M24 7.5v9c0 .83-.67 1.5-1.5 1.5H14v-12h8.5c.83 0 1.5.67 1.5 1.5z"/>
-    <path fill="#0078D4" d="M14 6v12l-4 2V4l4 2z"/>
-    <ellipse fill="#0078D4" cx="6" cy="12" rx="5" ry="6"/>
-    <ellipse fill="#fff" cx="6" cy="12" rx="3" ry="4"/>
-  </svg>
+  <img 
+    src="https://img.icons8.com/color/1200/outlook-calendar.jpg" 
+    alt="Outlook Calendar" 
+    className="w-7 h-7 object-contain rounded"
+  />
 )
 
 const AppleLogo = () => (
@@ -32,10 +28,11 @@ const AppleLogo = () => (
 )
 
 const MailchimpLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-7 h-7">
-    <circle fill="#FFE01B" cx="12" cy="12" r="10"/>
-    <path fill="#241C15" d="M15.5 10.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm-7 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm3.5 6c-1.66 0-3-1.12-3-2.5h6c0 1.38-1.34 2.5-3 2.5z"/>
-  </svg>
+  <img 
+    src="https://images.squarespace-cdn.com/content/v1/64e4b52cb313f8621ac5c155/1692710271545-4CH6SHW21WZPWF1MKZBX/7.+Mailchimp-Logo_Mailchimp-Article_TinySeed.jpg" 
+    alt="Mailchimp" 
+    className="w-7 h-7 object-contain rounded"
+  />
 )
 
 const FacebookLogo = () => (
@@ -116,6 +113,126 @@ interface Integration {
 
 export default function IntegrationsTab() {
   const [connectedIntegrations, setConnectedIntegrations] = useState<string[]>([])
+  const [googleCalendarEmail, setGoogleCalendarEmail] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [tenantId, setTenantId] = useState<string>('')
+
+  // Pobierz API URL
+  const getApiUrl = () => {
+    if (typeof window === 'undefined') return 'http://localhost:3001'
+    const hostname = window.location.hostname
+    if (hostname.includes('bookings24.eu')) return 'https://api.bookings24.eu'
+    if (hostname.includes('rezerwacja24.pl')) return 'https://api.rezerwacja24.pl'
+    return 'http://localhost:3001'
+  }
+
+  // Sprawdź status integracji przy ładowaniu
+  useEffect(() => {
+    const checkIntegrations = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        const currentTenantId = user.tenantId || ''
+        setTenantId(currentTenantId)
+
+        if (!token || !currentTenantId) return
+
+        const apiUrl = getApiUrl()
+        const response = await fetch(`${apiUrl}/api/integrations/google-calendar/status`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-tenant-id': currentTenantId,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.connected) {
+            setConnectedIntegrations(prev => [...prev.filter(i => i !== 'google-calendar'), 'google-calendar'])
+            setGoogleCalendarEmail(data.email)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking integrations:', error)
+      }
+    }
+
+    checkIntegrations()
+  }, [])
+
+  // Obsługa połączenia z Google Calendar
+  const handleGoogleCalendarConnect = async () => {
+    try {
+      setIsLoading(true)
+      const token = localStorage.getItem('token')
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const currentTenantId = user.tenantId || ''
+
+      if (!token || !currentTenantId) {
+        toast.error('Musisz być zalogowany')
+        return
+      }
+
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/integrations/google-calendar/auth`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-tenant-id': currentTenantId,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Przekieruj do Google OAuth
+        window.location.href = data.authUrl
+      } else {
+        toast.error('Nie udało się połączyć z Google Calendar')
+      }
+    } catch (error) {
+      console.error('Error connecting Google Calendar:', error)
+      toast.error('Błąd połączenia')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Rozłącz Google Calendar
+  const handleGoogleCalendarDisconnect = async () => {
+    try {
+      setIsLoading(true)
+      const token = localStorage.getItem('token')
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const currentTenantId = user.tenantId || ''
+
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/integrations/google-calendar/disconnect`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-tenant-id': currentTenantId,
+        },
+      })
+
+      if (response.ok) {
+        setConnectedIntegrations(prev => prev.filter(i => i !== 'google-calendar'))
+        setGoogleCalendarEmail(null)
+        toast.success('Rozłączono z Google Calendar')
+      }
+    } catch (error) {
+      console.error('Error disconnecting:', error)
+      toast.error('Błąd rozłączania')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Kopiuj link iCal
+  const copyICalLink = () => {
+    const apiUrl = getApiUrl()
+    const icalUrl = `${apiUrl}/api/calendar/ical/${tenantId}`
+    navigator.clipboard.writeText(icalUrl)
+    toast.success('Skopiowano link iCal!')
+  }
 
   const integrations: Integration[] = [
     { id: 'google-calendar', name: 'Google Calendar', description: 'Synchronizuj rezerwacje z kalendarzem Google', logo: <GoogleCalendarLogo />, status: 'available', category: 'calendar' },
@@ -200,6 +317,56 @@ export default function IntegrationsTab() {
                       <div className="mt-4">
                         {isComingSoon ? (
                           <button disabled className="w-full py-2.5 bg-[var(--bg-card)] text-[var(--text-muted)] rounded-xl text-sm font-medium cursor-not-allowed">Niedostępne</button>
+                        ) : integration.id === 'google-calendar' ? (
+                          // Google Calendar - specjalna obsługa
+                          isConnected ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-center gap-2 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium">
+                                <Check className="w-4 h-4" />
+                                <span>Połączono{googleCalendarEmail ? `: ${googleCalendarEmail}` : ''}</span>
+                              </div>
+                              <button 
+                                onClick={handleGoogleCalendarDisconnect} 
+                                disabled={isLoading}
+                                className="w-full py-2 bg-[var(--bg-card)] text-[var(--text-muted)] rounded-xl text-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
+                              >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Rozłącz'}
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={handleGoogleCalendarConnect} 
+                              disabled={isLoading}
+                              className="w-full py-2.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2"
+                            >
+                              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                              {isLoading ? 'Łączenie...' : 'Połącz z Google'}
+                            </button>
+                          )
+                        ) : integration.id === 'apple-calendar' ? (
+                          // Apple Calendar (iCal) - pokaż link do skopiowania
+                          <div className="space-y-2">
+                            <div className="p-3 bg-[var(--bg-card)] rounded-xl">
+                              <p className="text-xs text-[var(--text-muted)] mb-2">Link do subskrypcji kalendarza:</p>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text" 
+                                  readOnly 
+                                  value={tenantId ? `${getApiUrl()}/api/calendar/ical/${tenantId}` : 'Ładowanie...'}
+                                  className="flex-1 text-xs bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[var(--text-muted)]"
+                                />
+                                <button 
+                                  onClick={copyICalLink}
+                                  disabled={!tenantId}
+                                  className="px-3 py-1.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  Kopiuj
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)]">Dodaj ten link w Apple Calendar, Outlook lub innej aplikacji kalendarza.</p>
+                          </div>
                         ) : isConnected ? (
                           <div className="flex gap-2">
                             <div className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium">

@@ -131,13 +131,19 @@ export function useProfileSetup() {
       const companyData = localStorage.getItem(`company_${userId}`)
       const company = companyData ? JSON.parse(companyData) : null
 
-      // Sprawdź każdy krok
+      // Sprawdź każdy krok - bardziej liberalne warunki
+      // Uznajemy krok za ukończony jeśli są JAKIEKOLWIEK dane
       const completedSteps: Record<string, boolean> = {
-        company_data: !!(company?.businessName && company?.phone && company?.address),
+        // Dane firmy - wystarczy nazwa firmy
+        company_data: !!(company?.businessName),
+        // Usługi - wystarczy jedna usługa
         services: services.length > 0,
+        // Pracownicy - wystarczy jeden pracownik
         employees: employees.length > 0,
-        working_hours: !!(company?.openingHours && Object.keys(company.openingHours).length > 0),
-        branding: !!(company?.logo),
+        // Godziny pracy - zawsze uznajemy za ukończone (domyślne są ustawiane)
+        working_hours: true,
+        // Branding - opcjonalne, zawsze uznajemy za ukończone
+        branding: true,
       }
 
       console.log('🔍 Profile Setup Check:', {

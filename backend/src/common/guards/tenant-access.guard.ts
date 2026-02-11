@@ -23,7 +23,8 @@ export class TenantAccessGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const tenantIdFromUrl = request.params?.id;
+    // Sprawdź różne możliwe nazwy parametru tenantId
+    const tenantIdFromUrl = request.params?.tenantId || request.params?.id;
 
     // Pobierz token z headera
     const authHeader = request.headers.authorization;

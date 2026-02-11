@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, MessageSquare, Loader2, Check, AlertCircle, Clock, UserCheck, X as XIcon, Zap } from 'lucide-react'
+import { Bell, MessageSquare, Loader2, Check, AlertCircle, Clock, UserCheck, X as XIcon, Zap, Edit3, Info } from 'lucide-react'
 
 interface NotificationSettings {
   smsEnabled: boolean
@@ -18,6 +18,20 @@ interface SmsStats {
   used: number
   limit: number
   remaining: number
+}
+
+interface SmsTemplates {
+  confirmed: string
+  cancelled: string
+  rescheduled: string
+  reminder: string
+}
+
+const DEFAULT_TEMPLATES: SmsTemplates = {
+  confirmed: 'Rezerwacja potwierdzona! {usługa} w {firma} - {data}, godz. {godzina}. Dziękujemy!',
+  cancelled: 'Rezerwacja odwołana: {usługa} w {firma} - {data}, godz. {godzina}.',
+  rescheduled: 'Rezerwacja przesunięta: {usługa} w {firma} - nowy termin: {data}, godz. {godzina}.',
+  reminder: 'Przypomnienie: {usługa} w {firma} jutro o godz. {godzina}. Do zobaczenia!',
 }
 
 export default function NotificationsTab() {
@@ -40,6 +54,10 @@ export default function NotificationsTab() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState<number>(100)
+  const [templates, setTemplates] = useState<SmsTemplates>(DEFAULT_TEMPLATES)
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<keyof SmsTemplates | null>(null)
+  const [tempTemplate, setTempTemplate] = useState('')
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -54,9 +72,10 @@ export default function NotificationsTab() {
         setTenantId(extractedTenantId)
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.rezerwacja24.pl'
         
-        const [statusRes, settingsRes] = await Promise.all([
+        const [statusRes, settingsRes, templatesRes] = await Promise.all([
           fetch(`${apiUrl}/api/sms/status`, { headers: { 'X-Tenant-ID': extractedTenantId } }),
-          fetch(`${apiUrl}/api/sms/settings`, { headers: { 'X-Tenant-ID': extractedTenantId } })
+          fetch(`${apiUrl}/api/sms/settings`, { headers: { 'X-Tenant-ID': extractedTenantId } }),
+          fetch(`${apiUrl}/api/sms/templates`, { headers: { 'X-Tenant-ID': extractedTenantId } })
         ])
 
         if (statusRes.ok) setSmsStats(await statusRes.json())
@@ -73,6 +92,10 @@ export default function NotificationsTab() {
             },
           })
         }
+        if (templatesRes.ok) {
+          const smsTemplates = await templatesRes.json()
+          setTemplates(smsTemplates)
+        }
       } catch (err) {
         console.error('Failed to fetch settings:', err)
       } finally {
@@ -88,23 +111,56 @@ export default function NotificationsTab() {
     try {
       if (!tenantId) throw new Error('Brak ID firmy')
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.rezerwacja24.pl'
-      const response = await fetch(`${apiUrl}/api/sms/settings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': tenantId },
-        body: JSON.stringify({
-          confirmedEnabled: settings.notifications.bookingConfirmation,
-          rescheduledEnabled: settings.notifications.bookingReschedule,
-          cancelledEnabled: settings.notifications.bookingCancellation,
-          reminderEnabled: settings.notifications.bookingReminder,
+      
+      // Zapisz ustawienia i szablony równolegle
+      const [settingsRes, templatesRes] = await Promise.all([
+        fetch(`${apiUrl}/api/sms/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': tenantId },
+          body: JSON.stringify({
+            confirmedEnabled: settings.notifications.bookingConfirmation,
+            rescheduledEnabled: settings.notifications.bookingReschedule,
+            cancelledEnabled: settings.notifications.bookingCancellation,
+            reminderEnabled: settings.notifications.bookingReminder,
+          }),
         }),
-      })
-      if (!response.ok) throw new Error('Nie udało się zapisać')
+        fetch(`${apiUrl}/api/sms/templates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': tenantId },
+          body: JSON.stringify(templates),
+        })
+      ])
+      
+      if (!settingsRes.ok || !templatesRes.ok) throw new Error('Nie udało się zapisać')
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Błąd zapisu')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleEditTemplate = (type: keyof SmsTemplates) => {
+    setEditingTemplate(type)
+    setTempTemplate(templates[type])
+    setShowTemplatesModal(true)
+  }
+
+  const handleSaveTemplate = () => {
+    if (editingTemplate) {
+      setTemplates({ ...templates, [editingTemplate]: tempTemplate })
+    }
+    setShowTemplatesModal(false)
+    setEditingTemplate(null)
+  }
+
+  const getTemplateLabel = (type: keyof SmsTemplates) => {
+    switch (type) {
+      case 'confirmed': return 'Potwierdzenie rezerwacji'
+      case 'cancelled': return 'Anulowanie rezerwacji'
+      case 'rescheduled': return 'Przesunięcie terminu'
+      case 'reminder': return 'Przypomnienie'
     }
   }
 
@@ -193,6 +249,7 @@ export default function NotificationsTab() {
 
         {/* Notification Types */}
         {settings.smsEnabled && (
+          <>
           <div className="p-6 bg-[var(--bg-primary)] rounded-2xl space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <Bell className="w-5 h-5 text-[var(--text-muted)]" />
@@ -214,18 +271,43 @@ export default function NotificationsTab() {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-[var(--bg-card)] rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-4 h-4 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">Przypomnienie</p>
-                    <p className="text-xs text-[var(--text-muted)]">{settings.notifications.reminderHoursBefore}h przed wizytą</p>
+              <div className="p-3 bg-[var(--bg-card)] rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">Przypomnienie</p>
+                      <p className="text-xs text-[var(--text-muted)]">Przed wizytą</p>
+                    </div>
                   </div>
+                  <Toggle 
+                    checked={settings.notifications.bookingReminder} 
+                    onChange={() => setSettings({ ...settings, notifications: { ...settings.notifications, bookingReminder: !settings.notifications.bookingReminder } })} 
+                  />
                 </div>
-                <Toggle 
-                  checked={settings.notifications.bookingReminder} 
-                  onChange={() => setSettings({ ...settings, notifications: { ...settings.notifications, bookingReminder: !settings.notifications.bookingReminder } })} 
-                />
+                {settings.notifications.bookingReminder && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border-color)]">
+                    <label className="text-xs text-[var(--text-muted)] mb-2 block">Wyślij przypomnienie na:</label>
+                    <select
+                      value={settings.notifications.reminderHoursBefore}
+                      onChange={(e) => setSettings({ 
+                        ...settings, 
+                        notifications: { 
+                          ...settings.notifications, 
+                          reminderHoursBefore: parseInt(e.target.value) 
+                        } 
+                      })}
+                      className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-muted)]"
+                    >
+                      <option value={2}>2 godziny przed</option>
+                      <option value={3}>3 godziny przed</option>
+                      <option value={6}>6 godzin przed</option>
+                      <option value={12}>12 godzin przed</option>
+                      <option value={24}>24 godziny przed (dzień wcześniej)</option>
+                      <option value={48}>48 godzin przed (2 dni wcześniej)</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-3 bg-[var(--bg-card)] rounded-lg">
@@ -257,6 +339,47 @@ export default function NotificationsTab() {
               </div>
             </div>
           </div>
+
+          {/* Szablony SMS */}
+          <div className="p-6 bg-[var(--bg-primary)] rounded-2xl space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <Edit3 className="w-5 h-5 text-[var(--text-muted)]" />
+                <p className="font-medium text-[var(--text-primary)]">Treść wiadomości SMS</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mb-4">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-blue-700 dark:text-blue-300">
+                  <p className="font-medium mb-1">Dostępne zmienne:</p>
+                  <p><code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{usługa}'}</code> - nazwa usługi</p>
+                  <p><code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{firma}'}</code> - nazwa firmy</p>
+                  <p><code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{data}'}</code> - data wizyty</p>
+                  <p><code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{godzina}'}</code> - godzina wizyty</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {(['confirmed', 'reminder', 'rescheduled', 'cancelled'] as const).map((type) => (
+                <div key={type} className="p-3 bg-[var(--bg-card)] rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{getTemplateLabel(type)}</p>
+                    <button
+                      onClick={() => handleEditTemplate(type)}
+                      className="p-1.5 hover:bg-[var(--bg-card-hover)] rounded-lg transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4 text-[var(--text-muted)]" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] line-clamp-2">{templates[type]}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          </>
         )}
       </div>
 
@@ -317,6 +440,60 @@ export default function NotificationsTab() {
               </button>
               <button className="flex-1 px-4 py-3 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl font-medium">
                 Wykup {selectedPackage} SMS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Edit Modal */}
+      {showTemplatesModal && editingTemplate && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowTemplatesModal(false)}>
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Edytuj szablon SMS</h3>
+              <button onClick={() => setShowTemplatesModal(false)} className="p-2 hover:bg-[var(--bg-card-hover)] rounded-lg">
+                <XIcon className="w-5 h-5 text-[var(--text-muted)]" />
+              </button>
+            </div>
+
+            <p className="text-sm text-[var(--text-muted)] mb-4">{getTemplateLabel(editingTemplate)}</p>
+
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mb-4">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-blue-700 dark:text-blue-300">
+                  <p className="font-medium mb-1">Dostępne zmienne:</p>
+                  <p><code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{usługa}'}</code> <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{firma}'}</code> <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{data}'}</code> <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{'{godzina}'}</code></p>
+                </div>
+              </div>
+            </div>
+
+            <textarea
+              value={tempTemplate}
+              onChange={(e) => setTempTemplate(e.target.value)}
+              className="w-full h-32 p-3 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--text-muted)] resize-none"
+              placeholder="Wpisz treść wiadomości SMS..."
+            />
+
+            <p className="text-xs text-[var(--text-muted)] mt-2 mb-4">
+              Długość: {tempTemplate.length} znaków (max ~160 dla 1 SMS)
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => {
+                  setTempTemplate(DEFAULT_TEMPLATES[editingTemplate])
+                }}
+                className="px-4 py-2.5 border border-[var(--border-color)] text-[var(--text-muted)] rounded-xl text-sm"
+              >
+                Przywróć domyślny
+              </button>
+              <button 
+                onClick={handleSaveTemplate}
+                className="flex-1 px-4 py-2.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl font-medium"
+              >
+                Zapisz szablon
               </button>
             </div>
           </div>

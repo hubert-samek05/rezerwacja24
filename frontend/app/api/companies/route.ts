@@ -82,7 +82,9 @@ export async function GET(request: NextRequest) {
       acceptOnlinePayment: false,
       stripeEnabled: false,
       przelewy24Enabled: false,
-      payuEnabled: false
+      payuEnabled: false,
+      tpayEnabled: false,
+      autopayEnabled: false
     }
     try {
       const paymentsResponse = await fetch(`${API_URL}/api/payments/settings`, {
@@ -97,7 +99,9 @@ export async function GET(request: NextRequest) {
           acceptOnlinePayment: paymentsData.acceptOnlinePayment || false,
           stripeEnabled: paymentsData.stripeEnabled || false,
           przelewy24Enabled: paymentsData.przelewy24Enabled || false,
-          payuEnabled: paymentsData.payuEnabled || false
+          payuEnabled: paymentsData.payuEnabled || false,
+          tpayEnabled: paymentsData.tpayEnabled || false,
+          autopayEnabled: paymentsData.autopayEnabled || false
         }
       }
     } catch (e) {

@@ -38,6 +38,7 @@ import { GroupBookingsModule } from './group-bookings/group-bookings.module';
 import { PartnersModule } from './partners/partners.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { EmployeeAccountsModule } from './employee-accounts/employee-accounts.module';
+import { DepositsModule } from './deposits/deposits.module';
 import { appProviders } from './app.providers';
 import { TrialNotificationsService } from './subscription/trial-notifications.service';
 import { MaintenanceModule } from './maintenance/maintenance.module';
@@ -107,6 +108,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     MaintenanceModule,
     LoyaltyModule,
     EmployeeAccountsModule,
+    DepositsModule,
   ],
   providers: [...appProviders, TrialNotificationsService],
 })

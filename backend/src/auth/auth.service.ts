@@ -774,6 +774,208 @@ export class AuthService {
   }
 
   /**
+   * Sign in with Apple - logowanie/rejestracja przez Apple ID
+   */
+  async appleLogin(appleUser: any) {
+    this.logger.log(`🍎 Apple OAuth login for: ${appleUser.email || appleUser.appleId}`);
+
+    // Sprawdź czy użytkownik już istnieje (po email lub appleId)
+    let user = await this.prisma.users.findFirst({
+      where: {
+        OR: [
+          { email: appleUser.email },
+          { microsoftId: appleUser.appleId }, // Używamy microsoftId jako appleId (pole już istnieje w schemacie)
+        ],
+      },
+      include: {
+        tenant_users: {
+          include: {
+            tenants: true,
+          },
+        },
+      },
+    });
+
+    // Jeśli użytkownik istnieje ale nie ma appleId, połącz konta
+    if (user && !user.microsoftId && appleUser.appleId) {
+      this.logger.log(`🔗 Linking Apple account to existing user: ${user.email}`);
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { 
+          microsoftId: appleUser.appleId, // Używamy microsoftId jako appleId
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // Jeśli użytkownik nie istnieje, utwórz nowe konto
+    if (!user) {
+      this.logger.log(`Creating new user from Apple OAuth: ${appleUser.email || appleUser.appleId}`);
+
+      // Utwórz subdomenę z email lub appleId
+      const emailPrefix = appleUser.email 
+        ? appleUser.email.split('@')[0]
+        : `apple-${appleUser.appleId.substring(0, 8)}`;
+      const subdomain = emailPrefix
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 50) + '-' + Date.now().toString().substring(8);
+
+      // Utwórz użytkownika i tenant w transakcji
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // 1. Utwórz użytkownika
+        const newUser = await prisma.users.create({
+          data: {
+            id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            email: appleUser.email || `${appleUser.appleId}@privaterelay.appleid.com`,
+            firstName: appleUser.firstName,
+            lastName: appleUser.lastName,
+            microsoftId: appleUser.appleId, // Używamy microsoftId jako appleId
+            role: 'TENANT_OWNER',
+            emailVerified: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
+        // 2. Utwórz tenant (firmę) z domyślnymi godzinami otwarcia
+        const defaultOpeningHours = {
+          monday: { open: '09:00', close: '18:00', closed: false },
+          tuesday: { open: '09:00', close: '18:00', closed: false },
+          wednesday: { open: '09:00', close: '18:00', closed: false },
+          thursday: { open: '09:00', close: '18:00', closed: false },
+          friday: { open: '09:00', close: '18:00', closed: false },
+          saturday: { open: '10:00', close: '16:00', closed: false },
+          sunday: { closed: true }
+        };
+
+        const businessName = `${appleUser.firstName} ${appleUser.lastName}`;
+        const tenant = await prisma.tenants.create({
+          data: {
+            id: `tenant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: businessName,
+            subdomain,
+            email: appleUser.email || `${appleUser.appleId}@privaterelay.appleid.com`,
+            ownerId: newUser.id,
+            isActive: true,
+            isSuspended: false,
+            openingHours: defaultOpeningHours,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
+        // 3. Połącz użytkownika z tenantem
+        await prisma.tenant_users.create({
+          data: {
+            id: `tu-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            tenantId: tenant.id,
+            userId: newUser.id,
+            role: 'TENANT_OWNER',
+            createdAt: new Date(),
+          },
+        });
+
+        // 4. Utwórz subskrypcję TRIAL (7 dni bez karty)
+        const trialDays = 7;
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+        
+        // Pobierz domyślny plan (Starter lub pierwszy aktywny)
+        const defaultPlan = await prisma.subscription_plans.findFirst({
+          where: { isActive: true },
+          orderBy: { priceMonthly: 'asc' },
+        });
+
+        if (defaultPlan) {
+          await prisma.subscriptions.create({
+            data: {
+              id: `sub-trial-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              tenantId: tenant.id,
+              planId: defaultPlan.id,
+              status: 'TRIALING',
+              stripeCustomerId: `pending-${tenant.id}`,
+              stripeSubscriptionId: null,
+              currentPeriodStart: now,
+              currentPeriodEnd: trialEnd,
+              trialStart: now,
+              trialEnd: trialEnd,
+              cancelAtPeriodEnd: false,
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+        }
+
+        return { user: newUser, tenant };
+      });
+
+      this.logger.log(`✅ Created user ${result.user.id} and tenant ${result.tenant.id} from Apple OAuth`);
+
+      // Automatycznie skonfiguruj subdomenę (nginx + SSL) w tle
+      this.subdomainSetup.setupSubdomain(subdomain).catch(err => {
+        this.logger.error(`Failed to setup subdomain ${subdomain}:`, err);
+      });
+
+      // 📧 Wyślij email powitalny
+      if (appleUser.email) {
+        this.emailService.sendWelcomeEmail(appleUser.email, {
+          name: appleUser.firstName,
+          companyName: result.tenant.name,
+          subdomain: subdomain,
+        }).catch(err => {
+          this.logger.error(`Failed to send welcome email:`, err);
+        });
+      }
+
+      // Pobierz pełne dane użytkownika z relacjami
+      user = await this.prisma.users.findUnique({
+        where: { id: result.user.id },
+        include: {
+          tenant_users: {
+            include: {
+              tenants: true,
+            },
+          },
+        },
+      });
+    }
+
+    // Pobierz tenant użytkownika
+    const userTenant = user.tenant_users[0];
+    if (!userTenant && user.role !== 'SUPER_ADMIN') {
+      throw new UnauthorizedException('Użytkownik nie ma przypisanego salonu');
+    }
+
+    const tenantId = userTenant?.tenantId || null;
+
+    // Generuj token JWT
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      tenantId: tenantId,
+      role: user.role,
+    };
+
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        tenantId: tenantId,
+        tenant: userTenant?.tenants || null,
+      },
+    };
+  }
+
+  /**
    * Wysyła email z linkiem do resetu hasła
    * Używa JWT token (bez zmian w bazie danych)
    */
@@ -853,5 +1055,50 @@ export class AuthService {
       this.logger.error(`Password reset failed: ${error.message}`);
       throw new UnauthorizedException('Token jest nieprawidłowy lub wygasł');
     }
+  }
+
+  /**
+   * Zmiana hasła przez zalogowanego użytkownika
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    this.logger.log(`🔐 Password change attempt for user: ${userId}`);
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Użytkownik nie istnieje');
+    }
+
+    // Sprawdź obecne hasło
+    let isPasswordValid = false;
+    if (user.passwordHash) {
+      try {
+        isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      } catch (e) {
+        isPasswordValid = user.passwordHash === currentPassword;
+      }
+    }
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Nieprawidłowe obecne hasło');
+    }
+
+    // Hashuj nowe hasło
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Zaktualizuj hasło
+    await this.prisma.users.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        updatedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`✅ Password changed successfully for user: ${userId}`);
+
+    return { message: 'Hasło zostało zmienione' };
   }
 }

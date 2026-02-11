@@ -26,7 +26,9 @@ import {
   CreditCard,
   Ticket,
   ShoppingCart,
-  Gift
+  Gift,
+  Flag,
+  UserX
 } from 'lucide-react'
 import Link from 'next/link'
 import { getCustomers, getBookings, updateCustomer, deleteCustomer, type Customer } from '@/lib/storage'
@@ -257,10 +259,18 @@ export default function CustomersPage() {
     }
   }
 
-  const handleDeleteCustomer = (customerId: string) => {
+  const handleDeleteCustomer = async (customerId: string) => {
     if (confirm('Czy na pewno chcesz usunąć tego klienta?')) {
-      deleteCustomer(customerId)
-      loadData()
+      try {
+        const config = getTenantConfig()
+        await axios.delete(`${API_URL}/api/customers/${customerId}`, config)
+        toast.success(t.customers?.deleted || 'Klient został usunięty')
+        await loadData()
+      } catch (error: any) {
+        console.error('Error deleting customer:', error)
+        const errorMessage = error.response?.data?.message || t.customers?.deleteError || 'Nie można usunąć klienta'
+        toast.error(errorMessage)
+      }
     }
   }
 
@@ -811,11 +821,9 @@ export default function CustomersPage() {
         {showDetailsModal && selectedCustomer && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowDetailsModal(false)}
           >
             <div
               className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -1093,11 +1101,9 @@ export default function CustomersPage() {
         {showEditModal && selectedCustomer && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowEditModal(false)}
           >
             <div
               className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-2xl w-full max-h-[calc(100vh-120px)] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -1161,21 +1167,35 @@ export default function CustomersPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editForm.isBlocked}
-                      onChange={(e) => setEditForm({ ...editForm, isBlocked: e.target.checked })}
-                      className="w-4 h-4 rounded border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:ring-accent-neon"
-                    />
-                    <span className="text-sm font-medium text-[var(--text-muted)]">
-                      Zablokuj klienta
-                    </span>
+                {/* Flagi klienta */}
+                <div className="p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]">
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-3">
+                    <Flag className="w-4 h-4 inline mr-1" />
+                    Flagi klienta
                   </label>
-                  <p className="text-xs text-[var(--text-muted)]/70 mt-1">
-                    Zablokowany klient nie będzie mógł dokonywać rezerwacji
-                  </p>
+                  <div className="space-y-3">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editForm.isBlocked}
+                        onChange={(e) => setEditForm({ ...editForm, isBlocked: e.target.checked })}
+                        className="w-4 h-4 rounded border-[var(--border-color)] bg-[var(--bg-primary)] text-red-500 focus:ring-red-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-red-400">Zablokowany</span>
+                        <p className="text-xs text-[var(--text-muted)]/70">Nie może dokonywać rezerwacji</p>
+                      </div>
+                    </label>
+                    
+                    {selectedCustomer && (selectedCustomer.noShowCount || 0) > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-yellow-500/10 rounded-lg">
+                        <UserX className="w-4 h-4 text-yellow-500" />
+                        <span className="text-sm text-yellow-500">
+                          Nieobecności: {selectedCustomer.noShowCount || 0}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -1187,7 +1207,7 @@ export default function CustomersPage() {
                     onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                     rows={3}
                     className="w-full px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] resize-none"
-                    placeholder="Dodatkowe informacje o kliencie..."
+                    placeholder="Dodatkowe informacje o kliencie (np. nie przyszedł 2x, nie powiadomił)..."
                   />
                 </div>
               </div>
@@ -1215,11 +1235,9 @@ export default function CustomersPage() {
       {showSellPassModal && selectedCustomer && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => setShowSellPassModal(false)}
         >
           <div
             className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-md w-full max-h-[calc(100vh-120px)] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-[var(--text-primary)]">Sprzedaj karnet</h2>
@@ -1285,11 +1303,9 @@ export default function CustomersPage() {
       {showAddModal && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setShowAddModal(false)}
         >
           <div
             className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6 max-w-lg w-full max-h-[calc(100vh-120px)] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

@@ -78,6 +78,15 @@ class ResetPasswordDto {
   newPassword: string;
 }
 
+class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -224,6 +233,92 @@ export class AuthController {
     res.redirect(redirectUrl);
   }
 
+  // ==================== APPLE SIGN IN ====================
+  
+  @Public()
+  @Get('apple')
+  async appleAuth(@Req() req: Request, @Res() res: Response, @Query('state') state?: string) {
+    // Ręcznie budujemy URL do Apple OAuth
+    const clientId = process.env.APPLE_CLIENT_ID;
+    const callbackUrl = process.env.APPLE_CALLBACK_URL;
+    const scope = 'name email';
+    
+    let appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code id_token&scope=${encodeURIComponent(scope)}&response_mode=form_post`;
+    
+    // Dodaj state jeśli przekazany (dla mobile app)
+    if (state) {
+      appleAuthUrl += `&state=${encodeURIComponent(state)}`;
+    }
+    
+    res.redirect(appleAuthUrl);
+  }
+
+  @Public()
+  @Post('apple/callback')
+  async appleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    // Apple wysyła dane jako POST form-data
+    const { code, id_token, state, user } = req.body as any;
+    
+    this.logger.log(`🍎 Apple OAuth callback received`);
+    
+    try {
+      // Dekoduj id_token (JWT) żeby wyciągnąć dane użytkownika
+      const tokenParts = id_token.split('.');
+      const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+      
+      // Parsuj dane użytkownika (Apple wysyła je tylko przy pierwszej autoryzacji)
+      let firstName = 'Apple';
+      let lastName = 'User';
+      
+      if (user) {
+        try {
+          const userData = typeof user === 'string' ? JSON.parse(user) : user;
+          firstName = userData.name?.firstName || firstName;
+          lastName = userData.name?.lastName || lastName;
+        } catch (e) {
+          this.logger.warn('Could not parse Apple user data');
+        }
+      }
+      
+      const appleUser = {
+        appleId: payload.sub,
+        email: payload.email,
+        firstName,
+        lastName,
+        state,
+      };
+      
+      const result = await this.authService.appleLogin(appleUser);
+      
+      // Sprawdź czy to request z aplikacji mobilnej
+      let redirectUrl: string;
+      
+      if (state) {
+        try {
+          const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+          if (stateData.redirect_uri) {
+            redirectUrl = `${stateData.redirect_uri}?token=${result.access_token}`;
+            this.logger.log(`📱 Mobile Apple OAuth redirect to: ${stateData.redirect_uri}`);
+          }
+        } catch (e) {
+          this.logger.debug('State is not valid JSON, using default redirect');
+        }
+      }
+      
+      // Domyślne przekierowanie do frontendu
+      if (!redirectUrl) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        redirectUrl = `${frontendUrl}/auth/callback?token=${result.access_token}`;
+      }
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      this.logger.error(`Apple OAuth error: ${error.message}`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?error=apple_auth_failed`);
+    }
+  }
+
   @Public()
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -234,5 +329,15 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  async changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    return this.authService.changePassword(userId, dto.currentPassword, dto.newPassword);
   }
 }

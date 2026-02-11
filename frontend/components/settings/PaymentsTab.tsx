@@ -18,39 +18,44 @@ interface PaymentsTabProps {
   isLoading: boolean
 }
 
-// SVG loga inline dla niezawodności
+// Loga płatności jako obrazki - pełne wypełnienie kontenerów
 const StripeLogo = () => (
-  <svg viewBox="0 0 60 25" className="w-10 h-5" fill="white">
-    <path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 0 1-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.02 1.04-.06 1.48zm-6.3-5.63c-1.03 0-1.87.73-2.03 2.2h4.09c-.15-1.47-1.03-2.2-2.06-2.2zM41.14 20.3V5.57l4.15-.67v14.4c0 2.97-1.41 4.36-4.36 4.36-.67 0-1.41-.07-1.93-.22v-3.32c.3.07.67.11.93.11.78 0 1.21-.37 1.21-1.21v-.72zm-2.08-14.73c0-1.33 1.03-2.42 2.42-2.42s2.42 1.1 2.42 2.42c0 1.33-1.03 2.42-2.42 2.42s-2.42-1.1-2.42-2.42zM33.17 20.3l-2.5-5.78-1.48 1.78v4h-4.15V.67l4.15-.67v12.73l3.62-4.87h4.87l-4.43 5.19 4.8 7.25h-4.88zm-12.73 0h-4.15V7.86h4.15v12.44zm-2.08-14.73c-1.33 0-2.42-1.1-2.42-2.42s1.1-2.42 2.42-2.42 2.42 1.1 2.42 2.42-1.1 2.42-2.42 2.42zM9.93 20.3c-1.85 0-3.36-.52-4.36-1.26l.74-3.1c.89.59 2.08 1.04 3.36 1.04 1.04 0 1.56-.37 1.56-.89 0-.59-.67-.81-1.93-1.19-2.31-.67-4.02-1.78-4.02-4.24 0-2.5 2.01-4.36 5.19-4.36 1.63 0 3.06.37 4.06.96l-.74 3.06c-.74-.44-1.78-.81-2.98-.81-.89 0-1.41.3-1.41.81 0 .52.59.74 1.71 1.11 2.46.74 4.24 1.78 4.24 4.28 0 2.61-2.01 4.59-5.42 4.59z"/>
-  </svg>
+  <img 
+    src="https://logowik.com/content/uploads/images/stripe1461.jpg" 
+    alt="Stripe" 
+    className="w-full h-full object-cover rounded-lg"
+  />
 )
 
 const P24Logo = () => (
-  <svg viewBox="0 0 120 50" className="w-12 h-6">
-    <rect width="120" height="50" rx="4" fill="#D13239"/>
-    <text x="10" y="36" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="white">Przelewy</text>
-    <text x="95" y="36" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="white">24</text>
-  </svg>
+  <img 
+    src="https://images.seeklogo.com/logo-png/24/2/przelewy-24-logo-png_seeklogo-245975.png" 
+    alt="Przelewy24" 
+    className="w-full h-full object-contain"
+  />
 )
 
 const PayULogo = () => (
-  <svg viewBox="0 0 80 35" className="w-10 h-5">
+  <svg viewBox="0 0 80 35" className="w-full h-8">
     <text x="5" y="26" fontFamily="Arial, sans-serif" fontSize="22" fontWeight="bold" fill="#A6C307">Pay</text>
     <text x="42" y="26" fontFamily="Arial, sans-serif" fontSize="22" fontWeight="bold" fill="#169BD7">U</text>
   </svg>
 )
 
 const TpayLogo = () => (
-  <svg viewBox="0 0 70 30" className="w-10 h-5">
-    <text x="5" y="23" fontFamily="Arial, sans-serif" fontSize="20" fontWeight="bold" fill="#00A0E3">tpay</text>
-  </svg>
+  <img 
+    src="https://inmarketing.pl/wp-content/uploads/2025/06/Projekt-bez-nazwy.png" 
+    alt="Tpay" 
+    className="w-full h-full object-contain"
+  />
 )
 
-const BlikLogo = () => (
-  <svg viewBox="0 0 70 30" className="w-10 h-5">
-    <rect width="70" height="30" rx="4" fill="#E6007A"/>
-    <text x="10" y="22" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="white">BLIK</text>
-  </svg>
+const AutopayLogo = () => (
+  <img 
+    src="https://www.gsmservice.pl/wp-content/uploads/2023/10/autopay.png" 
+    alt="Autopay" 
+    className="w-full h-full object-contain"
+  />
 )
 
 export default function PaymentsTab({ companyData, setCompanyData, onSave, isLoading }: PaymentsTabProps) {
@@ -123,7 +128,7 @@ export default function PaymentsTab({ companyData, setCompanyData, onSave, isLoa
         <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-[#635BFF] rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 rounded-xl shadow-lg overflow-hidden">
                 <StripeLogo />
               </div>
               <div>
@@ -184,7 +189,7 @@ export default function PaymentsTab({ companyData, setCompanyData, onSave, isLoa
         <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-[#D13239] rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+              <div className="w-14 h-14 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-1">
                 <P24Logo />
               </div>
               <div>
@@ -282,51 +287,278 @@ export default function PaymentsTab({ companyData, setCompanyData, onSave, isLoa
         </div>
 
         {/* PayU */}
-        <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl relative overflow-hidden">
-          <div className="absolute top-4 right-4 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-            Wkrótce
-          </div>
-          <div className="flex items-center gap-4 opacity-60">
-            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200">
-              <PayULogo />
+        <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex items-center justify-center p-2">
+                <PayULogo />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">PayU</h3>
+                <p className="text-sm text-[var(--text-muted)]">Szybkie płatności online, raty</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">PayU</h3>
-              <p className="text-sm text-[var(--text-muted)]">Szybkie płatności online, raty</p>
-            </div>
+            <Toggle 
+              checked={(companyData.paymentMethods as any)?.payu?.enabled || false}
+              onChange={() => setCompanyData({
+                ...companyData,
+                paymentMethods: {
+                  ...companyData.paymentMethods,
+                  payu: { enabled: !(companyData.paymentMethods as any)?.payu?.enabled }
+                } as any
+              })}
+            />
           </div>
+          
+          {(companyData.paymentMethods as any)?.payu?.enabled && (
+            <div className="mt-5 pt-5 border-t border-[var(--border-color)] space-y-4">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Zarejestruj się na <a href="https://payu.pl" target="_blank" rel="noopener noreferrer" className="underline font-medium">payu.pl</a> i pobierz dane z panelu sprzedawcy.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">POS ID</label>
+                  <input 
+                    type="text" 
+                    className={inputClass} 
+                    placeholder="123456"
+                    value={(companyData.paymentMethods as any)?.payu?.posId || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        payu: { ...(companyData.paymentMethods as any)?.payu, enabled: true, posId: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Second Key (MD5)</label>
+                  <input 
+                    type="password" 
+                    className={inputClass} 
+                    placeholder="••••••••"
+                    value={(companyData.paymentMethods as any)?.payu?.secondKey || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        payu: { ...(companyData.paymentMethods as any)?.payu, enabled: true, secondKey: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">OAuth Client ID</label>
+                  <input 
+                    type="text" 
+                    className={inputClass} 
+                    placeholder="123456"
+                    value={(companyData.paymentMethods as any)?.payu?.clientId || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        payu: { ...(companyData.paymentMethods as any)?.payu, enabled: true, clientId: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">OAuth Client Secret</label>
+                  <input 
+                    type="password" 
+                    className={inputClass} 
+                    placeholder="••••••••"
+                    value={(companyData.paymentMethods as any)?.payu?.clientSecret || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        payu: { ...(companyData.paymentMethods as any)?.payu, enabled: true, clientSecret: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tpay */}
-        <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl relative overflow-hidden">
-          <div className="absolute top-4 right-4 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-            Wkrótce
-          </div>
-          <div className="flex items-center gap-4 opacity-60">
-            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200">
-              <TpayLogo />
+        <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-1">
+                <TpayLogo />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Tpay</h3>
+                <p className="text-sm text-[var(--text-muted)]">Przelewy, BLIK, karty, portfele</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Tpay</h3>
-              <p className="text-sm text-[var(--text-muted)]">Przelewy, BLIK, karty, portfele</p>
-            </div>
+            <Toggle 
+              checked={(companyData.paymentMethods as any)?.tpay?.enabled || false}
+              onChange={() => setCompanyData({
+                ...companyData,
+                paymentMethods: {
+                  ...companyData.paymentMethods,
+                  tpay: { enabled: !(companyData.paymentMethods as any)?.tpay?.enabled }
+                } as any
+              })}
+            />
           </div>
+          
+          {(companyData.paymentMethods as any)?.tpay?.enabled && (
+            <div className="mt-5 pt-5 border-t border-[var(--border-color)] space-y-4">
+              <div className="p-4 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl">
+                <p className="text-sm text-cyan-700 dark:text-cyan-300">
+                  Zarejestruj się na <a href="https://tpay.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">tpay.com</a> i pobierz dane API z panelu.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Client ID</label>
+                  <input 
+                    type="text" 
+                    className={inputClass} 
+                    placeholder="123456-abc"
+                    value={(companyData.paymentMethods as any)?.tpay?.clientId || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        tpay: { ...(companyData.paymentMethods as any)?.tpay, enabled: true, clientId: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Client Secret</label>
+                  <input 
+                    type="password" 
+                    className={inputClass} 
+                    placeholder="••••••••"
+                    value={(companyData.paymentMethods as any)?.tpay?.clientSecret || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        tpay: { ...(companyData.paymentMethods as any)?.tpay, enabled: true, clientSecret: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Merchant ID</label>
+                  <input 
+                    type="text" 
+                    className={inputClass} 
+                    placeholder="12345"
+                    value={(companyData.paymentMethods as any)?.tpay?.merchantId || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        tpay: { ...(companyData.paymentMethods as any)?.tpay, enabled: true, merchantId: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Security Code</label>
+                  <input 
+                    type="password" 
+                    className={inputClass} 
+                    placeholder="••••••••"
+                    value={(companyData.paymentMethods as any)?.tpay?.securityCode || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        tpay: { ...(companyData.paymentMethods as any)?.tpay, enabled: true, securityCode: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* BLIK */}
-        <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl relative overflow-hidden">
-          <div className="absolute top-4 right-4 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full">
-            Wkrótce
-          </div>
-          <div className="flex items-center gap-4 opacity-60">
-            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200 overflow-hidden">
-              <BlikLogo />
+        {/* Autopay (Blue Media) */}
+        <div className="p-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-1">
+                <AutopayLogo />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Autopay (Blue Media)</h3>
+                <p className="text-sm text-[var(--text-muted)]">Przelewy, BLIK, karty płatnicze</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">BLIK bezpośrednio</h3>
-              <p className="text-sm text-[var(--text-muted)]">Płatności BLIK bez pośredników</p>
-            </div>
+            <Toggle 
+              checked={(companyData.paymentMethods as any)?.autopay?.enabled || false}
+              onChange={() => setCompanyData({
+                ...companyData,
+                paymentMethods: {
+                  ...companyData.paymentMethods,
+                  autopay: { enabled: !(companyData.paymentMethods as any)?.autopay?.enabled }
+                } as any
+              })}
+            />
           </div>
+          
+          {(companyData.paymentMethods as any)?.autopay?.enabled && (
+            <div className="mt-5 pt-5 border-t border-[var(--border-color)] space-y-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Zarejestruj się na <a href="https://autopay.pl" target="_blank" rel="noopener noreferrer" className="underline font-medium">autopay.pl</a> i pobierz dane integracyjne.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Service ID</label>
+                  <input 
+                    type="text" 
+                    className={inputClass} 
+                    placeholder="123456"
+                    value={(companyData.paymentMethods as any)?.autopay?.serviceId || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        autopay: { ...(companyData.paymentMethods as any)?.autopay, enabled: true, serviceId: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Shared Key</label>
+                  <input 
+                    type="password" 
+                    className={inputClass} 
+                    placeholder="••••••••"
+                    value={(companyData.paymentMethods as any)?.autopay?.sharedKey || ''}
+                    onChange={(e) => setCompanyData({
+                      ...companyData,
+                      paymentMethods: {
+                        ...companyData.paymentMethods,
+                        autopay: { ...(companyData.paymentMethods as any)?.autopay, enabled: true, sharedKey: e.target.value }
+                      } as any
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
