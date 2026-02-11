@@ -191,12 +191,13 @@ export class BookingsService {
     // 📱 Wyślij SMS z potwierdzeniem TYLKO jeśli status to CONFIRMED (płatność gotówką lub już opłacone)
     // Dla płatności online SMS zostanie wysłany po potwierdzeniu płatności (w webhook lub update)
     if (booking.customers?.phone && booking.status === 'CONFIRMED') {
-      // Pobierz nazwę firmy
+      // Pobierz nazwę firmy i subdomenę
       const tenant = await this.prisma.tenants.findUnique({
         where: { id: tenantId },
-        select: { name: true },
+        select: { name: true, subdomain: true },
       });
       const businessName = tenant?.name || 'Firma';
+      const subdomain = tenant?.subdomain;
       
       // Pobierz custom szablony SMS
       const customTemplates = await this.flySMSService.getSMSTemplates(tenantId);
@@ -207,12 +208,21 @@ export class BookingsService {
       const dateStr = this.formatDate(bookingDate, region);
       const timeStr = this.formatTime(bookingDate, region);
       
+      // Generuj linki do odwołania i płatności
+      const frontendUrl = process.env.FRONTEND_URL || 'https://rezerwacja24.pl';
+      const cancelUrl = subdomain ? `${frontendUrl}/${subdomain}/cancel/${booking.id}` : undefined;
+      const paymentUrl = (booking.status === 'PENDING' && subdomain) ? `${frontendUrl}/${subdomain}/pay/${booking.id}` : undefined;
+      
       // Użyj szablonu SMS dla odpowiedniego regionu z custom szablonami
       const message = this.smsTemplatesService.getConfirmedTemplate({
         serviceName: booking.services?.name,
         businessName,
         date: dateStr,
         time: timeStr,
+        cancelUrl,
+        paymentUrl,
+        bookingId: booking.id,
+        subdomain,
       }, region, customTemplates);
       
       this.flySMSService.sendSMS(tenantId, booking.customers.phone, message, 'confirmed').catch(err => {

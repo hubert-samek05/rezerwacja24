@@ -63,6 +63,7 @@ export default function CustomersPage() {
     email: '',
     phone: '',
     isBlocked: false,
+    noShowCount: 0,
     notes: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
@@ -364,6 +365,7 @@ export default function CustomersPage() {
       email: customer.email || '',
       phone: customer.phone,
       isBlocked: customer.isBlocked || false,
+      noShowCount: customer.noShowCount || 0,
       notes: customer.notes || ''
     })
     setShowEditModal(true)
@@ -379,7 +381,9 @@ export default function CustomersPage() {
           lastName: editForm.lastName,
           email: editForm.email || null,
           phone: editForm.phone,
-          isBlocked: editForm.isBlocked
+          isBlocked: editForm.isBlocked,
+          noShowCount: editForm.noShowCount || 0,
+          notes: editForm.notes || null
         }
         await axios.patch(`${API_URL}/api/customers/${selectedCustomer.id}`, updateData, config)
         toast.success(t.customers?.updated || 'Customer updated')
@@ -572,8 +576,20 @@ export default function CustomersPage() {
                           <span className="text-sm font-bold text-[var(--text-primary)]">{customer.firstName[0]}{customer.lastName[0]}</span>
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-semibold text-[var(--text-primary)]">{customer.firstName} {customer.lastName}</p>
+                            {customer.isBlocked && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded-full text-xs font-medium">
+                                <Flag className="w-3 h-3" />
+                                Zablokowany
+                              </span>
+                            )}
+                            {(customer.noShowCount || 0) > 0 && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 rounded-full text-xs font-medium">
+                                <UserX className="w-3 h-3" />
+                                {customer.noShowCount}x
+                              </span>
+                            )}
                             {loyaltyPoints[customer.id] > 0 && (
                               <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
                                 <Gift className="w-3 h-3" />
@@ -1174,6 +1190,7 @@ export default function CustomersPage() {
                     Flagi klienta
                   </label>
                   <div className="space-y-3">
+                    {/* Blokada klienta */}
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1187,14 +1204,35 @@ export default function CustomersPage() {
                       </div>
                     </label>
                     
-                    {selectedCustomer && (selectedCustomer.noShowCount || 0) > 0 && (
-                      <div className="flex items-center gap-2 p-2 bg-yellow-500/10 rounded-lg">
+                    {/* Licznik nieobecności */}
+                    <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-center gap-2">
                         <UserX className="w-4 h-4 text-yellow-500" />
-                        <span className="text-sm text-yellow-500">
-                          Nieobecności: {selectedCustomer.noShowCount || 0}
-                        </span>
+                        <div>
+                          <span className="text-sm font-medium text-yellow-500">Nieobecności (no-show)</span>
+                          <p className="text-xs text-[var(--text-muted)]/70">Klient nie przyszedł bez powiadomienia</p>
+                        </div>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditForm({ ...editForm, noShowCount: Math.max(0, (editForm.noShowCount || 0) - 1) })}
+                          className="w-8 h-8 flex items-center justify-center bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] rounded-lg text-[var(--text-muted)] transition-colors"
+                        >
+                          -
+                        </button>
+                        <span className="w-8 text-center text-lg font-bold text-yellow-500">
+                          {editForm.noShowCount || 0}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditForm({ ...editForm, noShowCount: (editForm.noShowCount || 0) + 1 })}
+                          className="w-8 h-8 flex items-center justify-center bg-yellow-500/20 hover:bg-yellow-500/30 rounded-lg text-yellow-500 transition-colors"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
