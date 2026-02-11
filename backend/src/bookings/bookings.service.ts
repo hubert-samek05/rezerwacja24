@@ -211,7 +211,22 @@ export class BookingsService {
       // Generuj linki do odwołania i płatności
       const frontendUrl = process.env.FRONTEND_URL || 'https://rezerwacja24.pl';
       const cancelUrl = subdomain ? `${frontendUrl}/${subdomain}/cancel/${booking.id}` : undefined;
-      const paymentUrl = (booking.status === 'PENDING' && subdomain) ? `${frontendUrl}/${subdomain}/pay/${booking.id}` : undefined;
+      
+      // Link do płatności tylko gdy:
+      // 1. Status PENDING (nieopłacone) LUB
+      // 2. Metoda płatności to online (nie gotówka) i nie jest opłacone LUB
+      // 3. Jest wymagana zaliczka i nie jest opłacona
+      const paymentMethod = (booking as any).paymentMethod || 'cash';
+      const isPaid = (booking as any).paymentStatus === 'paid';
+      const depositRequired = (booking as any).depositAmount > 0;
+      const depositPaid = (booking as any).depositPaid;
+      
+      const needsPaymentLink = subdomain && !isPaid && (
+        !booking.isPaid || 
+        (paymentMethod !== 'cash') ||
+        (depositRequired && !depositPaid)
+      );
+      const paymentUrl = needsPaymentLink ? `${frontendUrl}/${subdomain}/pay/${booking.id}` : undefined;
       
       // Użyj szablonu SMS dla odpowiedniego regionu z custom szablonami
       const message = this.smsTemplatesService.getConfirmedTemplate({

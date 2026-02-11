@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, MessageSquare, Loader2, Check, AlertCircle, Clock, UserCheck, X as XIcon, Zap, Edit3, Info } from 'lucide-react'
+import { Bell, MessageSquare, Loader2, Check, AlertCircle, Clock, UserCheck, X as XIcon, Zap, Edit3, Info, Globe, CreditCard } from 'lucide-react'
 
 interface NotificationSettings {
   smsEnabled: boolean
@@ -11,6 +11,8 @@ interface NotificationSettings {
     bookingCancellation: boolean
     bookingReschedule: boolean
     reminderHoursBefore: number
+    includeCancelLink: boolean
+    includePaymentLink: boolean
   }
 }
 
@@ -43,6 +45,8 @@ export default function NotificationsTab() {
       bookingCancellation: true,
       bookingReschedule: true,
       reminderHoursBefore: 24,
+      includeCancelLink: true,
+      includePaymentLink: true,
     },
   })
 
@@ -88,7 +92,9 @@ export default function NotificationsTab() {
               bookingReminder: smsSettings.reminderEnabled !== false,
               bookingCancellation: smsSettings.cancelledEnabled !== false,
               bookingReschedule: smsSettings.rescheduledEnabled !== false,
-              reminderHoursBefore: 24,
+              reminderHoursBefore: smsSettings.reminderHoursBefore || 24,
+              includeCancelLink: smsSettings.includeCancelLink !== false,
+              includePaymentLink: smsSettings.includePaymentLink !== false,
             },
           })
         }
@@ -122,6 +128,9 @@ export default function NotificationsTab() {
             rescheduledEnabled: settings.notifications.bookingReschedule,
             cancelledEnabled: settings.notifications.bookingCancellation,
             reminderEnabled: settings.notifications.bookingReminder,
+            reminderHoursBefore: settings.notifications.reminderHoursBefore,
+            includeCancelLink: settings.notifications.includeCancelLink,
+            includePaymentLink: settings.notifications.includePaymentLink,
           }),
         }),
         fetch(`${apiUrl}/api/sms/templates`, {
@@ -335,6 +344,44 @@ export default function NotificationsTab() {
                 <Toggle 
                   checked={settings.notifications.bookingCancellation} 
                   onChange={() => setSettings({ ...settings, notifications: { ...settings.notifications, bookingCancellation: !settings.notifications.bookingCancellation } })} 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Linki w SMS */}
+          <div className="p-6 bg-[var(--bg-primary)] rounded-2xl space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Globe className="w-5 h-5 text-[var(--text-muted)]" />
+              <p className="font-medium text-[var(--text-primary)]">Linki w wiadomościach SMS</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-[var(--bg-card)] rounded-lg">
+                <div className="flex items-center gap-3">
+                  <XIcon className="w-4 h-4 text-orange-500" />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">Link do odwołania</p>
+                    <p className="text-xs text-[var(--text-muted)]">Klient może anulować wizytę przez link</p>
+                  </div>
+                </div>
+                <Toggle 
+                  checked={settings.notifications.includeCancelLink} 
+                  onChange={() => setSettings({ ...settings, notifications: { ...settings.notifications, includeCancelLink: !settings.notifications.includeCancelLink } })} 
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-[var(--bg-card)] rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-4 h-4 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">Link do płatności</p>
+                    <p className="text-xs text-[var(--text-muted)]">Tylko gdy płatność online lub zaliczka</p>
+                  </div>
+                </div>
+                <Toggle 
+                  checked={settings.notifications.includePaymentLink} 
+                  onChange={() => setSettings({ ...settings, notifications: { ...settings.notifications, includePaymentLink: !settings.notifications.includePaymentLink } })} 
                 />
               </div>
             </div>
