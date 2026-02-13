@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { 
   Calendar, 
   Users, 
@@ -11,8 +11,6 @@ import {
   BarChart3,
   Bell,
   CreditCard,
-  Menu,
-  X,
   Clock,
   Star,
   Zap,
@@ -35,10 +33,9 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 
 export default function BeautyLandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const [appUrl, setAppUrl] = useState('https://app.rezerwacja24.pl')
   
   useEffect(() => {
@@ -47,132 +44,10 @@ export default function BeautyLandingPage() {
     setAppUrl(isEu ? 'https://app.bookings24.eu' : 'https://app.rezerwacja24.pl')
   }, [])
   
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-  
   return (
     <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center">
-              <Image 
-                src="/logo.png" 
-                alt="Rezerwacja24" 
-                width={180} 
-                height={54} 
-                className="h-9 sm:h-10 w-auto"
-                priority
-              />
-            </Link>
-            
-            <div className="hidden lg:flex items-center gap-8">
-              <Link href="#funkcje" className="text-sm font-medium text-gray-600 hover:text-pink-700 transition-colors">Funkcje</Link>
-              <Link href="#jak-to-dziala" className="text-sm font-medium text-gray-600 hover:text-pink-700 transition-colors">Jak to działa</Link>
-              <Link href="#cennik" className="text-sm font-medium text-gray-600 hover:text-pink-700 transition-colors">Cennik</Link>
-              <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-pink-700 transition-colors">Kontakt</Link>
-            </div>
-            
-            <div className="hidden lg:flex items-center gap-4">
-              <a href={`${appUrl}/login`} className="text-sm font-medium text-gray-600 hover:text-pink-700 transition-colors">
-                Zaloguj się
-              </a>
-              <a href={`${appUrl}/register`} className="px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-lg transition-colors text-sm">
-                Wypróbuj za darmo
-              </a>
-            </div>
-            
-            <button 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-        
-        {/* Mobile menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="lg:hidden fixed inset-0 z-40 bg-black/20"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'tween', duration: 0.25 }}
-                className="lg:hidden fixed top-0 right-0 bottom-0 z-50 w-80 max-w-[90vw] bg-white shadow-2xl"
-              >
-                <button 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="absolute top-5 right-5 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                
-                <div className="pt-20 px-8">
-                  <nav className="space-y-1">
-                    <Link 
-                      href="#funkcje" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-pink-700 font-medium text-center"
-                    >
-                      Funkcje
-                    </Link>
-                    <Link 
-                      href="#jak-to-dziala" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-pink-700 font-medium text-center"
-                    >
-                      Jak to działa
-                    </Link>
-                    <Link 
-                      href="#cennik" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-pink-700 font-medium text-center"
-                    >
-                      Cennik
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-pink-700 font-medium text-center"
-                    >
-                      Kontakt
-                    </Link>
-                  </nav>
-                  
-                  <div className="mt-10 space-y-3">
-                    <a 
-                      href={`${appUrl}/login`} 
-                      className="block w-full py-3.5 text-center text-gray-700 hover:text-gray-900 font-medium border border-gray-200 rounded-lg hover:bg-gray-50"
-                    >
-                      Zaloguj się
-                    </a>
-                    <a 
-                      href={`${appUrl}/register`} 
-                      className="block w-full py-3.5 text-center text-white bg-pink-600 hover:bg-pink-700 font-medium rounded-lg"
-                    >
-                      Wypróbuj za darmo
-                    </a>
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </nav>
+      {/* Navigation - identyczna jak na stronie głównej */}
+      <MainNavigation />
 
       {/* HERO - Film w tle dla Beauty */}
       <section className="relative min-h-[100svh] flex items-center">

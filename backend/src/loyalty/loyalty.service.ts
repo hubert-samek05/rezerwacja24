@@ -324,9 +324,15 @@ export class LoyaltyService {
   }
 
   /**
-   * Pobiera punkty wszystkich klientów
+   * Pobiera punkty wszystkich klientów (tylko jeśli program jest aktywny)
    */
   async getAllCustomerPoints(tenantId: string) {
+    // Sprawdź czy program lojalnościowy jest aktywny
+    const program = await this.getSettings(tenantId);
+    if (!program.isActive) {
+      return []; // Zwróć pustą tablicę jeśli program nieaktywny
+    }
+
     const allPoints = await this.prisma.customer_loyalty.findMany({
       where: { tenantId },
       select: {

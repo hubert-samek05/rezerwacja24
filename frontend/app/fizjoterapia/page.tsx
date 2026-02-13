@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 
 export default function FizjoterapiaLandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -64,17 +65,17 @@ export default function FizjoterapiaLandingPage() {
             </Link>
             
             <div className="hidden lg:flex items-center gap-8">
-              <Link href="#funkcje" className="text-sm font-medium text-gray-600 hover:text-emerald-700 transition-colors">Funkcje</Link>
-              <Link href="#jak-to-dziala" className="text-sm font-medium text-gray-600 hover:text-emerald-700 transition-colors">Jak to działa</Link>
-              <Link href="#cennik" className="text-sm font-medium text-gray-600 hover:text-emerald-700 transition-colors">Cennik</Link>
-              <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-emerald-700 transition-colors">Kontakt</Link>
+              <Link href="#funkcje" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Funkcje</Link>
+              <Link href="#jak-to-dziala" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Jak to działa</Link>
+              <Link href="#cennik" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Cennik</Link>
+              <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">Kontakt</Link>
             </div>
             
             <div className="hidden lg:flex items-center gap-4">
-              <a href={`${appUrl}/login`} className="text-sm font-medium text-gray-600 hover:text-emerald-700 transition-colors">
+              <a href={`${appUrl}/login`} className="text-sm font-medium text-gray-600 hover:text-teal-700 transition-colors">
                 Zaloguj się
               </a>
-              <a href={`${appUrl}/register`} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors text-sm">
+              <a href={`${appUrl}/register`} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors text-sm">
                 Wypróbuj za darmo
               </a>
             </div>
@@ -119,28 +120,28 @@ export default function FizjoterapiaLandingPage() {
                     <Link 
                       href="#funkcje" 
                       onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-emerald-700 font-medium text-center"
+                      className="block py-4 text-lg text-gray-700 hover:text-teal-700 font-medium text-center"
                     >
                       Funkcje
                     </Link>
                     <Link 
                       href="#jak-to-dziala" 
                       onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-emerald-700 font-medium text-center"
+                      className="block py-4 text-lg text-gray-700 hover:text-teal-700 font-medium text-center"
                     >
                       Jak to działa
                     </Link>
                     <Link 
                       href="#cennik" 
                       onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-emerald-700 font-medium text-center"
+                      className="block py-4 text-lg text-gray-700 hover:text-teal-700 font-medium text-center"
                     >
                       Cennik
                     </Link>
                     <Link 
                       href="/contact" 
                       onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-emerald-700 font-medium text-center"
+                      className="block py-4 text-lg text-gray-700 hover:text-teal-700 font-medium text-center"
                     >
                       Kontakt
                     </Link>
@@ -155,7 +156,7 @@ export default function FizjoterapiaLandingPage() {
                     </a>
                     <a 
                       href={`${appUrl}/register`} 
-                      className="block w-full py-3.5 text-center text-white bg-emerald-600 hover:bg-emerald-700 font-medium rounded-lg"
+                      className="block w-full py-3.5 text-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg"
                     >
                       Wypróbuj za darmo
                     </a>
@@ -175,7 +176,7 @@ export default function FizjoterapiaLandingPage() {
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=2070&q=80')" }}
         />
         {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-900/80 to-emerald-800/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-teal-900/80 to-teal-800/60"></div>
         
         {/* Content */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 pt-24 pb-20 sm:pt-28 sm:pb-16">
@@ -186,7 +187,7 @@ export default function FizjoterapiaLandingPage() {
               transition={{ duration: 0.8 }}
               className="text-center sm:text-left"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-800/60 backdrop-blur-sm border border-emerald-300/30 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-800/60 backdrop-blur-sm border border-emerald-300/30 rounded-full mb-6">
                 <Activity className="w-4 h-4 text-emerald-200" />
                 <span className="text-sm text-white font-medium">System rezerwacji dla fizjoterapeutów</span>
               </div>
@@ -204,7 +205,7 @@ export default function FizjoterapiaLandingPage() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
                 <a 
                   href={`${appUrl}/register`} 
-                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-emerald-700 font-semibold rounded-lg hover:bg-emerald-50 transition-colors text-base sm:text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors text-base sm:text-lg"
                 >
                   Załóż konto za darmo
                   <ArrowRight className="w-5 h-5" />
@@ -265,7 +266,7 @@ export default function FizjoterapiaLandingPage() {
                 transition={{ delay: i * 0.1 }}
                 className="flex items-center gap-3 sm:gap-4"
               >
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-emerald-600">{stat.value}</span>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-teal-600">{stat.value}</span>
                 <span className="text-sm sm:text-base text-gray-500 max-w-[80px] leading-tight">{stat.label}</span>
               </motion.div>
             ))}
@@ -274,10 +275,10 @@ export default function FizjoterapiaLandingPage() {
       </section>
 
       {/* Dla kogo */}
-      <section className="py-24 bg-gradient-to-b from-emerald-50 to-white">
+      <section className="py-24 bg-gradient-to-b from-teal-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Dla fizjoterapeutów
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -308,10 +309,10 @@ export default function FizjoterapiaLandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 hover:border-emerald-300 hover:shadow-lg transition-all"
+                  className="flex items-center gap-3 p-4 bg-white rounded-xl border border-teal-100 hover:border-emerald-300 hover:shadow-lg transition-all"
                 >
-                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <IconComponent className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <IconComponent className="w-5 h-5 text-teal-600" />
                   </div>
                   <span className="text-gray-700 text-sm font-medium">{industry.name}</span>
                 </motion.div>
@@ -327,7 +328,7 @@ export default function FizjoterapiaLandingPage() {
           
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
             <div>
-              <span className="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full mb-4">
+              <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
                 Funkcje dla fizjoterapeutów
               </span>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -346,7 +347,7 @@ export default function FizjoterapiaLandingPage() {
                   'Raporty i statystyki przychodów',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-gray-700">
-                    <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                     {item}
                   </li>
                 ))}
@@ -361,7 +362,7 @@ export default function FizjoterapiaLandingPage() {
               className="relative"
             >
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/20 to-emerald-300/20 rounded-3xl blur-2xl"></div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 to-emerald-300/20 rounded-3xl blur-2xl"></div>
                 
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 lg:translate-x-12">
                   <Image
@@ -378,8 +379,8 @@ export default function FizjoterapiaLandingPage() {
                 
                 <div className="absolute -bottom-4 left-4 lg:-left-4 bg-white rounded-xl shadow-lg px-4 py-3 border border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-emerald-600" />
+                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                      <Activity className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-900">Szybki dostęp</p>
@@ -415,8 +416,8 @@ export default function FizjoterapiaLandingPage() {
                   className="group p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 bg-white border border-gray-100 hover:border-emerald-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300 bg-emerald-100 group-hover:bg-emerald-600">
-                      <IconComponent className="w-6 h-6 transition-colors duration-300 text-emerald-700 group-hover:text-white" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300 bg-teal-100 group-hover:bg-teal-600">
+                      <IconComponent className="w-6 h-6 transition-colors duration-300 text-teal-700 group-hover:text-white" />
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900 mb-1.5">{feature.title}</h3>
@@ -431,7 +432,7 @@ export default function FizjoterapiaLandingPage() {
           <div className="mt-14 text-center">
             <a 
               href={`${appUrl}/register`}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-teal-600/20"
             >
               Wypróbuj wszystkie funkcje za darmo
               <ArrowRight className="w-5 h-5" />
@@ -444,7 +445,7 @@ export default function FizjoterapiaLandingPage() {
       <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Korzyści
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -511,14 +512,14 @@ export default function FizjoterapiaLandingPage() {
                   className="group p-6 bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-emerald-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-emerald-100 group-hover:bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300">
-                      <IconComponent className="w-6 h-6 text-emerald-700 group-hover:text-white transition-colors duration-300" />
+                    <div className="w-12 h-12 bg-teal-100 group-hover:bg-teal-600 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300">
+                      <IconComponent className="w-6 h-6 text-teal-700 group-hover:text-white transition-colors duration-300" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 mb-1.5">{benefit.title}</h3>
                       <p className="text-sm text-gray-500 leading-relaxed mb-3">{benefit.description}</p>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-2xl font-bold text-emerald-600">{benefit.stat}</span>
+                        <span className="text-2xl font-bold text-teal-600">{benefit.stat}</span>
                         <span className="text-xs text-gray-400">{benefit.statLabel}</span>
                       </div>
                     </div>
@@ -534,7 +535,7 @@ export default function FizjoterapiaLandingPage() {
       <section id="jak-to-dziala" className="py-24 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Jak to działa
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -581,12 +582,12 @@ export default function FizjoterapiaLandingPage() {
                   )}
                   
                   <div className="relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 h-full">
-                    <div className="absolute -top-4 left-8 px-3 py-1 bg-emerald-600 text-white text-sm font-bold rounded-full">
+                    <div className="absolute -top-4 left-8 px-3 py-1 bg-teal-600 text-white text-sm font-bold rounded-full">
                       Krok {step.num}
                     </div>
                     
-                    <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 mt-2">
-                      <StepIcon className="w-8 h-8 text-emerald-700" />
+                    <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 mt-2">
+                      <StepIcon className="w-8 h-8 text-teal-700" />
                     </div>
                     
                     <h3 className="text-2xl font-bold text-gray-900 mb-3">{step.title}</h3>
@@ -595,7 +596,7 @@ export default function FizjoterapiaLandingPage() {
                     <ul className="space-y-2">
                       {step.details.map((detail, j) => (
                         <li key={j} className="flex items-center gap-2 text-sm text-gray-600">
-                          <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-teal-600 flex-shrink-0" />
                           {detail}
                         </li>
                       ))}
@@ -609,7 +610,7 @@ export default function FizjoterapiaLandingPage() {
           <div className="text-center mt-16">
             <a 
               href={`${appUrl}/register`}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-all text-lg shadow-lg shadow-emerald-600/20"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all text-lg shadow-lg shadow-teal-600/20"
             >
               Zacznij teraz - za darmo
               <ArrowRight className="w-5 h-5" />
@@ -620,7 +621,7 @@ export default function FizjoterapiaLandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-emerald-700">
+      <section className="py-24 bg-teal-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
@@ -652,7 +653,7 @@ export default function FizjoterapiaLandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-emerald-600/80 backdrop-blur rounded-2xl p-8 border border-emerald-500/50"
+                className="bg-teal-600/80 backdrop-blur rounded-2xl p-8 border border-teal-500/50"
               >
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
@@ -674,7 +675,7 @@ export default function FizjoterapiaLandingPage() {
       <section id="cennik" className="py-24 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Cennik
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -695,28 +696,28 @@ export default function FizjoterapiaLandingPage() {
                   <span className="text-4xl font-bold text-gray-900">12,99</span>
                   <span className="text-gray-500">zł/mies.</span>
                 </div>
-                <p className="text-sm text-emerald-600 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-600 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">100 rezerwacji miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">1 terapeuta</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Własna strona rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Kalendarz online</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">0% prowizji</span>
                 </div>
               </div>
@@ -730,9 +731,9 @@ export default function FizjoterapiaLandingPage() {
             </div>
 
             {/* Standard - Highlighted */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-emerald-500 relative transform md:scale-105 z-10">
+            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-teal-500 relative transform md:scale-105 z-10">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="px-4 py-1 bg-emerald-600 text-white text-sm font-bold rounded-full">
+                <span className="px-4 py-1 bg-teal-600 text-white text-sm font-bold rounded-full">
                   Najpopularniejszy
                 </span>
               </div>
@@ -740,42 +741,42 @@ export default function FizjoterapiaLandingPage() {
                 <h3 className="text-xl font-bold text-gray-900 mb-1">Standard</h3>
                 <p className="text-sm text-gray-500 mb-4">Dla rozwijających się gabinetów</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-emerald-600">29,99</span>
+                  <span className="text-4xl font-bold text-teal-600">29,99</span>
                   <span className="text-gray-500">zł/mies.</span>
                 </div>
-                <p className="text-sm text-emerald-600 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-600 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">Bez limitu rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Do 5 terapeutów</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">100 SMS miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Analityka i raporty</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">CRM - baza pacjentów</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">0% prowizji</span>
                 </div>
               </div>
               
               <a 
                 href={`${appUrl}/register?plan=professional`}
-                className="block w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-center transition-colors"
+                className="block w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-center transition-colors"
               >
                 Rozpocznij za darmo
               </a>
@@ -790,32 +791,32 @@ export default function FizjoterapiaLandingPage() {
                   <span className="text-4xl font-bold text-white">79,99</span>
                   <span className="text-gray-400">zł/mies.</span>
                 </div>
-                <p className="text-sm text-emerald-400 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-400 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">Bez limitu rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">Bez limitu terapeutów</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">500 SMS miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">Zaawansowana analityka</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">Priorytetowe wsparcie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">0% prowizji</span>
                 </div>
               </div>
@@ -832,17 +833,17 @@ export default function FizjoterapiaLandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-emerald-700">
+      <section className="py-24 bg-teal-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
             Gotowy na więcej pacjentów?
           </h2>
-          <p className="text-xl text-emerald-100 mb-10">
+          <p className="text-xl text-teal-100 mb-10">
             Dołącz do setek fizjoterapeutów, którzy już korzystają z Rezerwacja24
           </p>
           <a 
             href={`${appUrl}/register`}
-            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-emerald-700 font-bold rounded-xl text-xl hover:bg-emerald-50 transition-colors"
+            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-teal-700 font-bold rounded-xl text-xl hover:bg-teal-50 transition-colors"
           >
             Załóż konto za darmo
             <ArrowRight className="w-6 h-6" />
@@ -896,7 +897,7 @@ export default function FizjoterapiaLandingPage() {
                 href="https://www.facebook.com/profile.php?id=61583476963744" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-emerald-500 transition-colors"
+                className="text-gray-400 hover:text-teal-500 transition-colors"
               >
                 <Facebook className="w-5 h-5" />
               </a>
@@ -904,7 +905,7 @@ export default function FizjoterapiaLandingPage() {
                 href="https://www.instagram.com/rezerwacja24" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-emerald-500 transition-colors"
+                className="text-gray-400 hover:text-teal-500 transition-colors"
               >
                 <Instagram className="w-5 h-5" />
               </a>

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 
 export default function LekarzeLandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

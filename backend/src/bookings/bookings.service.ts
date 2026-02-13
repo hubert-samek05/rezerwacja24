@@ -547,6 +547,31 @@ export class BookingsService {
       }
     }
 
+    // 🚫 Zwiększ noShowCount klienta jeśli status zmienił się na NO_SHOW
+    if (updatedBooking.status === 'NO_SHOW' && oldBooking.status !== 'NO_SHOW') {
+      if (updatedBooking.customerId) {
+        await this.prisma.customers.update({
+          where: { id: updatedBooking.customerId },
+          data: { noShowCount: { increment: 1 } },
+        });
+        this.logger.log(`Increased noShowCount for customer ${updatedBooking.customerId}`);
+      }
+    }
+
+    // 🔄 Zmniejsz noShowCount jeśli status zmienił się Z NO_SHOW na inny
+    if (oldBooking.status === 'NO_SHOW' && updatedBooking.status !== 'NO_SHOW') {
+      if (updatedBooking.customerId) {
+        const customer = await this.prisma.customers.findUnique({ where: { id: updatedBooking.customerId } });
+        if (customer && customer.noShowCount > 0) {
+          await this.prisma.customers.update({
+            where: { id: updatedBooking.customerId },
+            data: { noShowCount: { decrement: 1 } },
+          });
+          this.logger.log(`Decreased noShowCount for customer ${updatedBooking.customerId}`);
+        }
+      }
+    }
+
     // 📱 Wyślij SMS jeśli data się zmieniła (przesunięcie)
     if (updateBookingDto.startTime && oldBooking.startTime.getTime() !== new Date(updateBookingDto.startTime).getTime()) {
       if (updatedBooking.customers?.phone) {

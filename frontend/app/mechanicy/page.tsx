@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { 
   Calendar, 
   Users, 
@@ -11,8 +11,6 @@ import {
   BarChart3,
   Bell,
   CreditCard,
-  Menu,
-  X,
   Clock,
   Star,
   Zap,
@@ -28,10 +26,9 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 
 export default function MechanicyLandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const [appUrl, setAppUrl] = useState('https://app.rezerwacja24.pl')
   
   useEffect(() => {
@@ -40,132 +37,10 @@ export default function MechanicyLandingPage() {
     setAppUrl(isEu ? 'https://app.bookings24.eu' : 'https://app.rezerwacja24.pl')
   }, [])
   
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-  
   return (
     <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center">
-              <Image 
-                src="/logo.png" 
-                alt="Rezerwacja24" 
-                width={180} 
-                height={54} 
-                className="h-9 sm:h-10 w-auto"
-                priority
-              />
-            </Link>
-            
-            <div className="hidden lg:flex items-center gap-8">
-              <Link href="#funkcje" className="text-sm font-medium text-gray-600 hover:text-slate-700 transition-colors">Funkcje</Link>
-              <Link href="#jak-to-dziala" className="text-sm font-medium text-gray-600 hover:text-slate-700 transition-colors">Jak to działa</Link>
-              <Link href="#cennik" className="text-sm font-medium text-gray-600 hover:text-slate-700 transition-colors">Cennik</Link>
-              <Link href="/contact" className="text-sm font-medium text-gray-600 hover:text-slate-700 transition-colors">Kontakt</Link>
-            </div>
-            
-            <div className="hidden lg:flex items-center gap-4">
-              <a href={`${appUrl}/login`} className="text-sm font-medium text-gray-600 hover:text-slate-700 transition-colors">
-                Zaloguj się
-              </a>
-              <a href={`${appUrl}/register`} className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-medium rounded-lg transition-colors text-sm">
-                Wypróbuj za darmo
-              </a>
-            </div>
-            
-            <button 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-        
-        {/* Mobile menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="lg:hidden fixed inset-0 z-40 bg-black/20"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'tween', duration: 0.25 }}
-                className="lg:hidden fixed top-0 right-0 bottom-0 z-50 w-80 max-w-[90vw] bg-white shadow-2xl"
-              >
-                <button 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="absolute top-5 right-5 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                
-                <div className="pt-20 px-8">
-                  <nav className="space-y-1">
-                    <Link 
-                      href="#funkcje" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-slate-700 font-medium text-center"
-                    >
-                      Funkcje
-                    </Link>
-                    <Link 
-                      href="#jak-to-dziala" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-slate-700 font-medium text-center"
-                    >
-                      Jak to działa
-                    </Link>
-                    <Link 
-                      href="#cennik" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-slate-700 font-medium text-center"
-                    >
-                      Cennik
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      onClick={() => setMobileMenuOpen(false)} 
-                      className="block py-4 text-lg text-gray-700 hover:text-slate-700 font-medium text-center"
-                    >
-                      Kontakt
-                    </Link>
-                  </nav>
-                  
-                  <div className="mt-10 space-y-3">
-                    <a 
-                      href={`${appUrl}/login`} 
-                      className="block w-full py-3.5 text-center text-gray-700 hover:text-gray-900 font-medium border border-gray-200 rounded-lg hover:bg-gray-50"
-                    >
-                      Zaloguj się
-                    </a>
-                    <a 
-                      href={`${appUrl}/register`} 
-                      className="block w-full py-3.5 text-center text-white bg-slate-700 hover:bg-slate-800 font-medium rounded-lg"
-                    >
-                      Wypróbuj za darmo
-                    </a>
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </nav>
+      {/* Navigation - identyczna jak na stronie głównej */}
+      <MainNavigation />
 
       {/* HERO */}
       <section className="relative min-h-[100svh] flex items-center">
@@ -175,7 +50,7 @@ export default function MechanicyLandingPage() {
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=2074&q=80')" }}
         />
         {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/85 to-slate-900/70"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-teal-900/85 to-teal-900/70"></div>
         
         {/* Content */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 pt-24 pb-20 sm:pt-28 sm:pb-16">
@@ -186,14 +61,14 @@ export default function MechanicyLandingPage() {
               transition={{ duration: 0.8 }}
               className="text-center sm:text-left"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800/80 backdrop-blur-sm border border-slate-400/30 rounded-full mb-6">
-                <Wrench className="w-4 h-4 text-orange-400" />
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-800/80 backdrop-blur-sm border border-teal-400/30 rounded-full mb-6">
+                <Wrench className="w-4 h-4 text-teal-400" />
                 <span className="text-sm text-white font-medium">System rezerwacji dla warsztatów</span>
               </div>
               
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight mb-5 sm:mb-6">
                 Twój warsztat
-                <span className="block text-orange-400 mt-1 sm:mt-2">zawsze pełny zleceń</span>
+                <span className="block text-teal-400 mt-1 sm:mt-2">zawsze pełny zleceń</span>
               </h1>
               
               <p className="text-base sm:text-lg md:text-xl text-white/80 mb-8 sm:mb-10 leading-relaxed max-w-2xl mx-auto sm:mx-0">
@@ -204,7 +79,7 @@ export default function MechanicyLandingPage() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
                 <a 
                   href={`${appUrl}/register`} 
-                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors text-base sm:text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 transition-colors text-base sm:text-lg"
                 >
                   Załóż konto za darmo
                   <ArrowRight className="w-5 h-5" />
@@ -219,15 +94,15 @@ export default function MechanicyLandingPage() {
               
               <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-6 text-sm sm:text-base text-white/70 justify-center sm:justify-start">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400" />
                   <span>7 dni za darmo</span>
                 </div>
                 <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400" />
                   <span>Bez karty kredytowej</span>
                 </div>
                 <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400" />
                   <span>0% prowizji</span>
                 </div>
               </div>
@@ -265,7 +140,7 @@ export default function MechanicyLandingPage() {
                 transition={{ delay: i * 0.1 }}
                 className="flex items-center gap-3 sm:gap-4"
               >
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-700">{stat.value}</span>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-teal-700">{stat.value}</span>
                 <span className="text-sm sm:text-base text-gray-500 max-w-[80px] leading-tight">{stat.label}</span>
               </motion.div>
             ))}
@@ -274,10 +149,10 @@ export default function MechanicyLandingPage() {
       </section>
 
       {/* Dla kogo */}
-      <section className="py-24 bg-gradient-to-b from-slate-50 to-white">
+      <section className="py-24 bg-gradient-to-b from-teal-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1.5 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Dla branży motoryzacyjnej
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -308,10 +183,10 @@ export default function MechanicyLandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-300 hover:shadow-lg transition-all"
+                  className="flex items-center gap-3 p-4 bg-white rounded-xl border border-teal-100 hover:border-slate-300 hover:shadow-lg transition-all"
                 >
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <IconComponent className="w-5 h-5 text-slate-600" />
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <IconComponent className="w-5 h-5 text-teal-600" />
                   </div>
                   <span className="text-gray-700 text-sm font-medium">{industry.name}</span>
                 </motion.div>
@@ -327,7 +202,7 @@ export default function MechanicyLandingPage() {
           
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
             <div>
-              <span className="inline-block px-4 py-1.5 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full mb-4">
+              <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
                 Funkcje dla warsztatów
               </span>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -346,7 +221,7 @@ export default function MechanicyLandingPage() {
                   'Raporty i statystyki przychodów',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-gray-700">
-                    <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                     {item}
                   </li>
                 ))}
@@ -361,7 +236,7 @@ export default function MechanicyLandingPage() {
               className="relative"
             >
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-slate-500/20 to-slate-300/20 rounded-3xl blur-2xl"></div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 to-slate-300/20 rounded-3xl blur-2xl"></div>
                 
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 lg:translate-x-12">
                   <Image
@@ -378,8 +253,8 @@ export default function MechanicyLandingPage() {
                 
                 <div className="absolute -bottom-4 left-4 lg:-left-4 bg-white rounded-xl shadow-lg px-4 py-3 border border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                      <Wrench className="w-5 h-5 text-slate-600" />
+                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                      <Wrench className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-900">Szybki dostęp</p>
@@ -415,8 +290,8 @@ export default function MechanicyLandingPage() {
                   className="group p-6 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 bg-white border border-gray-100 hover:border-slate-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300 bg-slate-100 group-hover:bg-slate-700">
-                      <IconComponent className="w-6 h-6 transition-colors duration-300 text-slate-700 group-hover:text-white" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300 bg-teal-100 group-hover:bg-teal-700">
+                      <IconComponent className="w-6 h-6 transition-colors duration-300 text-teal-700 group-hover:text-white" />
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900 mb-1.5">{feature.title}</h3>
@@ -431,7 +306,7 @@ export default function MechanicyLandingPage() {
           <div className="mt-14 text-center">
             <a 
               href={`${appUrl}/register`}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl transition-all shadow-lg shadow-slate-700/20"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-xl transition-all shadow-lg shadow-teal-700/20"
             >
               Wypróbuj wszystkie funkcje za darmo
               <ArrowRight className="w-5 h-5" />
@@ -444,7 +319,7 @@ export default function MechanicyLandingPage() {
       <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Korzyści
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -511,14 +386,14 @@ export default function MechanicyLandingPage() {
                   className="group p-6 bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-slate-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-slate-100 group-hover:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300">
-                      <IconComponent className="w-6 h-6 text-slate-700 group-hover:text-white transition-colors duration-300" />
+                    <div className="w-12 h-12 bg-teal-100 group-hover:bg-teal-700 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300">
+                      <IconComponent className="w-6 h-6 text-teal-700 group-hover:text-white transition-colors duration-300" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 mb-1.5">{benefit.title}</h3>
                       <p className="text-sm text-gray-500 leading-relaxed mb-3">{benefit.description}</p>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-2xl font-bold text-slate-700">{benefit.stat}</span>
+                        <span className="text-2xl font-bold text-teal-700">{benefit.stat}</span>
                         <span className="text-xs text-gray-400">{benefit.statLabel}</span>
                       </div>
                     </div>
@@ -534,7 +409,7 @@ export default function MechanicyLandingPage() {
       <section id="jak-to-dziala" className="py-24 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Jak to działa
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -581,12 +456,12 @@ export default function MechanicyLandingPage() {
                   )}
                   
                   <div className="relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 h-full">
-                    <div className="absolute -top-4 left-8 px-3 py-1 bg-slate-700 text-white text-sm font-bold rounded-full">
+                    <div className="absolute -top-4 left-8 px-3 py-1 bg-teal-700 text-white text-sm font-bold rounded-full">
                       Krok {step.num}
                     </div>
                     
-                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-6 mt-2">
-                      <StepIcon className="w-8 h-8 text-slate-700" />
+                    <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 mt-2">
+                      <StepIcon className="w-8 h-8 text-teal-700" />
                     </div>
                     
                     <h3 className="text-2xl font-bold text-gray-900 mb-3">{step.title}</h3>
@@ -595,7 +470,7 @@ export default function MechanicyLandingPage() {
                     <ul className="space-y-2">
                       {step.details.map((detail, j) => (
                         <li key={j} className="flex items-center gap-2 text-sm text-gray-600">
-                          <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 text-teal-600 flex-shrink-0" />
                           {detail}
                         </li>
                       ))}
@@ -609,7 +484,7 @@ export default function MechanicyLandingPage() {
           <div className="text-center mt-16">
             <a 
               href={`${appUrl}/register`}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl transition-all text-lg shadow-lg shadow-slate-700/20"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-xl transition-all text-lg shadow-lg shadow-teal-700/20"
             >
               Zacznij teraz - za darmo
               <ArrowRight className="w-5 h-5" />
@@ -620,7 +495,7 @@ export default function MechanicyLandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-slate-800">
+      <section className="py-24 bg-teal-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
@@ -652,11 +527,11 @@ export default function MechanicyLandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-slate-700/80 backdrop-blur rounded-2xl p-8 border border-slate-600/50"
+                className="bg-teal-700/80 backdrop-blur rounded-2xl p-8 border border-teal-600/50"
               >
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-5 h-5 text-amber-400 fill-amber-400" />
+                    <Star key={j} className="w-5 h-5 text-teal-400 fill-teal-400" />
                   ))}
                 </div>
                 <p className="text-white/90 text-lg mb-6">"{item.quote}"</p>
@@ -674,7 +549,7 @@ export default function MechanicyLandingPage() {
       <section id="cennik" className="py-24 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1.5 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full mb-4">
+            <span className="inline-block px-4 py-1.5 bg-teal-100 text-teal-800 text-sm font-semibold rounded-full mb-4">
               Cennik
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -695,28 +570,28 @@ export default function MechanicyLandingPage() {
                   <span className="text-4xl font-bold text-gray-900">12,99</span>
                   <span className="text-gray-500">zł/mies.</span>
                 </div>
-                <p className="text-sm text-slate-600 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-600 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">100 rezerwacji miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">1 stanowisko</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Własna strona rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Kalendarz online</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">0% prowizji</span>
                 </div>
               </div>
@@ -730,9 +605,9 @@ export default function MechanicyLandingPage() {
             </div>
 
             {/* Standard - Highlighted */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-slate-500 relative transform md:scale-105 z-10">
+            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-teal-500 relative transform md:scale-105 z-10">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="px-4 py-1 bg-slate-700 text-white text-sm font-bold rounded-full">
+                <span className="px-4 py-1 bg-teal-700 text-white text-sm font-bold rounded-full">
                   Najpopularniejszy
                 </span>
               </div>
@@ -740,42 +615,42 @@ export default function MechanicyLandingPage() {
                 <h3 className="text-xl font-bold text-gray-900 mb-1">Standard</h3>
                 <p className="text-sm text-gray-500 mb-4">Dla rozwijających się warsztatów</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-slate-700">29,99</span>
+                  <span className="text-4xl font-bold text-teal-700">29,99</span>
                   <span className="text-gray-500">zł/mies.</span>
                 </div>
-                <p className="text-sm text-slate-600 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-600 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">Bez limitu rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Do 5 stanowisk</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">100 SMS miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">Analityka i raporty</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700">CRM - baza klientów</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">0% prowizji</span>
                 </div>
               </div>
               
               <a 
                 href={`${appUrl}/register?plan=professional`}
-                className="block w-full py-3 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl text-center transition-colors"
+                className="block w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-xl text-center transition-colors"
               >
                 Rozpocznij za darmo
               </a>
@@ -790,32 +665,32 @@ export default function MechanicyLandingPage() {
                   <span className="text-4xl font-bold text-white">79,99</span>
                   <span className="text-gray-400">zł/mies.</span>
                 </div>
-                <p className="text-sm text-orange-400 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-400 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">Bez limitu rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">Bez limitu stanowisk</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">500 SMS miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">Zaawansowana analityka</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">Priorytetowe wsparcie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">0% prowizji</span>
                 </div>
               </div>
@@ -832,7 +707,7 @@ export default function MechanicyLandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-slate-800">
+      <section className="py-24 bg-teal-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
             Gotowy na więcej zleceń?
@@ -842,7 +717,7 @@ export default function MechanicyLandingPage() {
           </p>
           <a 
             href={`${appUrl}/register`}
-            className="inline-flex items-center gap-3 px-10 py-5 bg-orange-500 text-white font-bold rounded-xl text-xl hover:bg-orange-600 transition-colors"
+            className="inline-flex items-center gap-3 px-10 py-5 bg-teal-500 text-white font-bold rounded-xl text-xl hover:bg-teal-600 transition-colors"
           >
             Załóż konto za darmo
             <ArrowRight className="w-6 h-6" />
@@ -896,7 +771,7 @@ export default function MechanicyLandingPage() {
                 href="https://www.facebook.com/profile.php?id=61583476963744" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-slate-500 transition-colors"
+                className="text-gray-400 hover:text-teal-500 transition-colors"
               >
                 <Facebook className="w-5 h-5" />
               </a>
@@ -904,7 +779,7 @@ export default function MechanicyLandingPage() {
                 href="https://www.instagram.com/rezerwacja24" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-slate-500 transition-colors"
+                className="text-gray-400 hover:text-teal-500 transition-colors"
               >
                 <Instagram className="w-5 h-5" />
               </a>

@@ -240,30 +240,57 @@ export default function AuthPage() {
     }
   }
 
-  const handleAppleAuth = () => {
+  const handleAppleAuth = async () => {
     const apiUrl = getApiUrl()
-    // Wykryj czy to aplikacja mobilna (Capacitor)
-    const isMobileApp = typeof window !== 'undefined' && 
-      (window.navigator.userAgent.includes('Rezerwacja24App') || 
-       (window as any).Capacitor?.isNativePlatform?.())
+    // Wykryj czy to aplikacja mobilna iOS (Capacitor)
+    const Capacitor = (window as any).Capacitor
+    const isNativeIOS = Capacitor?.isNativePlatform?.() && Capacitor?.getPlatform?.() === 'ios'
     
-    if (isMobileApp) {
-      // Dla aplikacji mobilnej - przekaż redirect_uri
-      const stateData = {
-        redirect_uri: 'https://app.rezerwacja24.pl/auth/callback',
-        mobile: true
-      }
-      const state = btoa(JSON.stringify(stateData))
-      const authUrl = `${apiUrl}/api/auth/apple?state=${state}`
-      
-      const Browser = (window as any).Capacitor?.Plugins?.Browser
-      if (Browser) {
-        Browser.open({ url: authUrl, windowName: '_system' })
-      } else {
-        window.open(authUrl, '_system')
+    if (isNativeIOS) {
+      // Na iOS używamy natywnego Sign in with Apple
+      try {
+        setIsLoading(true)
+        const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
+        
+        const result = await SignInWithApple.authorize({
+          clientId: 'pl.rezerwacja24.app',
+          redirectURI: 'https://api.rezerwacja24.pl/api/auth/apple/callback',
+          scopes: 'email name',
+          state: 'native_ios',
+          nonce: Math.random().toString(36).substring(2, 15),
+        })
+        
+        // Wyślij dane do backendu
+        const response = await fetch(`${apiUrl}/api/auth/apple/native`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identityToken: result.response.identityToken,
+            authorizationCode: result.response.authorizationCode,
+            user: result.response.user,
+            email: result.response.email,
+            givenName: result.response.givenName,
+            familyName: result.response.familyName,
+          }),
+        })
+        
+        if (!response.ok) {
+          throw new Error('Apple authentication failed')
+        }
+        
+        const data = await response.json()
+        localStorage.setItem('token', data.access_token)
+        router.push('/dashboard')
+      } catch (error: any) {
+        console.error('Apple Sign In error:', error)
+        if (error.message !== 'The user canceled the authorization attempt.') {
+          toast.error(isEnglish ? 'Apple Sign In failed' : 'Logowanie przez Apple nie powiodło się')
+        }
+      } finally {
+        setIsLoading(false)
       }
     } else {
-      // Dla przeglądarki - standardowe przekierowanie
+      // Dla przeglądarki - standardowe przekierowanie OAuth
       window.location.href = `${apiUrl}/api/auth/apple`
     }
   }

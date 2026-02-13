@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 import Image from 'next/image'
 import { Calendar, Users, CheckCircle, ArrowRight, Bell, CreditCard, Star, Heart } from 'lucide-react'
 
@@ -66,7 +67,7 @@ export default function StomatologiaPage() {
 
       <section className="py-24 bg-cyan-900">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="flex justify-center gap-1 mb-6">{[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 text-amber-400 fill-amber-400" />)}</div>
+          <div className="flex justify-center gap-1 mb-6">{[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 text-teal-400 fill-teal-400" />)}</div>
           <blockquote className="text-2xl text-white mb-8">"System znacznie usprawnił pracę recepcji. Pacjenci sami rezerwują wizyty, a my mamy więcej czasu na opiekę."</blockquote>
           <p className="font-bold text-white">Dr Anna Zębowska</p>
           <p className="text-cyan-300">Właścicielka Dental Clinic</p>

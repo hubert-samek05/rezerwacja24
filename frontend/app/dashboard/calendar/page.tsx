@@ -1133,7 +1133,7 @@ export default function CalendarPage() {
                                     )}
                                   </div>
                                   <div className="text-xs text-[var(--text-muted)]/70 truncate">
-                                    {booking.eventType === 'group' ? booking.serviceName : booking.employeeName}
+                                    {booking.serviceName}
                                   </div>
                                 </div>
                                 <div className="text-xs font-bold text-[var(--text-primary)] whitespace-nowrap">
@@ -1328,7 +1328,7 @@ export default function CalendarPage() {
                             handleBookingClick(booking)
                           }}
                         >
-                          {booking.isFullDay ? '📅 ' : `${booking.time}-${getEndTime(booking.time, booking.duration)} `}{booking.customerName}
+                          {booking.isFullDay ? '📅 ' : `${booking.time} `}{booking.customerName} - {booking.serviceName}
                         </div>
                       ))}
                       {dayBookings.length > 3 && (

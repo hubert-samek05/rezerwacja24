@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 
 // Custom Pet icon component
 const PawPrint = ({ className }: { className?: string }) => (
@@ -214,7 +215,7 @@ export default function PetsitterzLandingPage() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
                 <a 
                   href={`${appUrl}/register`} 
-                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-amber-700 font-semibold rounded-lg hover:bg-amber-50 transition-colors text-base sm:text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-amber-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors text-base sm:text-lg"
                 >
                   Załóż konto za darmo
                   <ArrowRight className="w-5 h-5" />
@@ -284,7 +285,7 @@ export default function PetsitterzLandingPage() {
       </section>
 
       {/* Dla kogo */}
-      <section className="py-24 bg-gradient-to-b from-amber-50 to-white">
+      <section className="py-24 bg-gradient-to-b from-teal-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="inline-block px-4 py-1.5 bg-amber-100 text-amber-800 text-sm font-semibold rounded-full mb-4">
@@ -371,7 +372,7 @@ export default function PetsitterzLandingPage() {
               className="relative"
             >
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 to-amber-300/20 rounded-3xl blur-2xl"></div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/20 to-amber-300/20 rounded-3xl blur-2xl"></div>
                 
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 lg:translate-x-12">
                   <Image
@@ -662,7 +663,7 @@ export default function PetsitterzLandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-amber-600/80 backdrop-blur rounded-2xl p-8 border border-amber-500/50"
+                className="bg-amber-600/80 backdrop-blur rounded-2xl p-8 border border-teal-500/50"
               >
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
@@ -740,7 +741,7 @@ export default function PetsitterzLandingPage() {
             </div>
 
             {/* Standard - Highlighted */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-amber-500 relative transform md:scale-105 z-10">
+            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-teal-500 relative transform md:scale-105 z-10">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <span className="px-4 py-1 bg-amber-600 text-white text-sm font-bold rounded-full">
                   Najpopularniejszy
@@ -800,32 +801,32 @@ export default function PetsitterzLandingPage() {
                   <span className="text-4xl font-bold text-white">79,99</span>
                   <span className="text-gray-400">zł/mies.</span>
                 </div>
-                <p className="text-sm text-amber-400 mt-2 font-medium">7 dni za darmo</p>
+                <p className="text-sm text-teal-400 mt-2 font-medium">7 dni za darmo</p>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">Bez limitu rezerwacji</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">Bez limitu opiekunów</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">500 SMS miesięcznie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">Zaawansowana analityka</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-gray-300">Priorytetowe wsparcie</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">0% prowizji</span>
                 </div>
               </div>
@@ -852,7 +853,7 @@ export default function PetsitterzLandingPage() {
           </p>
           <a 
             href={`${appUrl}/register`}
-            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-amber-700 font-bold rounded-xl text-xl hover:bg-amber-50 transition-colors"
+            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-amber-700 font-bold rounded-xl text-xl hover:bg-teal-50 transition-colors"
           >
             Załóż konto za darmo
             <ArrowRight className="w-6 h-6" />
@@ -906,7 +907,7 @@ export default function PetsitterzLandingPage() {
                 href="https://www.facebook.com/profile.php?id=61583476963744" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-amber-500 transition-colors"
+                className="text-gray-400 hover:text-teal-500 transition-colors"
               >
                 <Facebook className="w-5 h-5" />
               </a>
@@ -914,7 +915,7 @@ export default function PetsitterzLandingPage() {
                 href="https://www.instagram.com/rezerwacja24" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-amber-500 transition-colors"
+                className="text-gray-400 hover:text-teal-500 transition-colors"
               >
                 <Instagram className="w-5 h-5" />
               </a>

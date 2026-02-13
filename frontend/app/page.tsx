@@ -45,7 +45,12 @@ import {
   Dumbbell,
   Car,
   User,
-  Smartphone
+  Smartphone,
+  Stethoscope,
+  GraduationCap,
+  PawPrint,
+  Home,
+  UtensilsCrossed
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -246,25 +251,30 @@ export default function HomePage() {
                           >
                             <div className="py-2 space-y-1">
                               {[
-                                { href: '/beauty', label: 'Beauty & SPA', img: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=80&h=80&fit=crop' },
-                                { href: '/zdrowie', label: locale === 'pl' ? 'Zdrowie i medycyna' : 'Health & Medical', img: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=80&h=80&fit=crop' },
-                                { href: '/motoryzacja', label: locale === 'pl' ? 'Motoryzacja' : 'Automotive', img: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=80&h=80&fit=crop' },
-                                { href: '/sport', label: locale === 'pl' ? 'Sport i fitness' : 'Sports & Fitness', img: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=80&h=80&fit=crop' },
-                                { href: '/edukacja', label: locale === 'pl' ? 'Edukacja' : 'Education', img: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=80&h=80&fit=crop' },
-                                { href: '/zwierzeta', label: locale === 'pl' ? 'Usługi dla zwierząt' : 'Pet Services', img: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=80&h=80&fit=crop' },
-                                { href: '/dom', label: locale === 'pl' ? 'Dom i naprawa' : 'Home & Repair', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=80&h=80&fit=crop' },
-                                { href: '/gastronomia', label: locale === 'pl' ? 'Gastronomia' : 'Gastronomy', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=80&h=80&fit=crop' },
-                              ].map((item) => (
-                                <Link 
-                                  key={item.href}
-                                  href={item.href} 
-                                  onClick={() => setMobileMenuOpen(false)} 
-                                  className="flex items-center gap-3 py-2.5 px-4 text-sm text-gray-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
-                                >
-                                  <Image src={item.img} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-                                  {item.label}
-                                </Link>
-                              ))}
+                                { href: '/beauty', label: 'Beauty & SPA', icon: Scissors, color: 'from-pink-500 to-rose-500' },
+                                { href: '/zdrowie', label: locale === 'pl' ? 'Zdrowie i medycyna' : 'Health & Medical', icon: Stethoscope, color: 'from-red-500 to-rose-500' },
+                                { href: '/motoryzacja', label: locale === 'pl' ? 'Motoryzacja' : 'Automotive', icon: Car, color: 'from-slate-600 to-slate-700' },
+                                { href: '/sport', label: locale === 'pl' ? 'Sport i fitness' : 'Sports & Fitness', icon: Dumbbell, color: 'from-orange-500 to-amber-500' },
+                                { href: '/edukacja', label: locale === 'pl' ? 'Edukacja' : 'Education', icon: GraduationCap, color: 'from-blue-500 to-indigo-500' },
+                                { href: '/zwierzeta', label: locale === 'pl' ? 'Usługi dla zwierząt' : 'Pet Services', icon: PawPrint, color: 'from-amber-500 to-yellow-500' },
+                                { href: '/dom', label: locale === 'pl' ? 'Dom i naprawa' : 'Home & Repair', icon: Home, color: 'from-emerald-500 to-teal-500' },
+                                { href: '/gastronomia', label: locale === 'pl' ? 'Gastronomia' : 'Gastronomy', icon: UtensilsCrossed, color: 'from-red-500 to-orange-500' },
+                              ].map((item) => {
+                                const IconComponent = item.icon
+                                return (
+                                  <Link 
+                                    key={item.href}
+                                    href={item.href} 
+                                    onClick={() => setMobileMenuOpen(false)} 
+                                    className="flex items-center gap-3 py-2.5 px-4 text-sm text-gray-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                                  >
+                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${item.color} flex items-center justify-center flex-shrink-0`}>
+                                      <IconComponent className="w-4 h-4 text-white" />
+                                    </div>
+                                    {item.label}
+                                  </Link>
+                                )
+                              })}
                               <Link 
                                 href="/branze"
                                 onClick={() => setMobileMenuOpen(false)} 

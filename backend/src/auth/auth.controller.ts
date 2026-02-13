@@ -320,6 +320,41 @@ export class AuthController {
   }
 
   @Public()
+  @Post('apple/native')
+  async appleNativeAuth(@Body() body: any) {
+    // Endpoint dla natywnego Sign in with Apple z iOS
+    this.logger.log(`🍎 Native Apple Sign In received`);
+    
+    try {
+      const { identityToken, authorizationCode, user, email, givenName, familyName } = body;
+      
+      if (!identityToken) {
+        throw new Error('Missing identity token');
+      }
+      
+      // Dekoduj identity token (JWT) żeby wyciągnąć dane użytkownika
+      const tokenParts = identityToken.split('.');
+      const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+      
+      const appleUser = {
+        appleId: payload.sub,
+        email: email || payload.email,
+        firstName: givenName || 'Apple',
+        lastName: familyName || 'User',
+      };
+      
+      this.logger.log(`🍎 Native Apple user: ${appleUser.email || appleUser.appleId}`);
+      
+      const result = await this.authService.appleLogin(appleUser);
+      
+      return result;
+    } catch (error) {
+      this.logger.error(`Native Apple Sign In error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Public()
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);

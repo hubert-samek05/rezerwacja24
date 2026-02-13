@@ -34,6 +34,14 @@ import {
   Activity,
   Wrench,
   Stethoscope,
+  GraduationCap,
+  PawPrint,
+  Home,
+  MessageCircle,
+  PartyPopper,
+  UtensilsCrossed,
+  Scale,
+  MoreHorizontal,
 } from 'lucide-react'
 
 interface MegaMenuProps {
@@ -164,20 +172,20 @@ const features = [
   },
 ]
 
-// Główne kategorie branż ze zdjęciami
+// Główne kategorie branż z ikonami
 const industries = [
-  { id: 'beauty', titlePl: 'Beauty & SPA', titleEn: 'Beauty & SPA', image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=100&h=100&fit=crop' },
-  { id: 'zdrowie', titlePl: 'Zdrowie i medycyna', titleEn: 'Health & Medical', image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=100&h=100&fit=crop' },
-  { id: 'motoryzacja', titlePl: 'Motoryzacja', titleEn: 'Automotive', image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=100&h=100&fit=crop' },
-  { id: 'sport', titlePl: 'Sport i fitness', titleEn: 'Sports & Fitness', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100&h=100&fit=crop' },
-  { id: 'edukacja', titlePl: 'Edukacja', titleEn: 'Education', image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=100&h=100&fit=crop' },
-  { id: 'zwierzeta', titlePl: 'Usługi dla zwierząt', titleEn: 'Pet Services', image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=100&h=100&fit=crop' },
-  { id: 'dom', titlePl: 'Dom i naprawa', titleEn: 'Home & Repair', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=100&h=100&fit=crop' },
-  { id: 'konsultacje', titlePl: 'Konsultacje', titleEn: 'Consulting', image: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=100&h=100&fit=crop' },
-  { id: 'rozrywka', titlePl: 'Rozrywka i eventy', titleEn: 'Entertainment', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=100&h=100&fit=crop' },
-  { id: 'gastronomia', titlePl: 'Gastronomia', titleEn: 'Gastronomy', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=100&h=100&fit=crop' },
-  { id: 'prawne', titlePl: 'Usługi prawne', titleEn: 'Legal Services', image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=100&h=100&fit=crop' },
-  { id: 'inne', titlePl: 'Inne usługi', titleEn: 'Other Services', image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=100&h=100&fit=crop' },
+  { id: 'beauty', titlePl: 'Beauty & SPA', titleEn: 'Beauty & SPA', icon: Scissors, color: 'from-pink-500 to-rose-500' },
+  { id: 'zdrowie', titlePl: 'Zdrowie i medycyna', titleEn: 'Health & Medical', icon: Stethoscope, color: 'from-red-500 to-rose-500' },
+  { id: 'motoryzacja', titlePl: 'Motoryzacja', titleEn: 'Automotive', icon: Car, color: 'from-slate-600 to-slate-700' },
+  { id: 'sport', titlePl: 'Sport i fitness', titleEn: 'Sports & Fitness', icon: Dumbbell, color: 'from-orange-500 to-amber-500' },
+  { id: 'edukacja', titlePl: 'Edukacja', titleEn: 'Education', icon: GraduationCap, color: 'from-blue-500 to-indigo-500' },
+  { id: 'zwierzeta', titlePl: 'Usługi dla zwierząt', titleEn: 'Pet Services', icon: PawPrint, color: 'from-amber-500 to-yellow-500' },
+  { id: 'dom', titlePl: 'Dom i naprawa', titleEn: 'Home & Repair', icon: Home, color: 'from-emerald-500 to-teal-500' },
+  { id: 'konsultacje', titlePl: 'Konsultacje', titleEn: 'Consulting', icon: MessageCircle, color: 'from-violet-500 to-purple-500' },
+  { id: 'rozrywka', titlePl: 'Rozrywka i eventy', titleEn: 'Entertainment', icon: PartyPopper, color: 'from-fuchsia-500 to-pink-500' },
+  { id: 'gastronomia', titlePl: 'Gastronomia', titleEn: 'Gastronomy', icon: UtensilsCrossed, color: 'from-red-500 to-orange-500' },
+  { id: 'prawne', titlePl: 'Usługi prawne', titleEn: 'Legal Services', icon: Scale, color: 'from-indigo-500 to-blue-500' },
+  { id: 'inne', titlePl: 'Inne usługi', titleEn: 'Other Services', icon: MoreHorizontal, color: 'from-gray-500 to-slate-500' },
 ]
 
 export default function MegaMenu({ locale }: MegaMenuProps) {
@@ -761,24 +769,23 @@ export default function MegaMenu({ locale }: MegaMenuProps) {
                   {isPl ? 'Branże' : 'Industries'}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {industries.map((industry) => (
-                    <Link
-                      key={industry.id}
-                      href={`/${industry.id}`}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-teal-50 transition-all group"
-                    >
-                      <Image 
-                        src={industry.image} 
-                        alt="" 
-                        width={40} 
-                        height={40} 
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow-sm" 
-                      />
-                      <span className="font-medium text-gray-700 group-hover:text-teal-700 text-sm transition-colors">
-                        {isPl ? industry.titlePl : industry.titleEn}
-                      </span>
-                    </Link>
-                  ))}
+                  {industries.map((industry) => {
+                    const IconComponent = industry.icon
+                    return (
+                      <Link
+                        key={industry.id}
+                        href={`/${industry.id}`}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-teal-50 transition-all group"
+                      >
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${industry.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                          <IconComponent className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="font-medium text-gray-700 group-hover:text-teal-700 text-sm transition-colors">
+                          {isPl ? industry.titlePl : industry.titleEn}
+                        </span>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
               

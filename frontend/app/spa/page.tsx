@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
 import Image from 'next/image'
 import { Calendar, Users, CheckCircle, ArrowRight, Bell, CreditCard, Star, Sparkles } from 'lucide-react'
 
@@ -107,7 +108,7 @@ export default function SpaPage() {
       <section className="py-24 bg-teal-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex justify-center gap-1 mb-6">
-            {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 text-amber-400 fill-amber-400" />)}
+            {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 text-teal-400 fill-teal-400" />)}
           </div>
           <blockquote className="text-2xl text-white mb-8">"Rezerwacja24 zrewolucjonizowała sposób w jaki zarządzamy rezerwacjami w naszym SPA. Goście uwielbiają możliwość rezerwacji online."</blockquote>
           <p className="font-bold text-white">Anna Nowak</p>

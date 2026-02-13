@@ -4,19 +4,22 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Calendar, Users, CheckCircle, ArrowRight, Bell, CreditCard, Star, Scissors } from 'lucide-react'
+import MainNavigation from '@/components/MainNavigation'
 
 export default function BarberPage() {
   return (
     <div className="min-h-screen bg-white">
-      <section className="relative min-h-[80vh] flex items-center overflow-hidden">
+      <MainNavigation />
+      
+      <section className="relative min-h-[80vh] flex items-center overflow-hidden pt-16">
         <div className="absolute inset-0">
           <Image src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&h=800&fit=crop" alt="Barber Shop" fill className="object-cover" priority />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/60 to-slate-900/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-teal-900/60 to-teal-900/40"></div>
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900/80 border border-amber-400/30 rounded-full mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-900/80 border border-teal-400/30 rounded-full mb-6">
               <Scissors className="w-5 h-5 text-amber-300" />
               <span className="text-amber-300 font-medium">Dla Barber Shopów</span>
             </div>
@@ -79,7 +82,7 @@ export default function BarberPage() {
         </div>
       </section>
 
-      <section className="py-24 bg-gradient-to-b from-amber-50 to-white">
+      <section className="py-24 bg-gradient-to-b from-teal-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -91,7 +94,7 @@ export default function BarberPage() {
                   'Widget na WWW', 'Raporty', 'CRM klientów', 'RODO',
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0" />
                     <span className="text-gray-700">{feature}</span>
                   </div>
                 ))}
@@ -104,10 +107,10 @@ export default function BarberPage() {
         </div>
       </section>
 
-      <section className="py-24 bg-slate-900">
+      <section className="py-24 bg-teal-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex justify-center gap-1 mb-6">
-            {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 text-amber-400 fill-amber-400" />)}
+            {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 text-teal-400 fill-teal-400" />)}
           </div>
           <blockquote className="text-2xl text-white mb-8">"Moi klienci uwielbiają możliwość rezerwacji przez telefon. System jest prosty i działa bez zarzutu."</blockquote>
           <p className="font-bold text-white">Marcin Barber</p>
