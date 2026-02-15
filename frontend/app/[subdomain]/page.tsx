@@ -2027,6 +2027,124 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   </div>
                 )}
 
+                {/* KROK 3: Dane klienta - dla usług elastycznych */}
+                {(selectedService.flexibleDuration || selectedService.allowMultiDay) && bookingStep === 3 && !bookingSuccess && (
+                  <div className="space-y-5">
+                    {/* Podsumowanie terminu */}
+                    <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Calendar className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Wybrany termin</div>
+                          {selectedService?.allowMultiDay && selectedEndDate ? (
+                            <>
+                              <div className="font-bold text-slate-800 text-sm">
+                                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' })} - {new Date(selectedEndDate + 'T00:00:00').toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </div>
+                              <div className="text-sm text-teal-600 font-medium">
+                                {(() => {
+                                  const start = new Date(selectedDate)
+                                  const end = new Date(selectedEndDate)
+                                  const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                                  return `${days} dni`
+                                })()}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-bold text-slate-800 text-sm">
+                                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                              </div>
+                              <div className="text-sm text-teal-600 font-medium">
+                                {selectedTime} - {(() => {
+                                  const [h, m] = selectedTime.split(':').map(Number)
+                                  const endMinutes = h * 60 + m + selectedDuration
+                                  const endH = Math.floor(endMinutes / 60)
+                                  const endM = endMinutes % 60
+                                  return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`
+                                })()} ({Math.floor(selectedDuration / 60)}h{selectedDuration % 60 > 0 ? ` ${selectedDuration % 60}min` : ''})
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <button onClick={() => setBookingStep(1)} className="text-sm text-slate-500 hover:text-slate-700">
+                          Zmień
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Formularz danych */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Imię i nazwisko *</label>
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors bg-slate-50 focus:bg-white" placeholder="Jan Kowalski" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Telefon *</label>
+                        <div className="relative">
+                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors bg-slate-50 focus:bg-white" placeholder="+48 123 456 789" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email (opcjonalnie)</label>
+                        <div className="relative">
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors bg-slate-50 focus:bg-white" placeholder="jan@example.com" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Uwagi (opcjonalnie)</label>
+                        <textarea 
+                          value={customerNotes} 
+                          onChange={(e) => setCustomerNotes(e.target.value)} 
+                          rows={2}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors bg-slate-50 focus:bg-white resize-none" 
+                          placeholder="Dodatkowe informacje..."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cena */}
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Do zapłaty</span>
+                        <span className="text-xl font-bold text-slate-800">
+                          {(() => {
+                            if (selectedService.allowMultiDay && selectedEndDate && selectedService.pricePerDay) {
+                              const start = new Date(selectedDate)
+                              const end = new Date(selectedEndDate)
+                              const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                              return (days * Number(selectedService.pricePerDay)).toFixed(0)
+                            } else if (selectedService.flexibleDuration && selectedService.pricePerHour) {
+                              return ((selectedDuration / 60) * Number(selectedService.pricePerHour)).toFixed(0)
+                            }
+                            return selectedService.price || selectedService.basePrice || 0
+                          })()} zł
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Przycisk rezerwacji */}
+                    <button
+                      onClick={handleBookingSubmit}
+                      disabled={!customerName || !customerPhone || bookingLoading}
+                      className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all flex items-center justify-center gap-3"
+                    >
+                      {bookingLoading ? (
+                        <><Loader2 className="w-6 h-6 animate-spin" />Rezerwuję...</>
+                      ) : (
+                        <><Check className="w-6 h-6" />Zarezerwuj</>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {/* KROK 1: Wybór specjalisty */}
                 {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 1 && (
                   <div className="space-y-3">
