@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar, CalendarDays, Clock, MapPin, Phone, Mail, Star,
   Facebook, Instagram, Globe as GlobeIcon, ArrowRight, Loader2,
-  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet
+  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle
 } from 'lucide-react'
 
 interface Service {
@@ -89,7 +89,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const [bookingLoading, setBookingLoading] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [paymentMethod, setPaymentMethod] = useState<string>('cash')
-  const [depositPaymentProvider, setDepositPaymentProvider] = useState<string>('')
   const [paymentUrl, setPaymentUrl] = useState<string>('')
   const [isEmbedded, setIsEmbedded] = useState(false)
   const [rodoConsent, setRodoConsent] = useState(false)
@@ -125,9 +124,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const [loadingServiceBookings, setLoadingServiceBookings] = useState(false)
   // Uwagi do rezerwacji (dla usług elastycznych)
   const [customerNotes, setCustomerNotes] = useState<string>('')
-  // Zaliczki
-  const [depositInfo, setDepositInfo] = useState<{ required: boolean; amount: number; reason: string } | null>(null)
-  const [checkingDeposit, setCheckingDeposit] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -432,42 +428,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
 
   const resetCoupon = () => { setCouponCode(''); setCouponValid(null); setCouponDiscount(null); setCouponError('') }
 
-  // Sprawdź czy zaliczka jest wymagana
-  const checkDepositRequired = async () => {
-    if (!selectedService || !company?.userId) return
-    setCheckingDeposit(true)
-    try {
-      const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') ? 'https://api.rezerwacja24.pl' : 'http://localhost:3001'
-      const servicePrice = selectedService?.price || parseFloat(selectedService?.basePrice || '0')
-      const response = await fetch(`${apiUrl}/api/deposits/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantId: company.userId,
-          serviceId: selectedService.id,
-          totalPrice: servicePrice,
-          customerPhone: customerPhone || undefined
-        })
-      })
-      if (response.ok) {
-        const result = await response.json()
-        setDepositInfo(result)
-      }
-    } catch (error) {
-      console.error('Error checking deposit:', error)
-      setDepositInfo(null)
-    } finally {
-      setCheckingDeposit(false)
-    }
-  }
-
-  // Sprawdź zaliczkę gdy zmieni się usługa lub telefon klienta
-  useEffect(() => {
-    if (selectedService && company?.userId) {
-      checkDepositRequired()
-    }
-  }, [selectedService?.id, customerPhone])
-
   const handleBookingSubmit = async () => {
     const finalEmployeeId = selectedSlotEmployee || selectedEmployee
     const isFlexibleService = selectedService?.flexibleDuration || selectedService?.allowMultiDay
@@ -505,10 +465,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         marketingConsent: consentSettings?.marketingConsentEnabled ? marketingConsent : false, 
         marketingConsentText: marketingConsent ? consentSettings?.marketingConsentText : null,
         // Dodaj packageId jeśli to rezerwacja pakietu
-        packageId: selectedPackage?.id || null,
-        // Informacje o zaliczce
-        depositRequired: depositInfo?.required || false,
-        depositAmount: depositInfo?.amount || 0
+        packageId: selectedPackage?.id || null
       }
       // Dla rezerwacji wielodniowych dodaj endDate
       if (selectedService.allowMultiDay && selectedEndDate) {
@@ -521,45 +478,11 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       if (response.ok) {
         const result = await response.json(); const booking = result.booking || result; const bookingId = booking?.id
         if (bookingId) {
-          // Oblicz cenę usługi
-          const basePrice = selectedService.price || parseFloat(selectedService.basePrice || '0')
-          const priceAfterDiscount = couponDiscount ? couponDiscount.finalPrice : basePrice
-          
-          // Logika płatności:
-          // 1. Płatność online (Przelewy24/Stripe) → pełna kwota do wybranego providera
-          // 2. Płatność gotówką + zaliczka wymagana → zaliczka do dostępnego providera
-          // 3. Płatność gotówką bez zaliczki → brak płatności online
-          const isOnlinePayment = paymentMethod !== 'cash'
-          const depositRequired = paymentMethod === 'cash' && depositInfo?.required && depositInfo?.amount > 0
-          const requiresOnlinePayment = isOnlinePayment || depositRequired
-          
-          if (requiresOnlinePayment) {
-            // Kwota: pełna przy online, zaliczka przy gotówce
-            const finalAmount = isOnlinePayment ? priceAfterDiscount : depositInfo!.amount
-            const isDeposit = depositRequired
-            
-            // Provider: wybrany przy online, lub dostępny przy zaliczce
-            let provider = paymentMethod
-            if (depositRequired) {
-              provider = depositPaymentProvider || 
-                (company?.paymentSettings?.przelewy24Enabled ? 'przelewy24' : 
-                (company?.paymentSettings?.stripeEnabled ? 'stripe' : 'przelewy24'))
-            }
-            
+          if (paymentMethod !== 'cash') {
             // Płatność online - przekieruj do bramki płatności
-            const paymentResponse = await fetch('/api/payments/create', { 
-              method: 'POST', 
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify({ 
-                bookingId, 
-                amount: finalAmount, 
-                provider,
-                customerEmail, 
-                customerName, 
-                userId: company?.userId,
-                isDeposit
-              }) 
-            })
+            const basePrice = selectedService.price || parseFloat(selectedService.basePrice || '0')
+            const finalAmount = couponDiscount ? couponDiscount.finalPrice : basePrice
+            const paymentResponse = await fetch('/api/payments/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId, amount: finalAmount, provider: paymentMethod, customerEmail, customerName, userId: company?.userId }) })
             if (paymentResponse.ok) { 
               const paymentResult = await paymentResponse.json()
               if (paymentResult.paymentUrl) { 
@@ -593,7 +516,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     finally { setBookingLoading(false) }
   }
 
-  const resetBookingModal = () => { setBookingModal(false); setCalendarModal(false); setSelectedService(null); setSelectedEmployee(''); setSelectedDate(''); setSelectedTime(''); setSelectedSlotEmployee(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail(''); setCustomerNotes(''); setBookingStep(1); setBookingSuccess(false); setAvailableSlots([]); resetCoupon(); setSelectedDuration(60); setSelectedEndDate(''); setDepositInfo(null) }
+  const resetBookingModal = () => { setBookingModal(false); setCalendarModal(false); setSelectedService(null); setSelectedEmployee(''); setSelectedDate(''); setSelectedTime(''); setSelectedSlotEmployee(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail(''); setCustomerNotes(''); setBookingStep(1); setBookingSuccess(false); setAvailableSlots([]); resetCoupon(); setSelectedDuration(60); setSelectedEndDate('') }
   const getAvailableEmployees = () => { if (!selectedService || !company?.employees) return []; return company.employees.filter(emp => emp.services?.includes(selectedService.id)) }
   const getMinDate = () => { const today = new Date(); return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}` }
   const getMaxDate = () => { const maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30); return `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}` }
@@ -2119,31 +2042,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         </div>
                       )}
                     </div>
-                    {/* Informacja o zaliczce */}
-                    {paymentMethod === 'cash' && depositInfo?.required && depositInfo.amount > 0 && (
-                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Wallet className="w-5 h-5 text-amber-600" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-amber-800">Wymagana zaliczka</h4>
-                            <p className="text-sm text-amber-700 mt-1">
-                              Aby potwierdzić rezerwację, wymagana jest zaliczka w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
-                            </p>
-                            <p className="text-xs text-amber-600 mt-2">
-                              Pozostała kwota do zapłaty na miejscu. Zaliczka zostanie odliczona od całkowitej ceny usługi.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {checkingDeposit && (
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Sprawdzanie wymagań zaliczki...
-                      </div>
-                    )}
                     {/* Metoda płatności - ukryta dla usług elastycznych chyba że włączona w ustawieniach */}
                     {(!(selectedService?.flexibleDuration || selectedService?.allowMultiDay) || company?.flexibleServiceSettings?.showPaymentOptions) && company?.paymentSettings && (company.paymentSettings.acceptCashPayment || company.paymentSettings.przelewy24Enabled || company.paymentSettings.stripeEnabled) && (
                       <div className="space-y-3">
@@ -2190,16 +2088,8 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         )}
                       </div>
                     )}
-                    <button onClick={handleBookingSubmit} disabled={!customerName || !customerPhone || bookingLoading || (consentSettings !== null && !rodoConsent) || ((paymentMethod !== 'cash' || (depositInfo?.required && depositInfo?.amount > 0)) && !customerEmail)} className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 flex items-center justify-center gap-3">
-                      {bookingLoading ? (
-                        <><Loader2 className="w-6 h-6 animate-spin" />Rezerwuję...</>
-                      ) : paymentMethod === 'cash' && depositInfo?.required && depositInfo?.amount > 0 ? (
-                        <><Wallet className="w-6 h-6" />Zapłać zaliczkę {depositInfo.amount.toFixed(0)} zł</>
-                      ) : paymentMethod === 'cash' ? (
-                        <><Check className="w-6 h-6" />Potwierdź rezerwację</>
-                      ) : (
-                        <><Check className="w-6 h-6" />Zapłać {couponDiscount ? couponDiscount.finalPrice.toFixed(0) : (selectedService?.price || parseFloat(selectedService?.basePrice || '0')).toFixed(0)} zł</>
-                      )}
+                    <button onClick={handleBookingSubmit} disabled={!customerName || !customerPhone || bookingLoading || (consentSettings !== null && !rodoConsent) || (paymentMethod !== 'cash' && !customerEmail)} className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 flex items-center justify-center gap-3">
+                      {bookingLoading ? <><Loader2 className="w-6 h-6 animate-spin" />Rezerwuję...</> : paymentMethod === 'cash' ? <><Check className="w-6 h-6" />Potwierdź rezerwację</> : <><Check className="w-6 h-6" />Zapłać i zarezerwuj</>}
                     </button>
                   </div>
                 )}
