@@ -96,9 +96,9 @@ async function bootstrap() {
     maxAge: 86400, // 24 hours
   });
 
-  // Global prefix - wykluczamy /uploads z prefixu /api
+  // Global prefix - wykluczamy /uploads i /booking z prefixu /api
   app.setGlobalPrefix('api', {
-    exclude: ['/uploads/(.*)', 'uploads/(.*)'],
+    exclude: ['/uploads/(.*)', 'uploads/(.*)', '/booking/(.*)', 'booking/(.*)'],
   });
 
   // Validation
