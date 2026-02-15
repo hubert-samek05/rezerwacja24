@@ -1,6 +1,7 @@
 // Zarządzanie danymi firmy
 
 import { getCurrentUserId, getTenantId } from './storage'
+import { PageBuilderConfig } from './page-builder'
 
 export interface PageSettings {
   servicesLayout?: 'grid' | 'list'
@@ -20,6 +21,8 @@ export interface PageSettings {
   bookingButtonText?: string
   buttonStyle?: 'rounded' | 'pill' | 'square'
   cardStyle?: 'shadow' | 'border' | 'flat'
+  // Page Builder
+  pageBuilder?: PageBuilderConfig
 }
 
 export interface CompanyData {

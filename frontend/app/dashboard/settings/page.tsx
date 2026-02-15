@@ -33,6 +33,7 @@ import GalleryTab from '@/components/settings/GalleryTab'
 import FlexibleServicesTab from '@/components/settings/FlexibleServicesTab'
 import AccountTypesTab from '@/components/settings/AccountTypesTab'
 import DepositsTab from '@/components/settings/DepositsTab'
+import PageBuilderTab from '@/components/settings/PageBuilderTab'
 import { useDashboardTranslation } from '@/hooks/useDashboardTranslation'
 
 export default function SettingsPage() {
@@ -453,6 +454,7 @@ export default function SettingsPage() {
         { id: 'company', icon: Building2, label: 'Dane firmy', desc: 'Nazwa, adres, kontakt' },
         { id: 'subdomain', icon: Globe, label: 'Subdomena', desc: 'Adres strony rezerwacji' },
         { id: 'branding', icon: Palette, label: 'Wygląd i funkcje strony', desc: 'Personalizuj swoją stronę rezerwacji' },
+        { id: 'page-builder', icon: Palette, label: 'Edytor strony', desc: 'Szablony i zaawansowana personalizacja' },
         { id: 'gallery', icon: Upload, label: 'Galeria zdjęć', desc: 'Zdjęcia firmy i usług' },
         { id: 'hours', icon: Clock, label: 'Godziny otwarcia', desc: 'Dni i godziny pracy' },
         { id: 'flexible-services', icon: Clock, label: 'Usługi na godziny/dni', desc: 'Ustawienia rezerwacji elastycznych' },
@@ -551,6 +553,12 @@ export default function SettingsPage() {
 
           {activeTab === 'branding' && (
             <BrandingTab companyData={companyData} setCompanyData={setCompanyData} onSave={handleSaveBranding} isLoading={isLoading} />
+          )}
+
+          {activeTab === 'page-builder' && (
+            <div className="p-6 lg:p-8">
+              <PageBuilderTab companyData={companyData} setCompanyData={setCompanyData} onSave={handleSaveBranding} isLoading={isLoading} />
+            </div>
           )}
 
           {activeTab === 'gallery' && (
