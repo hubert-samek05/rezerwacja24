@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar, CalendarDays, Clock, MapPin, Phone, Mail, Star,
   Facebook, Instagram, Globe as GlobeIcon, ArrowRight, Loader2,
-  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Info
+  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet, Info
 } from 'lucide-react'
 
 interface Service {
@@ -18,7 +18,7 @@ interface Service {
   durationStep?: number; allowMultiDay?: boolean; pricePerHour?: number; pricePerDay?: number
 }
 
-interface Employee { id: string; firstName: string; lastName: string; role: string; services: string[]; avatar?: string | null }
+interface Employee { id: string; firstName: string; lastName: string; role: string; services: string[] }
 
 interface PackageItem { id: string; serviceId: string; service: Service; order: number }
 interface ServicePackage { id: string; name: string; description: string | null; price: number; originalPrice: number; duration: number; items: PackageItem[] }
@@ -29,26 +29,6 @@ interface GroupBooking {
   type: { id: string; name: string; description: string | null; duration: number }
   employee?: { firstName: string; lastName: string; avatar: string | null }
   _count?: { participants: number }
-}
-
-interface PageSection {
-  id: string
-  type: string
-  enabled: boolean
-  order: number
-  settings: {
-    title?: string
-    subtitle?: string
-    padding?: 'small' | 'medium' | 'large'
-    heroVariant?: 'banner' | 'split' | 'centered' | 'video'
-    heroHeight?: 'small' | 'medium' | 'large' | 'full'
-  }
-}
-
-interface PageBuilderConfig {
-  templateId: 'elegant' | 'fresh' | 'minimal'
-  sections: PageSection[]
-  globalStyles?: { animations?: boolean }
 }
 
 interface PageSettings {
@@ -69,7 +49,6 @@ interface PageSettings {
   bookingButtonText?: string
   buttonStyle?: 'rounded' | 'pill' | 'square'
   cardStyle?: 'shadow' | 'border' | 'flat'
-  pageBuilder?: PageBuilderConfig
 }
 
 interface FlexibleServiceSettings {
@@ -110,6 +89,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const [bookingLoading, setBookingLoading] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [paymentMethod, setPaymentMethod] = useState<string>('cash')
+  const [depositPaymentProvider, setDepositPaymentProvider] = useState<string>('')
   const [paymentUrl, setPaymentUrl] = useState<string>('')
   const [isEmbedded, setIsEmbedded] = useState(false)
   const [rodoConsent, setRodoConsent] = useState(false)
@@ -143,11 +123,14 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   // Wykrywanie powrotu z płatności
   const [pendingPaymentAlert, setPendingPaymentAlert] = useState<{ bookingId: string; show: boolean } | null>(null)
   const [loadingServiceBookings, setLoadingServiceBookings] = useState(false)
+  // Uwagi do rezerwacji (dla usług elastycznych)
+  const [customerNotes, setCustomerNotes] = useState<string>('')
+  // Zaliczki
+  const [depositInfo, setDepositInfo] = useState<{ required: boolean; amount: number; reason: string } | null>(null)
+  const [checkingDeposit, setCheckingDeposit] = useState(false)
   // Modal szczegółów usługi
   const [serviceDetailModal, setServiceDetailModal] = useState(false)
   const [serviceDetailData, setServiceDetailData] = useState<Service | null>(null)
-  // Uwagi do rezerwacji (dla usług elastycznych)
-  const [customerNotes, setCustomerNotes] = useState<string>('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -452,6 +435,42 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
 
   const resetCoupon = () => { setCouponCode(''); setCouponValid(null); setCouponDiscount(null); setCouponError('') }
 
+  // Sprawdź czy zaliczka jest wymagana
+  const checkDepositRequired = async () => {
+    if (!selectedService || !company?.userId) return
+    setCheckingDeposit(true)
+    try {
+      const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') ? 'https://api.rezerwacja24.pl' : 'http://localhost:3001'
+      const servicePrice = selectedService?.price || parseFloat(selectedService?.basePrice || '0')
+      const response = await fetch(`${apiUrl}/api/deposits/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: company.userId,
+          serviceId: selectedService.id,
+          totalPrice: servicePrice,
+          customerPhone: customerPhone || undefined
+        })
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setDepositInfo(result)
+      }
+    } catch (error) {
+      console.error('Error checking deposit:', error)
+      setDepositInfo(null)
+    } finally {
+      setCheckingDeposit(false)
+    }
+  }
+
+  // Sprawdź zaliczkę gdy zmieni się usługa lub telefon klienta
+  useEffect(() => {
+    if (selectedService && company?.userId) {
+      checkDepositRequired()
+    }
+  }, [selectedService?.id, customerPhone])
+
   const handleBookingSubmit = async () => {
     const finalEmployeeId = selectedSlotEmployee || selectedEmployee
     const isFlexibleService = selectedService?.flexibleDuration || selectedService?.allowMultiDay
@@ -489,7 +508,10 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         marketingConsent: consentSettings?.marketingConsentEnabled ? marketingConsent : false, 
         marketingConsentText: marketingConsent ? consentSettings?.marketingConsentText : null,
         // Dodaj packageId jeśli to rezerwacja pakietu
-        packageId: selectedPackage?.id || null
+        packageId: selectedPackage?.id || null,
+        // Informacje o zaliczce
+        depositRequired: depositInfo?.required || false,
+        depositAmount: depositInfo?.amount || 0
       }
       // Dla rezerwacji wielodniowych dodaj endDate
       if (selectedService.allowMultiDay && selectedEndDate) {
@@ -502,11 +524,45 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       if (response.ok) {
         const result = await response.json(); const booking = result.booking || result; const bookingId = booking?.id
         if (bookingId) {
-          if (paymentMethod !== 'cash') {
+          // Oblicz cenę usługi
+          const basePrice = selectedService.price || parseFloat(selectedService.basePrice || '0')
+          const priceAfterDiscount = couponDiscount ? couponDiscount.finalPrice : basePrice
+          
+          // Logika płatności:
+          // 1. Płatność online (Przelewy24/Stripe) → pełna kwota do wybranego providera
+          // 2. Płatność gotówką + zaliczka wymagana → zaliczka do dostępnego providera
+          // 3. Płatność gotówką bez zaliczki → brak płatności online
+          const isOnlinePayment = paymentMethod !== 'cash'
+          const depositRequired = paymentMethod === 'cash' && depositInfo?.required && depositInfo?.amount > 0
+          const requiresOnlinePayment = isOnlinePayment || depositRequired
+          
+          if (requiresOnlinePayment) {
+            // Kwota: pełna przy online, zaliczka przy gotówce
+            const finalAmount = isOnlinePayment ? priceAfterDiscount : depositInfo!.amount
+            const isDeposit = depositRequired
+            
+            // Provider: wybrany przy online, lub dostępny przy zaliczce
+            let provider = paymentMethod
+            if (depositRequired) {
+              provider = depositPaymentProvider || 
+                (company?.paymentSettings?.przelewy24Enabled ? 'przelewy24' : 
+                (company?.paymentSettings?.stripeEnabled ? 'stripe' : 'przelewy24'))
+            }
+            
             // Płatność online - przekieruj do bramki płatności
-            const basePrice = selectedService.price || parseFloat(selectedService.basePrice || '0')
-            const finalAmount = couponDiscount ? couponDiscount.finalPrice : basePrice
-            const paymentResponse = await fetch('/api/payments/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId, amount: finalAmount, provider: paymentMethod, customerEmail, customerName, userId: company?.userId }) })
+            const paymentResponse = await fetch('/api/payments/create', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                bookingId, 
+                amount: finalAmount, 
+                provider,
+                customerEmail, 
+                customerName, 
+                userId: company?.userId,
+                isDeposit
+              }) 
+            })
             if (paymentResponse.ok) { 
               const paymentResult = await paymentResponse.json()
               if (paymentResult.paymentUrl) { 
@@ -540,7 +596,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     finally { setBookingLoading(false) }
   }
 
-  const resetBookingModal = () => { setBookingModal(false); setCalendarModal(false); setSelectedService(null); setSelectedEmployee(''); setSelectedDate(''); setSelectedTime(''); setSelectedSlotEmployee(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail(''); setCustomerNotes(''); setBookingStep(1); setBookingSuccess(false); setAvailableSlots([]); resetCoupon(); setSelectedDuration(60); setSelectedEndDate('') }
+  const resetBookingModal = () => { setBookingModal(false); setCalendarModal(false); setSelectedService(null); setSelectedEmployee(''); setSelectedDate(''); setSelectedTime(''); setSelectedSlotEmployee(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail(''); setCustomerNotes(''); setBookingStep(1); setBookingSuccess(false); setAvailableSlots([]); resetCoupon(); setSelectedDuration(60); setSelectedEndDate(''); setDepositInfo(null) }
   const getAvailableEmployees = () => { if (!selectedService || !company?.employees) return []; return company.employees.filter(emp => emp.services?.includes(selectedService.id)) }
   const getMinDate = () => { const today = new Date(); return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}` }
   const getMaxDate = () => { const maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30); return `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}` }
@@ -680,66 +736,8 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     }
   }
 
-  // Pobierz szablon
-  const templateId = pageSettings.pageBuilder?.templateId || 'fresh'
-  
-  // Style dla różnych szablonów
-  const getTemplateStyles = () => {
-    switch (templateId) {
-      case 'elegant':
-        return {
-          bgColor: 'bg-slate-900',
-          textColor: 'text-white',
-          cardBg: 'bg-slate-800/50 backdrop-blur-sm border border-slate-700',
-          sectionBg: 'bg-slate-800',
-          headingClass: 'font-serif',
-        }
-      case 'minimal':
-        return {
-          bgColor: 'bg-white',
-          textColor: 'text-slate-800',
-          cardBg: 'bg-white border border-slate-200',
-          sectionBg: 'bg-slate-50',
-          headingClass: 'font-light tracking-wide',
-        }
-      default:
-        return {
-          bgColor: 'bg-slate-50',
-          textColor: 'text-slate-800',
-          cardBg: 'bg-white shadow-lg shadow-slate-200/50',
-          sectionBg: 'bg-white',
-          headingClass: 'font-bold',
-        }
-    }
-  }
-  
-  const templateStyles = getTemplateStyles()
-
-  // Funkcja sprawdzająca czy sekcja jest włączona w page builder
-  const isSectionEnabled = (sectionType: string): boolean => {
-    const sections = pageSettings.pageBuilder?.sections
-    // Sekcje które domyślnie są WYŁĄCZONE gdy nie ma konfiguracji
-    const defaultDisabled = ['team', 'gallery', 'testimonials']
-    if (!sections) {
-      return !defaultDisabled.includes(sectionType)
-    }
-    const section = sections.find((s: any) => s.type === sectionType)
-    if (!section) {
-      return !defaultDisabled.includes(sectionType)
-    }
-    return section.enabled
-  }
-
-  // Pobierz ustawienia sekcji
-  const getSectionSettings = (sectionType: string): any => {
-    const sections = pageSettings.pageBuilder?.sections
-    if (!sections) return {}
-    const section = sections.find((s: any) => s.type === sectionType)
-    return section?.settings || {}
-  }
-
   return (
-    <div className={`min-h-screen ${templateStyles.bgColor}`}>
+    <div className="min-h-screen bg-slate-50">
       {/* ========== ALERT O NIEOPŁACONEJ REZERWACJI ========== */}
       {pendingPaymentAlert?.show && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-white px-4 py-3 shadow-lg">
@@ -836,26 +834,26 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   {company.businessName}
                 </motion.h1>
 
-                {/* Opis - skrócony do 180 znaków z przyciskiem "Czytaj więcej" */}
+                {/* Opis - skrócony w hero, max 180 znaków */}
                 {pageSettings.showDescription && company.description && pageSettings.heroStyle === 'banner' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.2 }}
-                    className="mb-6 sm:mb-8 max-w-lg"
+                    className="mb-6 sm:mb-8 max-w-xl"
                   >
-                    <p className="text-sm sm:text-base md:text-lg text-white/80 leading-relaxed">
-                      {company.description.length > 180
-                        ? `${company.description.slice(0, 180).trim()}...`
+                    <p className="text-sm sm:text-base md:text-lg text-white/90 leading-relaxed">
+                      {company.description.length > 180 
+                        ? `${company.description.slice(0, 180).trim()}...` 
                         : company.description}
                     </p>
                     {company.description.length > 180 && (
                       <button
                         onClick={() => document.getElementById('o-nas')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="mt-3 text-sm text-teal-400 hover:text-teal-300 flex items-center gap-1 transition-colors"
-                        style={{ color: pageSettings.accentColor }}
+                        className="mt-2 text-sm text-white/70 hover:text-white flex items-center gap-1 transition-colors"
                       >
-                        Czytaj więcej <ChevronDown className="w-4 h-4" />
+                        <span>Czytaj więcej</span>
+                        <ChevronDown className="w-4 h-4" />
                       </button>
                     )}
                   </motion.div>
@@ -920,20 +918,18 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         </div>
       )}
 
-      {/* ========== SEKCJA O NAS ========== */}
-      {isSectionEnabled('about') && company.description && company.description.length > 180 && (
-        <section id="o-nas" className="py-16 sm:py-20 bg-white">
-          <div className="max-w-4xl mx-auto px-6">
+      {/* ========== SEKCJA O NAS - pełny opis (tylko gdy długi) ========== */}
+      {pageSettings.showDescription && company.description && company.description.length > 180 && (
+        <section id="o-nas" className="py-12 sm:py-16 bg-white border-b border-slate-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center"
             >
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-6">
-                {getSectionSettings('about').title || 'O nas'}
-              </h2>
-              <p className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-6">O nas</h2>
+              <p className="text-slate-600 text-base sm:text-lg leading-relaxed whitespace-pre-line">
                 {company.description}
               </p>
             </motion.div>
@@ -942,17 +938,12 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       )}
 
       {/* ========== SEKCJA USŁUG ========== */}
-      {isSectionEnabled('services') && (
       <section id="uslugi" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-6">
           {/* Nagłówek */}
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">
-              {getSectionSettings('services').title || 'Nasze usługi'}
-            </h2>
-            <p className="text-slate-500">
-              {getSectionSettings('services').subtitle || 'Wybierz usługę i umów się na wizytę'}
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">Nasze usługi</h2>
+            <p className="text-slate-500">Wybierz usługę i umów się na wizytę</p>
           </div>
 
           {/* Zakładki Usługi / Pakiety / Zajęcia grupowe */}
@@ -1243,14 +1234,14 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                 {pageSettings.servicesLayout !== 'list' && (
                   <div className="px-6 pb-6 flex gap-2">
                     <button
-                      onClick={() => { setServiceDetailData(service); setServiceDetailModal(true) }}
+                      onClick={(e) => { e.stopPropagation(); setServiceDetailData(service); setServiceDetailModal(true) }}
                       className={`flex-1 py-3 text-slate-600 font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50`}
                     >
                       <Info className="w-4 h-4" />
                       Szczegóły
                     </button>
                     <button
-                      onClick={() => { setSelectedService(service); setBookingModal(true) }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedService(service); setBookingModal(true) }}
                       className={`flex-1 py-3 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2`}
                       style={{ backgroundColor: pageSettings.primaryColor }}
                     >
@@ -1269,46 +1260,12 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
           )}
         </div>
       </section>
-      )}
-
-      {/* ========== SEKCJA ZESPOŁU ========== */}
-      {isSectionEnabled('team') && company.employees && company.employees.length > 0 && (
-        <section className="py-16 sm:py-20 bg-slate-50">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">
-                {getSectionSettings('team').title || 'Nasz zespół'}
-              </h2>
-              <p className="text-slate-500">
-                {getSectionSettings('team').subtitle || 'Poznaj naszych specjalistów'}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {company.employees.map((employee) => (
-                <div key={employee.id} className="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-lg transition-shadow">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-                    {employee.avatar ? (
-                      <img src={employee.avatar} alt={employee.firstName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{employee.firstName[0]}{employee.lastName[0]}</span>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-slate-800">{employee.firstName} {employee.lastName}</h3>
-                  <p className="text-sm text-slate-500">{employee.role || 'Specjalista'}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ========== GALERIA ========== */}
-      {isSectionEnabled('gallery') && (company as any).gallery && (company as any).gallery.length > 0 && (
+      {(company as any).gallery && (company as any).gallery.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">
-              {getSectionSettings('gallery').title || 'Galeria'}
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">Galeria</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {(company as any).gallery.slice(0, 8).map((image: string, index: number) => (
                 <motion.div
@@ -1367,7 +1324,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       )}
 
       {/* ========== KONTAKT ========== */}
-      {isSectionEnabled('contact') && (
       <section className="py-16 bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -1426,7 +1382,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
           </div>
         </div>
       </section>
-      )}
 
       {/* ========== FOOTER ========== */}
       <footer className="py-8 bg-slate-900">
@@ -1455,6 +1410,23 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
               </div>
 
               <div className="p-6 flex-1">
+                {/* Step indicator */}
+                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && !bookingSuccess && (
+                  <div className="flex items-center justify-center gap-2 mb-6">
+                    {[{n:1,l:'Specjalista'},{n:2,l:'Data'},{n:3,l:'Godzina'},{n:4,l:'Dane'},{n:5,l:'Płatność'}].map((s,i) => (
+                      <div key={s.n} className="flex items-center">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${s.n<bookingStep?'bg-teal-500 text-white':s.n===bookingStep?'bg-slate-800 text-white ring-4 ring-teal-100':'bg-slate-100 text-slate-400'}`}>
+                            {s.n<bookingStep?<Check className="w-5 h-5"/>:s.n}
+                          </div>
+                          <span className={`text-xs mt-1 font-medium ${s.n===bookingStep?'text-slate-800':'text-slate-400'}`}>{s.l}</span>
+                        </div>
+                        {i<4&&<div className={`w-8 h-1 mx-1 rounded-full mb-5 ${s.n<bookingStep?'bg-teal-500':'bg-slate-200'}`}/>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Info */}
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl mb-6">
                   <div className="flex items-center gap-2 text-slate-500">
@@ -2048,29 +2020,104 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   </div>
                 )}
 
-                {/* KROK 1: Pracownik - tylko dla standardowych usług */}
+                {/* KROK 1: Wybór specjalisty */}
                 {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 1 && (
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-slate-700 mb-3">Wybierz specjalistę</p>
-                    <button onClick={() => { setSelectedEmployee('any'); setBookingModal(false); setCalendarModal(true) }} className="w-full p-4 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-left transition-colors">
+                    <p className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+                      <User className="w-5 h-5 text-teal-500" />
+                      Wybierz specjalistę
+                    </p>
+                    <button onClick={() => { setSelectedEmployee('any'); setBookingStep(2) }} className="w-full p-4 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-left transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><Sparkles className="w-5 h-5" /></div>
-                        <div><div className="font-medium">Dowolny specjalista</div><div className="text-sm text-white/70">Najszybszy termin</div></div>
+                        <div className="flex-1"><div className="font-medium">Dowolny specjalista</div><div className="text-sm text-white/70">Najszybszy termin</div></div>
+                        <ChevronRight className="w-5 h-5 opacity-70" />
                       </div>
                     </button>
                     {getAvailableEmployees().map((emp) => (
-                      <button key={emp.id} onClick={() => { setSelectedEmployee(emp.id); setBookingModal(false); setCalendarModal(true) }} className="w-full p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-left transition-all">
+                      <button key={emp.id} onClick={() => { setSelectedEmployee(emp.id); setBookingStep(2) }} className="w-full p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-left transition-all">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center"><User className="w-5 h-5 text-slate-600" /></div>
-                          <div><div className="font-medium text-slate-800">{emp.firstName} {emp.lastName}</div><div className="text-sm text-slate-500">{emp.role}</div></div>
+                          <div className="flex-1"><div className="font-medium text-slate-800">{emp.firstName} {emp.lastName}</div><div className="text-sm text-slate-500">{emp.role}</div></div>
+                          <ChevronRight className="w-5 h-5 text-slate-400" />
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
 
-                {/* KROK 3: Dane klienta */}
-                {bookingStep === 3 && selectedTime && !bookingSuccess && (
+                {/* KROK 2: Wybór daty */}
+                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 2 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-teal-500" />
+                        Wybierz datę
+                      </p>
+                      <button onClick={() => setBookingStep(1)} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                        <ChevronLeft className="w-4 h-4" /> Wstecz
+                      </button>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <button onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth() - 1); setCurrentMonth(n) }} className="p-2 hover:bg-slate-100 rounded-lg"><ChevronLeft className="w-5 h-5 text-slate-600" /></button>
+                        <span className="font-semibold text-slate-800">{currentMonth.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+                        <button onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth() + 1); setCurrentMonth(n) }} className="p-2 hover:bg-slate-100 rounded-lg"><ChevronRight className="w-5 h-5 text-slate-600" /></button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 mb-2">{['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'].map(d => <div key={d} className="text-center text-xs font-medium text-slate-400 py-2">{d}</div>)}</div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {(() => {
+                          const year = currentMonth.getFullYear(); const month = currentMonth.getMonth()
+                          const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0)
+                          const daysInMonth = lastDay.getDate(); const startingDayOfWeek = (firstDay.getDay() + 6) % 7
+                          const days = []; const today = new Date(); today.setHours(0, 0, 0, 0)
+                          const minDateVal = new Date(getMinDate()); const maxDateVal = new Date(getMaxDate())
+                          for (let i = 0; i < startingDayOfWeek; i++) days.push(<div key={`e-${i}`} />)
+                          for (let day = 1; day <= daysInMonth; day++) {
+                            const date = new Date(year, month, day); const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                            const isSelected = selectedDate === dateString; const isToday = date.getTime() === today.getTime(); const isDisabled = date < minDateVal || date > maxDateVal
+                            days.push(<button key={day} onClick={() => { if (!isDisabled) { setSelectedDate(dateString); setSelectedTime(''); setBookingStep(3) } }} disabled={isDisabled} className={`aspect-square rounded-lg text-sm font-medium transition-all ${isSelected ? 'bg-teal-500 text-white' : isToday ? 'bg-teal-100 text-teal-700' : isDisabled ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-100'}`}>{day}</button>)
+                          }
+                          return days
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* KROK 3: Wybór godziny */}
+                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 3 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-teal-500" />
+                        Wybierz godzinę
+                        <span className="text-slate-400 font-normal">({selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })})</span>
+                      </p>
+                      <button onClick={() => { setSelectedDate(''); setBookingStep(2) }} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                        <ChevronLeft className="w-4 h-4" /> Wstecz
+                      </button>
+                    </div>
+                    {loadingSlots ? (
+                      <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>
+                    ) : availableSlots.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                        {availableSlots.map((slot) => (
+                          <button key={slot.time} onClick={() => { setSelectedTime(slot.time); setSelectedSlotEmployee(slot.employees?.[0]?.employeeId || slot.employeeId || ''); setBookingStep(4) }} className="py-3 px-2 rounded-xl text-sm font-medium transition-all bg-slate-50 hover:bg-teal-500 hover:text-white text-slate-700">{slot.time}</button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-500">Brak dostępnych terminów</p>
+                        <button onClick={() => { setSelectedDate(''); setBookingStep(2) }} className="mt-4 text-teal-500 hover:text-teal-600 font-medium">Wybierz inną datę</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* KROK 4: Dane klienta */}
+                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 4 && !bookingSuccess && (
                   <div className="space-y-5">
                     {/* Podsumowanie terminu - elegancka karta */}
                     <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl">
@@ -2206,12 +2253,25 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         </div>
                       )}
                     </div>
-                    {/* Metoda płatności - ukryta dla usług elastycznych chyba że włączona w ustawieniach */}
-                    {(!(selectedService?.flexibleDuration || selectedService?.allowMultiDay) || company?.flexibleServiceSettings?.showPaymentOptions) && company?.paymentSettings && (company.paymentSettings.acceptCashPayment || company.paymentSettings.przelewy24Enabled || company.paymentSettings.stripeEnabled) && (
+                    {/* Przycisk Dalej do kroku płatności */}
+                    <div className="flex gap-3">
+                      <button onClick={() => setBookingStep(3)} className="flex-1 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 flex items-center justify-center gap-2"><ChevronLeft className="w-5 h-5" />Wstecz</button>
+                      <button onClick={() => setBookingStep(5)} disabled={!customerName || !customerPhone} className="flex-1 py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white font-medium rounded-xl flex items-center justify-center gap-2">Dalej<ChevronRight className="w-5 h-5" /></button>
+                    </div>
+                  </div>
+                )}
+
+                {/* KROK 5: Metoda płatności */}
+                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 5 && !bookingSuccess && (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-700 flex items-center gap-2"><Wallet className="w-5 h-5 text-teal-500" />Wybierz metodę płatności</p>
+                      <button onClick={() => setBookingStep(4)} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Wstecz</button>
+                    </div>
                       <div className="space-y-3">
                         <label className="block text-sm font-medium text-slate-700">Metoda płatności</label>
                         <div className="space-y-2">
-                          {company.paymentSettings.acceptCashPayment && (
+                          {company?.paymentSettings?.acceptCashPayment && (
                             <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cash' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
                               <input type="radio" name="paymentMethod" value="cash" checked={paymentMethod === 'cash'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
                               <div className="flex-1">
@@ -2220,7 +2280,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               </div>
                             </label>
                           )}
-                          {company.paymentSettings.przelewy24Enabled && (
+                          {company?.paymentSettings?.przelewy24Enabled && (
                             <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'przelewy24' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
                               <input type="radio" name="paymentMethod" value="przelewy24" checked={paymentMethod === 'przelewy24'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
                               <div className="flex-1">
@@ -2230,7 +2290,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               <div className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">P24</div>
                             </label>
                           )}
-                          {company.paymentSettings.stripeEnabled && (
+                          {company?.paymentSettings?.stripeEnabled && (
                             <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
                               <input type="radio" name="paymentMethod" value="stripe" checked={paymentMethod === 'stripe'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
                               <div className="flex-1">
@@ -2240,6 +2300,24 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               <div className="px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">Stripe</div>
                             </label>
                           )}
+                        </div>
+                      </div>
+                    {/* Informacja o zaliczce */}
+                    {paymentMethod === 'cash' && depositInfo?.required && depositInfo.amount > 0 && (
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Wallet className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-amber-800">Wymagana zaliczka</h4>
+                            <p className="text-sm text-amber-700 mt-1">
+                              Aby potwierdzić rezerwację, wymagana jest zaliczka w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
+                            </p>
+                            <p className="text-xs text-amber-600 mt-2">
+                              Pozostała kwota do zapłaty na miejscu.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2252,8 +2330,16 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         )}
                       </div>
                     )}
-                    <button onClick={handleBookingSubmit} disabled={!customerName || !customerPhone || bookingLoading || (consentSettings !== null && !rodoConsent) || (paymentMethod !== 'cash' && !customerEmail)} className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 flex items-center justify-center gap-3">
-                      {bookingLoading ? <><Loader2 className="w-6 h-6 animate-spin" />Rezerwuję...</> : paymentMethod === 'cash' ? <><Check className="w-6 h-6" />Potwierdź rezerwację</> : <><Check className="w-6 h-6" />Zapłać i zarezerwuj</>}
+                    <button onClick={handleBookingSubmit} disabled={!customerName || !customerPhone || bookingLoading || (consentSettings !== null && !rodoConsent) || ((paymentMethod !== 'cash' || (depositInfo?.required && depositInfo?.amount > 0)) && !customerEmail)} className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 flex items-center justify-center gap-3">
+                      {bookingLoading ? (
+                        <><Loader2 className="w-6 h-6 animate-spin" />Rezerwuję...</>
+                      ) : paymentMethod === 'cash' && depositInfo?.required && depositInfo?.amount > 0 ? (
+                        <><Wallet className="w-6 h-6" />Zapłać zaliczkę {depositInfo.amount.toFixed(0)} zł</>
+                      ) : paymentMethod === 'cash' ? (
+                        <><Check className="w-6 h-6" />Potwierdź rezerwację</>
+                      ) : (
+                        <><Check className="w-6 h-6" />Zapłać {couponDiscount ? couponDiscount.finalPrice.toFixed(0) : (selectedService?.price || parseFloat(selectedService?.basePrice || '0')).toFixed(0)} zł</>
+                      )}
                     </button>
                   </div>
                 )}
@@ -2525,7 +2611,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* ========== MODAL SZCZEGÓŁÓW USŁUGI ========== */}
       <AnimatePresence>
         {serviceDetailModal && serviceDetailData && (
@@ -2540,60 +2625,38 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="p-6 border-b border-slate-100">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-1 rounded-full">
-                      {serviceDetailData.service_categories?.name || 'Usługa'}
-                    </span>
-                    <h2 className="text-2xl font-bold text-slate-800 mt-2">{serviceDetailData.name}</h2>
-                  </div>
-                  <button
-                    onClick={() => setServiceDetailModal(false)}
-                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5 text-slate-500" />
-                  </button>
-                </div>
-                
-                {/* Cena i czas */}
-                <div className="flex items-center gap-4 mt-4">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Clock className="w-4 h-4" />
-                    <span>{serviceDetailData.duration} min</span>
-                  </div>
-                  <div className="text-xl font-bold text-slate-800">
-                    {serviceDetailData.price || serviceDetailData.basePrice} zł
-                  </div>
+              <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white">
+                <button onClick={() => setServiceDetailModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <span className="inline-block px-3 py-1 bg-teal-500/20 text-teal-300 text-xs font-medium rounded-full mb-3">
+                  {serviceDetailData.service_categories?.name || (typeof serviceDetailData.category === 'string' ? serviceDetailData.category : (serviceDetailData.category as any)?.name) || 'Usługa'}
+                </span>
+                <h2 className="text-2xl font-bold mb-2">{serviceDetailData.name}</h2>
+                <div className="flex items-center gap-4 text-white/80 text-sm">
+                  <div className="flex items-center gap-1"><Clock className="w-4 h-4" /><span>{serviceDetailData.duration} min</span></div>
+                  <div className="text-xl font-bold text-white">{serviceDetailData.price || serviceDetailData.basePrice} zł</div>
                 </div>
               </div>
-              
-              {/* Opis */}
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto max-h-[50vh]">
                 <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Opis usługi</h3>
                 {serviceDetailData.description ? (
-                  <p className="text-slate-600 leading-relaxed whitespace-pre-line">{serviceDetailData.description}</p>
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-line">{serviceDetailData.description}</p>
                 ) : (
                   <p className="text-slate-400 italic">Brak opisu dla tej usługi.</p>
                 )}
               </div>
-              
-              {/* Przycisk rezerwacji */}
               <div className="p-6 border-t border-slate-100 bg-slate-50">
                 <button
-                  onClick={() => {
-                    setServiceDetailModal(false)
-                    setSelectedService(serviceDetailData)
-                    setBookingModal(true)
-                  }}
-                  className="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  onClick={() => { setServiceDetailModal(false); setSelectedService(serviceDetailData); setBookingModal(true) }}
+                  className={`w-full py-3.5 text-white font-semibold ${getButtonRoundedClass()} transition-all shadow-lg flex items-center justify-center gap-2`}
+                  style={{ backgroundColor: pageSettings.primaryColor }}
                 >
                   <Calendar className="w-5 h-5" />
-                  Zarezerwuj teraz
+                  {pageSettings.bookingButtonText || 'Zarezerwuj'} teraz
                 </button>
               </div>
             </motion.div>
