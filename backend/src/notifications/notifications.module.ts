@@ -5,6 +5,7 @@ import { NotificationsController } from './notifications.controller';
 import { FlySMSService } from './flysms.service';
 import { SMSTemplatesService } from './sms-templates.service';
 import { SMSController } from './sms.controller';
+import { SMSReminderScheduler } from './sms-reminder.scheduler';
 import { PushNotificationService } from './push-notification.service';
 import { PrismaModule } from '../common/prisma/prisma.module';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -19,7 +20,7 @@ import { EmailModule } from '../email/email.module';
     }),
   ],
   controllers: [NotificationsController, SMSController],
-  providers: [NotificationsService, FlySMSService, SMSTemplatesService, PushNotificationService, PrismaService],
+  providers: [NotificationsService, FlySMSService, SMSTemplatesService, PushNotificationService, SMSReminderScheduler, PrismaService],
   exports: [NotificationsService, FlySMSService, SMSTemplatesService, PushNotificationService],
 })
 export class NotificationsModule {}

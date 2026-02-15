@@ -1000,7 +1000,8 @@ export default function CalendarPage() {
                             }`}>
                               {booking.status === 'confirmed' ? 'Potwierdzona' :
                                booking.status === 'pending' ? 'Oczekująca' :
-                               booking.status === 'completed' ? 'Zakończona' : 'Anulowana'}
+                               booking.status === 'completed' ? 'Zakończona' :
+                               booking.status === 'no_show' ? 'Nie przyszedł' : 'Anulowana'}
                             </span>
                           </div>
                           <div className="text-base font-semibold text-[var(--text-primary)] mb-1">
@@ -1807,7 +1808,7 @@ export default function CalendarPage() {
                           selectedBooking.status === 'confirmed' ? 'bg-[var(--text-primary)]/20 text-[var(--text-primary)] border-[var(--text-primary)]/30' :
                           selectedBooking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
                           selectedBooking.status === 'cancelled' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                          selectedBooking.status === 'no_show' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                          selectedBooking.status === 'no_show' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
                           'bg-blue-500/20 text-blue-400 border-blue-500/30'
                         } focus:outline-none focus:ring-2 focus:ring-accent-neon`}
                       >
