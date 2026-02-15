@@ -716,7 +716,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const isSectionEnabled = (sectionType: string): boolean => {
     const sections = pageSettings.pageBuilder?.sections
     // Sekcje które domyślnie są WYŁĄCZONE gdy nie ma konfiguracji
-    const defaultDisabled = ['team', 'gallery', 'testimonials', 'about']
+    const defaultDisabled = ['team', 'gallery', 'testimonials']
     if (!sections) {
       return !defaultDisabled.includes(sectionType)
     }
