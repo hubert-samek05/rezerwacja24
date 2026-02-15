@@ -715,9 +715,16 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   // Funkcja sprawdzająca czy sekcja jest włączona w page builder
   const isSectionEnabled = (sectionType: string): boolean => {
     const sections = pageSettings.pageBuilder?.sections
-    if (!sections) return true
+    // Sekcje które domyślnie są WYŁĄCZONE gdy nie ma konfiguracji
+    const defaultDisabled = ['team', 'gallery', 'testimonials', 'about']
+    if (!sections) {
+      return !defaultDisabled.includes(sectionType)
+    }
     const section = sections.find((s: any) => s.type === sectionType)
-    return section ? section.enabled : true
+    if (!section) {
+      return !defaultDisabled.includes(sectionType)
+    }
+    return section.enabled
   }
 
   // Pobierz ustawienia sekcji
