@@ -31,6 +31,26 @@ interface GroupBooking {
   _count?: { participants: number }
 }
 
+interface PageSection {
+  id: string
+  type: string
+  enabled: boolean
+  order: number
+  settings: {
+    title?: string
+    subtitle?: string
+    padding?: 'small' | 'medium' | 'large'
+    heroVariant?: 'banner' | 'split' | 'centered' | 'video'
+    heroHeight?: 'small' | 'medium' | 'large' | 'full'
+  }
+}
+
+interface PageBuilderConfig {
+  templateId: 'elegant' | 'fresh' | 'minimal'
+  sections: PageSection[]
+  globalStyles?: { animations?: boolean }
+}
+
 interface PageSettings {
   servicesLayout?: 'grid' | 'list'
   showServiceImages?: boolean
@@ -49,6 +69,7 @@ interface PageSettings {
   bookingButtonText?: string
   buttonStyle?: 'rounded' | 'pill' | 'square'
   cardStyle?: 'shadow' | 'border' | 'flat'
+  pageBuilder?: PageBuilderConfig
 }
 
 interface FlexibleServiceSettings {
@@ -656,8 +677,43 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     }
   }
 
+  // Pobierz szablon
+  const templateId = pageSettings.pageBuilder?.templateId || 'fresh'
+  
+  // Style dla różnych szablonów
+  const getTemplateStyles = () => {
+    switch (templateId) {
+      case 'elegant':
+        return {
+          bgColor: 'bg-slate-900',
+          textColor: 'text-white',
+          cardBg: 'bg-slate-800/50 backdrop-blur-sm border border-slate-700',
+          sectionBg: 'bg-slate-800',
+          headingClass: 'font-serif',
+        }
+      case 'minimal':
+        return {
+          bgColor: 'bg-white',
+          textColor: 'text-slate-800',
+          cardBg: 'bg-white border border-slate-200',
+          sectionBg: 'bg-slate-50',
+          headingClass: 'font-light tracking-wide',
+        }
+      default:
+        return {
+          bgColor: 'bg-slate-50',
+          textColor: 'text-slate-800',
+          cardBg: 'bg-white shadow-lg shadow-slate-200/50',
+          sectionBg: 'bg-white',
+          headingClass: 'font-bold',
+        }
+    }
+  }
+  
+  const templateStyles = getTemplateStyles()
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={`min-h-screen ${templateStyles.bgColor}`}>
       {/* ========== ALERT O NIEOPŁACONEJ REZERWACJI ========== */}
       {pendingPaymentAlert?.show && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-white px-4 py-3 shadow-lg">
