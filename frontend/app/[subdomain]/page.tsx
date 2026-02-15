@@ -833,16 +833,29 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   {company.businessName}
                 </motion.h1>
 
-                {/* Opis - tylko jeśli włączony i styl banner */}
+                {/* Opis - skrócony do 180 znaków z przyciskiem "Czytaj więcej" */}
                 {pageSettings.showDescription && company.description && pageSettings.heroStyle === 'banner' && (
-                  <motion.p 
+                  <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.2 }}
-                    className="text-sm sm:text-base md:text-lg text-white/80 mb-6 sm:mb-8 max-w-lg leading-relaxed line-clamp-4 sm:line-clamp-none"
+                    className="mb-6 sm:mb-8 max-w-lg"
                   >
-                    {company.description}
-                  </motion.p>
+                    <p className="text-sm sm:text-base md:text-lg text-white/80 leading-relaxed">
+                      {company.description.length > 180
+                        ? `${company.description.slice(0, 180).trim()}...`
+                        : company.description}
+                    </p>
+                    {company.description.length > 180 && (
+                      <button
+                        onClick={() => document.getElementById('o-nas')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="mt-3 text-sm text-teal-400 hover:text-teal-300 flex items-center gap-1 transition-colors"
+                        style={{ color: pageSettings.accentColor }}
+                      >
+                        Czytaj więcej <ChevronDown className="w-4 h-4" />
+                      </button>
+                    )}
+                  </motion.div>
                 )}
 
                 {/* Przyciski */}
@@ -902,6 +915,27 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========== SEKCJA O NAS ========== */}
+      {isSectionEnabled('about') && company.description && company.description.length > 180 && (
+        <section id="o-nas" className="py-16 sm:py-20 bg-white">
+          <div className="max-w-4xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-6">
+                {getSectionSettings('about').title || 'O nas'}
+              </h2>
+              <p className="text-lg text-slate-600 leading-relaxed whitespace-pre-line">
+                {company.description}
+              </p>
+            </motion.div>
+          </div>
+        </section>
       )}
 
       {/* ========== SEKCJA USŁUG ========== */}
