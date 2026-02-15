@@ -18,7 +18,7 @@ interface Service {
   durationStep?: number; allowMultiDay?: boolean; pricePerHour?: number; pricePerDay?: number
 }
 
-interface Employee { id: string; firstName: string; lastName: string; role: string; services: string[] }
+interface Employee { id: string; firstName: string; lastName: string; role: string; services: string[]; avatar?: string | null }
 
 interface PackageItem { id: string; serviceId: string; service: Service; order: number }
 interface ServicePackage { id: string; name: string; description: string | null; price: number; originalPrice: number; duration: number; items: PackageItem[] }
@@ -712,6 +712,22 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   
   const templateStyles = getTemplateStyles()
 
+  // Funkcja sprawdzająca czy sekcja jest włączona w page builder
+  const isSectionEnabled = (sectionType: string): boolean => {
+    const sections = pageSettings.pageBuilder?.sections
+    if (!sections) return true
+    const section = sections.find((s: any) => s.type === sectionType)
+    return section ? section.enabled : true
+  }
+
+  // Pobierz ustawienia sekcji
+  const getSectionSettings = (sectionType: string): any => {
+    const sections = pageSettings.pageBuilder?.sections
+    if (!sections) return {}
+    const section = sections.find((s: any) => s.type === sectionType)
+    return section?.settings || {}
+  }
+
   return (
     <div className={`min-h-screen ${templateStyles.bgColor}`}>
       {/* ========== ALERT O NIEOPŁACONEJ REZERWACJI ========== */}
@@ -882,12 +898,17 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       )}
 
       {/* ========== SEKCJA USŁUG ========== */}
+      {isSectionEnabled('services') && (
       <section id="uslugi" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-6">
           {/* Nagłówek */}
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">Nasze usługi</h2>
-            <p className="text-slate-500">Wybierz usługę i umów się na wizytę</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">
+              {getSectionSettings('services').title || 'Nasze usługi'}
+            </h2>
+            <p className="text-slate-500">
+              {getSectionSettings('services').subtitle || 'Wybierz usługę i umów się na wizytę'}
+            </p>
           </div>
 
           {/* Zakładki Usługi / Pakiety / Zajęcia grupowe */}
@@ -1197,12 +1218,46 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
           )}
         </div>
       </section>
+      )}
+
+      {/* ========== SEKCJA ZESPOŁU ========== */}
+      {isSectionEnabled('team') && company.employees && company.employees.length > 0 && (
+        <section className="py-16 sm:py-20 bg-slate-50">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">
+                {getSectionSettings('team').title || 'Nasz zespół'}
+              </h2>
+              <p className="text-slate-500">
+                {getSectionSettings('team').subtitle || 'Poznaj naszych specjalistów'}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {company.employees.map((employee) => (
+                <div key={employee.id} className="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-lg transition-shadow">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                    {employee.avatar ? (
+                      <img src={employee.avatar} alt={employee.firstName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{employee.firstName[0]}{employee.lastName[0]}</span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-slate-800">{employee.firstName} {employee.lastName}</h3>
+                  <p className="text-sm text-slate-500">{employee.role || 'Specjalista'}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ========== GALERIA ========== */}
-      {(company as any).gallery && (company as any).gallery.length > 0 && (
+      {isSectionEnabled('gallery') && (company as any).gallery && (company as any).gallery.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">Galeria</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">
+              {getSectionSettings('gallery').title || 'Galeria'}
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {(company as any).gallery.slice(0, 8).map((image: string, index: number) => (
                 <motion.div
@@ -1261,6 +1316,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       )}
 
       {/* ========== KONTAKT ========== */}
+      {isSectionEnabled('contact') && (
       <section className="py-16 bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -1319,6 +1375,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
           </div>
         </div>
       </section>
+      )}
 
       {/* ========== FOOTER ========== */}
       <footer className="py-8 bg-slate-900">
