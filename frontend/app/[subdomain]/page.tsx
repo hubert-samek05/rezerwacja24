@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar, CalendarDays, Clock, MapPin, Phone, Mail, Star,
   Facebook, Instagram, Globe as GlobeIcon, ArrowRight, Loader2,
-  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet
+  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet, Info
 } from 'lucide-react'
 
 interface Service {
@@ -128,6 +128,9 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   // Zaliczki
   const [depositInfo, setDepositInfo] = useState<{ required: boolean; amount: number; reason: string } | null>(null)
   const [checkingDeposit, setCheckingDeposit] = useState(false)
+  // Modal szczegółów usługi
+  const [serviceDetailModal, setServiceDetailModal] = useState(false)
+  const [serviceDetailData, setServiceDetailData] = useState<Service | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -831,16 +834,29 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   {company.businessName}
                 </motion.h1>
 
-                {/* Opis - tylko jeśli włączony i styl banner */}
+                {/* Opis - skrócony w hero, max 180 znaków */}
                 {pageSettings.showDescription && company.description && pageSettings.heroStyle === 'banner' && (
-                  <motion.p 
+                  <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.2 }}
-                    className="text-sm sm:text-base md:text-lg text-white/80 mb-6 sm:mb-8 max-w-lg leading-relaxed line-clamp-4 sm:line-clamp-none"
+                    className="mb-6 sm:mb-8 max-w-xl"
                   >
-                    {company.description}
-                  </motion.p>
+                    <p className="text-sm sm:text-base md:text-lg text-white/90 leading-relaxed">
+                      {company.description.length > 180 
+                        ? `${company.description.slice(0, 180).trim()}...` 
+                        : company.description}
+                    </p>
+                    {company.description.length > 180 && (
+                      <button
+                        onClick={() => document.getElementById('o-nas')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="mt-2 text-sm text-white/70 hover:text-white flex items-center gap-1 transition-colors"
+                      >
+                        <span>Czytaj więcej</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    )}
+                  </motion.div>
                 )}
 
                 {/* Przyciski */}
@@ -900,6 +916,25 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========== SEKCJA O NAS - pełny opis (tylko gdy długi) ========== */}
+      {pageSettings.showDescription && company.description && company.description.length > 180 && (
+        <section id="o-nas" className="py-12 sm:py-16 bg-white border-b border-slate-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-6">O nas</h2>
+              <p className="text-slate-600 text-base sm:text-lg leading-relaxed whitespace-pre-line">
+                {company.description}
+              </p>
+            </motion.div>
+          </div>
+        </section>
       )}
 
       {/* ========== SEKCJA USŁUG ========== */}
@@ -1195,12 +1230,19 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   )}
                 </div>
 
-                {/* Przycisk rezerwacji - tylko dla siatki */}
+                {/* Przyciski - tylko dla siatki */}
                 {pageSettings.servicesLayout !== 'list' && (
-                  <div className="px-6 pb-6">
+                  <div className="px-6 pb-6 flex gap-2">
                     <button
-                      onClick={() => { setSelectedService(service); setBookingModal(true) }}
-                      className={`w-full py-3 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2`}
+                      onClick={(e) => { e.stopPropagation(); setServiceDetailData(service); setServiceDetailModal(true) }}
+                      className={`flex-1 py-3 text-slate-600 font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50`}
+                    >
+                      <Info className="w-4 h-4" />
+                      Szczegóły
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedService(service); setBookingModal(true) }}
+                      className={`flex-1 py-3 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2`}
                       style={{ backgroundColor: pageSettings.primaryColor }}
                     >
                       <Calendar className="w-4 h-4" />
@@ -2565,6 +2607,58 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   </button>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* ========== MODAL SZCZEGÓŁÓW USŁUGI ========== */}
+      <AnimatePresence>
+        {serviceDetailModal && serviceDetailData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setServiceDetailModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white">
+                <button onClick={() => setServiceDetailModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <span className="inline-block px-3 py-1 bg-teal-500/20 text-teal-300 text-xs font-medium rounded-full mb-3">
+                  {serviceDetailData.service_categories?.name || (typeof serviceDetailData.category === 'string' ? serviceDetailData.category : (serviceDetailData.category as any)?.name) || 'Usługa'}
+                </span>
+                <h2 className="text-2xl font-bold mb-2">{serviceDetailData.name}</h2>
+                <div className="flex items-center gap-4 text-white/80 text-sm">
+                  <div className="flex items-center gap-1"><Clock className="w-4 h-4" /><span>{serviceDetailData.duration} min</span></div>
+                  <div className="text-xl font-bold text-white">{serviceDetailData.price || serviceDetailData.basePrice} zł</div>
+                </div>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[50vh]">
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Opis usługi</h3>
+                {serviceDetailData.description ? (
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-line">{serviceDetailData.description}</p>
+                ) : (
+                  <p className="text-slate-400 italic">Brak opisu dla tej usługi.</p>
+                )}
+              </div>
+              <div className="p-6 border-t border-slate-100 bg-slate-50">
+                <button
+                  onClick={() => { setServiceDetailModal(false); setSelectedService(serviceDetailData); setBookingModal(true) }}
+                  className={`w-full py-3.5 text-white font-semibold ${getButtonRoundedClass()} transition-all shadow-lg flex items-center justify-center gap-2`}
+                  style={{ backgroundColor: pageSettings.primaryColor }}
+                >
+                  <Calendar className="w-5 h-5" />
+                  {pageSettings.bookingButtonText || 'Zarezerwuj'} teraz
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
