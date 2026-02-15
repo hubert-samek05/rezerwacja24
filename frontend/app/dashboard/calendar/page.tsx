@@ -1068,6 +1068,8 @@ export default function CalendarPage() {
                               ? 'bg-purple-500/30 border border-purple-500/50'
                               : dayBookings[0].status === 'confirmed' 
                                 ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
+                                ? 'bg-red-500/20 border border-red-500/30'
                                 : 'bg-yellow-500/20 border border-yellow-500/30'
                           }`}
                         >
@@ -1118,6 +1120,8 @@ export default function CalendarPage() {
                                   ? 'bg-purple-500/30 border border-purple-500/50'
                                   : booking.status === 'confirmed' 
                                     ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                    : booking.status === 'no_show' || booking.status === 'cancelled'
+                                    ? 'bg-red-500/20 border border-red-500/30'
                                     : 'bg-yellow-500/20 border border-yellow-500/30'
                               }`}
                             >
@@ -1223,6 +1227,8 @@ export default function CalendarPage() {
                                   ? 'bg-blue-500/30 border border-blue-500/50'
                                   : dayBookings[0].status === 'confirmed' 
                                   ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                  : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
+                                  ? 'bg-red-500/20 border border-red-500/30'
                                   : 'bg-yellow-500/20 border border-yellow-500/30'
                               }`}
                             >
@@ -1247,6 +1253,8 @@ export default function CalendarPage() {
                                 className={`p-1.5 rounded cursor-pointer hover:shadow-lg transition-all ${
                                   dayBookings[0].status === 'confirmed' 
                                     ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                    : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
+                                    ? 'bg-red-500/20 border border-red-500/30'
                                     : 'bg-yellow-500/20 border border-yellow-500/30'
                                 }`}
                               >
@@ -1322,6 +1330,8 @@ export default function CalendarPage() {
                               ? 'bg-blue-500/30 text-blue-300'
                               : booking.status === 'confirmed'
                               ? 'bg-[var(--text-primary)]/30 text-[var(--text-primary)]'
+                              : booking.status === 'no_show' || booking.status === 'cancelled'
+                              ? 'bg-red-500/20 text-red-300'
                               : 'bg-yellow-500/20 text-yellow-300'
                           }`}
                           onClick={(e) => {
@@ -1346,7 +1356,7 @@ export default function CalendarPage() {
         )}
 
         {/* Legend */}
-        <div className="mt-6 flex items-center justify-center space-x-6">
+        <div className="mt-6 flex items-center justify-center flex-wrap gap-4">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30 rounded"></div>
             <span className="text-sm text-[var(--text-muted)]/70">Potwierdzona</span>
@@ -1354,6 +1364,10 @@ export default function CalendarPage() {
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-yellow-500/20 border border-yellow-500/30 rounded"></div>
             <span className="text-sm text-[var(--text-muted)]/70">Oczekująca</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-red-500/20 border border-red-500/30 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]/70">Nie przyszedł / Anulowana</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-white/5 border border-white/10 rounded"></div>
