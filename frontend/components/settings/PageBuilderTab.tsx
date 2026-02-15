@@ -7,7 +7,8 @@ import {
   Image, Info, Sparkles, ImageIcon, MessageSquare, Users, HelpCircle, 
   Mail, Megaphone, DollarSign, Star, MousePointer, Check, ChevronRight,
   Monitor, Smartphone, RotateCcw, Save, Loader2, X, ChevronDown, ChevronUp,
-  Sliders, Layers, PaintBucket, Move, Plus, Trash2, ExternalLink, Maximize2
+  Sliders, Layers, PaintBucket, Move, Plus, Trash2, ExternalLink, Maximize2,
+  Upload
 } from 'lucide-react'
 import { CompanyData, PageSettings } from '@/lib/company'
 import { 
@@ -402,9 +403,17 @@ function LivePreview({ companyData, pageBuilder, previewMode }: {
                     'h-96'
                   }`}
                   style={{ 
-                    background: `linear-gradient(135deg, ${pageSettings.primaryColor || template.defaultColors.primary}, ${pageSettings.accentColor || template.defaultColors.accent})`
+                    background: companyData.banner 
+                      ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${companyData.banner}) center/cover`
+                      : `linear-gradient(135deg, ${pageSettings.primaryColor || template.defaultColors.primary}, ${pageSettings.accentColor || template.defaultColors.accent})`
                   }}
                 >
+                  {/* Logo */}
+                  {companyData.logo && (
+                    <div className="absolute top-4 left-4">
+                      <img src={companyData.logo} alt="Logo" className="h-10 w-auto object-contain" />
+                    </div>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center text-white text-center p-6">
                     <div>
                       <h1 className="text-2xl font-bold mb-2">{companyData.businessName}</h1>
@@ -525,6 +534,51 @@ export default function PageBuilderTab({ companyData, setCompanyData, onSave, is
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop')
   const [editingSection, setEditingSection] = useState<string | null>(null)
   const [showFullPreview, setShowFullPreview] = useState(false)
+  const [logoPreview, setLogoPreview] = useState<string | null>(companyData.logo || null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(companyData.banner || null)
+
+  // Aktualizuj podgląd gdy zmienią się dane
+  useEffect(() => {
+    setLogoPreview(companyData.logo || null)
+    setBannerPreview(companyData.banner || null)
+  }, [companyData.logo, companyData.banner])
+
+  // Funkcje uploadu
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setLogoPreview(result)
+        setCompanyData({ ...companyData, logo: result })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setBannerPreview(result)
+        setCompanyData({ ...companyData, banner: result })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeLogo = () => {
+    setLogoPreview(null)
+    setCompanyData({ ...companyData, logo: undefined })
+  }
+
+  const removeBanner = () => {
+    setBannerPreview(null)
+    setCompanyData({ ...companyData, banner: undefined })
+  }
 
   const updatePageBuilder = (updates: Partial<PageBuilderConfig>) => {
     setCompanyData({
@@ -537,9 +591,16 @@ export default function PageBuilderTab({ companyData, setCompanyData, onSave, is
   }
 
   const updateSection = (sectionId: string, updates: Partial<PageSection>) => {
-    const newSections = pageBuilder.sections.map(s => 
-      s.id === sectionId ? { ...s, ...updates } : s
-    )
+    const newSections = pageBuilder.sections.map(s => {
+      if (s.id === sectionId) {
+        // Merguj settings osobno żeby nie nadpisać całego obiektu
+        const newSettings = updates.settings 
+          ? { ...s.settings, ...updates.settings }
+          : s.settings
+        return { ...s, ...updates, settings: newSettings }
+      }
+      return s
+    })
     updatePageBuilder({ sections: newSections })
   }
 
@@ -762,6 +823,59 @@ export default function PageBuilderTab({ companyData, setCompanyData, onSave, is
                   className="space-y-5"
                 >
                   <h3 className="font-semibold text-slate-800">Dostosuj wygląd</h3>
+                  
+                  {/* Logo i Banner */}
+                  <div className="space-y-4 pb-5 border-b border-slate-200">
+                    <label className="text-sm font-medium text-slate-700">Logo i banner</label>
+                    
+                    {/* Logo */}
+                    <div className="space-y-2">
+                      <span className="text-xs text-slate-500">Logo firmy</span>
+                      {logoPreview ? (
+                        <div className="relative inline-block">
+                          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <img src={logoPreview} alt="Logo" className="h-16 w-auto object-contain" />
+                          </div>
+                          <button
+                            onClick={removeLogo}
+                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-teal-500 hover:bg-teal-50/50 transition-colors">
+                          <Upload className="w-5 h-5 text-slate-400" />
+                          <span className="text-sm text-slate-500">Dodaj logo</span>
+                          <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                    
+                    {/* Banner */}
+                    <div className="space-y-2">
+                      <span className="text-xs text-slate-500">Banner (tło hero)</span>
+                      {bannerPreview ? (
+                        <div className="relative">
+                          <div className="rounded-xl overflow-hidden border border-slate-200">
+                            <img src={bannerPreview} alt="Banner" className="w-full h-24 object-cover" />
+                          </div>
+                          <button
+                            onClick={removeBanner}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-teal-500 hover:bg-teal-50/50 transition-colors">
+                          <Upload className="w-5 h-5 text-slate-400" />
+                          <span className="text-sm text-slate-500">Dodaj banner</span>
+                          <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                  </div>
                   
                   {/* Kolory */}
                   <div className="space-y-3">
