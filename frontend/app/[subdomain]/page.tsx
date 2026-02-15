@@ -1368,23 +1368,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
               </div>
 
               <div className="p-6 flex-1">
-                {/* Step indicator */}
-                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && !bookingSuccess && (
-                  <div className="flex items-center justify-center gap-2 mb-6">
-                    {[{n:1,l:'Specjalista'},{n:2,l:'Data'},{n:3,l:'Godzina'},{n:4,l:'Dane'},{n:5,l:'Płatność'}].map((s,i) => (
-                      <div key={s.n} className="flex items-center">
-                        <div className="flex flex-col items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${s.n<bookingStep?'bg-teal-500 text-white':s.n===bookingStep?'bg-slate-800 text-white ring-4 ring-teal-100':'bg-slate-100 text-slate-400'}`}>
-                            {s.n<bookingStep?<Check className="w-5 h-5"/>:s.n}
-                          </div>
-                          <span className={`text-xs mt-1 font-medium ${s.n===bookingStep?'text-slate-800':'text-slate-400'}`}>{s.l}</span>
-                        </div>
-                        {i<4&&<div className={`w-8 h-1 mx-1 rounded-full mb-5 ${s.n<bookingStep?'bg-teal-500':'bg-slate-200'}`}/>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* Info */}
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl mb-6">
                   <div className="flex items-center gap-2 text-slate-500">
@@ -1978,104 +1961,29 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   </div>
                 )}
 
-                {/* KROK 1: Wybór specjalisty */}
+                {/* KROK 1: Pracownik - tylko dla standardowych usług */}
                 {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 1 && (
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                      <User className="w-5 h-5 text-teal-500" />
-                      Wybierz specjalistę
-                    </p>
-                    <button onClick={() => { setSelectedEmployee('any'); setBookingStep(2) }} className="w-full p-4 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-left transition-colors">
+                    <p className="text-sm font-medium text-slate-700 mb-3">Wybierz specjalistę</p>
+                    <button onClick={() => { setSelectedEmployee('any'); setBookingModal(false); setCalendarModal(true) }} className="w-full p-4 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-left transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"><Sparkles className="w-5 h-5" /></div>
-                        <div className="flex-1"><div className="font-medium">Dowolny specjalista</div><div className="text-sm text-white/70">Najszybszy termin</div></div>
-                        <ChevronRight className="w-5 h-5 opacity-70" />
+                        <div><div className="font-medium">Dowolny specjalista</div><div className="text-sm text-white/70">Najszybszy termin</div></div>
                       </div>
                     </button>
                     {getAvailableEmployees().map((emp) => (
-                      <button key={emp.id} onClick={() => { setSelectedEmployee(emp.id); setBookingStep(2) }} className="w-full p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-left transition-all">
+                      <button key={emp.id} onClick={() => { setSelectedEmployee(emp.id); setBookingModal(false); setCalendarModal(true) }} className="w-full p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-left transition-all">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center"><User className="w-5 h-5 text-slate-600" /></div>
-                          <div className="flex-1"><div className="font-medium text-slate-800">{emp.firstName} {emp.lastName}</div><div className="text-sm text-slate-500">{emp.role}</div></div>
-                          <ChevronRight className="w-5 h-5 text-slate-400" />
+                          <div><div className="font-medium text-slate-800">{emp.firstName} {emp.lastName}</div><div className="text-sm text-slate-500">{emp.role}</div></div>
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
 
-                {/* KROK 2: Wybór daty */}
-                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 2 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-teal-500" />
-                        Wybierz datę
-                      </p>
-                      <button onClick={() => setBookingStep(1)} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                        <ChevronLeft className="w-4 h-4" /> Wstecz
-                      </button>
-                    </div>
-                    <div className="bg-white rounded-xl border border-slate-200 p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth() - 1); setCurrentMonth(n) }} className="p-2 hover:bg-slate-100 rounded-lg"><ChevronLeft className="w-5 h-5 text-slate-600" /></button>
-                        <span className="font-semibold text-slate-800">{currentMonth.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
-                        <button onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth() + 1); setCurrentMonth(n) }} className="p-2 hover:bg-slate-100 rounded-lg"><ChevronRight className="w-5 h-5 text-slate-600" /></button>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 mb-2">{['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'].map(d => <div key={d} className="text-center text-xs font-medium text-slate-400 py-2">{d}</div>)}</div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {(() => {
-                          const year = currentMonth.getFullYear(); const month = currentMonth.getMonth()
-                          const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0)
-                          const daysInMonth = lastDay.getDate(); const startingDayOfWeek = (firstDay.getDay() + 6) % 7
-                          const days = []; const today = new Date(); today.setHours(0, 0, 0, 0)
-                          const minDateVal = new Date(getMinDate()); const maxDateVal = new Date(getMaxDate())
-                          for (let i = 0; i < startingDayOfWeek; i++) days.push(<div key={`e-${i}`} />)
-                          for (let day = 1; day <= daysInMonth; day++) {
-                            const date = new Date(year, month, day); const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                            const isSelected = selectedDate === dateString; const isToday = date.getTime() === today.getTime(); const isDisabled = date < minDateVal || date > maxDateVal
-                            days.push(<button key={day} onClick={() => { if (!isDisabled) { setSelectedDate(dateString); setSelectedTime(''); setBookingStep(3) } }} disabled={isDisabled} className={`aspect-square rounded-lg text-sm font-medium transition-all ${isSelected ? 'bg-teal-500 text-white' : isToday ? 'bg-teal-100 text-teal-700' : isDisabled ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-100'}`}>{day}</button>)
-                          }
-                          return days
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* KROK 3: Wybór godziny */}
-                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 3 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-teal-500" />
-                        Wybierz godzinę
-                        <span className="text-slate-400 font-normal">({selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })})</span>
-                      </p>
-                      <button onClick={() => { setSelectedDate(''); setBookingStep(2) }} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                        <ChevronLeft className="w-4 h-4" /> Wstecz
-                      </button>
-                    </div>
-                    {loadingSlots ? (
-                      <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>
-                    ) : availableSlots.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                        {availableSlots.map((slot) => (
-                          <button key={slot.time} onClick={() => { setSelectedTime(slot.time); setSelectedSlotEmployee(slot.employees?.[0]?.employeeId || slot.employeeId || ''); setBookingStep(4) }} className="py-3 px-2 rounded-xl text-sm font-medium transition-all bg-slate-50 hover:bg-teal-500 hover:text-white text-slate-700">{slot.time}</button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-500">Brak dostępnych terminów</p>
-                        <button onClick={() => { setSelectedDate(''); setBookingStep(2) }} className="mt-4 text-teal-500 hover:text-teal-600 font-medium">Wybierz inną datę</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* KROK 4: Dane klienta */}
-                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 4 && !bookingSuccess && (
+                {/* KROK 3: Dane klienta */}
+                {bookingStep === 3 && selectedTime && !bookingSuccess && (
                   <div className="space-y-5">
                     {/* Podsumowanie terminu - elegancka karta */}
                     <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl">
@@ -2211,55 +2119,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         </div>
                       )}
                     </div>
-                    {/* Przycisk Dalej do kroku płatności */}
-                    <div className="flex gap-3">
-                      <button onClick={() => setBookingStep(3)} className="flex-1 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 flex items-center justify-center gap-2"><ChevronLeft className="w-5 h-5" />Wstecz</button>
-                      <button onClick={() => setBookingStep(5)} disabled={!customerName || !customerPhone} className="flex-1 py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white font-medium rounded-xl flex items-center justify-center gap-2">Dalej<ChevronRight className="w-5 h-5" /></button>
-                    </div>
-                  </div>
-                )}
-
-                {/* KROK 5: Metoda płatności */}
-                {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 5 && !bookingSuccess && (
-                  <div className="space-y-5">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-700 flex items-center gap-2"><Wallet className="w-5 h-5 text-teal-500" />Wybierz metodę płatności</p>
-                      <button onClick={() => setBookingStep(4)} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Wstecz</button>
-                    </div>
-                      <div className="space-y-3">
-                        <label className="block text-sm font-medium text-slate-700">Metoda płatności</label>
-                        <div className="space-y-2">
-                          {company?.paymentSettings?.acceptCashPayment && (
-                            <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cash' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                              <input type="radio" name="paymentMethod" value="cash" checked={paymentMethod === 'cash'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
-                              <div className="flex-1">
-                                <div className="font-medium text-slate-800">Płatność na miejscu</div>
-                                <div className="text-sm text-slate-500">Gotówka lub karta przy wizycie</div>
-                              </div>
-                            </label>
-                          )}
-                          {company?.paymentSettings?.przelewy24Enabled && (
-                            <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'przelewy24' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                              <input type="radio" name="paymentMethod" value="przelewy24" checked={paymentMethod === 'przelewy24'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
-                              <div className="flex-1">
-                                <div className="font-medium text-slate-800">Przelewy24</div>
-                                <div className="text-sm text-slate-500">BLIK, szybki przelew, karta online</div>
-                              </div>
-                              <div className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">P24</div>
-                            </label>
-                          )}
-                          {company?.paymentSettings?.stripeEnabled && (
-                            <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                              <input type="radio" name="paymentMethod" value="stripe" checked={paymentMethod === 'stripe'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
-                              <div className="flex-1">
-                                <div className="font-medium text-slate-800">Karta płatnicza</div>
-                                <div className="text-sm text-slate-500">Visa, Mastercard, Apple Pay</div>
-                              </div>
-                              <div className="px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">Stripe</div>
-                            </label>
-                          )}
-                        </div>
-                      </div>
                     {/* Informacja o zaliczce */}
                     {paymentMethod === 'cash' && depositInfo?.required && depositInfo.amount > 0 && (
                       <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -2273,9 +2132,52 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               Aby potwierdzić rezerwację, wymagana jest zaliczka w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
                             </p>
                             <p className="text-xs text-amber-600 mt-2">
-                              Pozostała kwota do zapłaty na miejscu.
+                              Pozostała kwota do zapłaty na miejscu. Zaliczka zostanie odliczona od całkowitej ceny usługi.
                             </p>
                           </div>
+                        </div>
+                      </div>
+                    )}
+                    {checkingDeposit && (
+                      <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Sprawdzanie wymagań zaliczki...
+                      </div>
+                    )}
+                    {/* Metoda płatności - ukryta dla usług elastycznych chyba że włączona w ustawieniach */}
+                    {(!(selectedService?.flexibleDuration || selectedService?.allowMultiDay) || company?.flexibleServiceSettings?.showPaymentOptions) && company?.paymentSettings && (company.paymentSettings.acceptCashPayment || company.paymentSettings.przelewy24Enabled || company.paymentSettings.stripeEnabled) && (
+                      <div className="space-y-3">
+                        <label className="block text-sm font-medium text-slate-700">Metoda płatności</label>
+                        <div className="space-y-2">
+                          {company.paymentSettings.acceptCashPayment && (
+                            <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cash' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                              <input type="radio" name="paymentMethod" value="cash" checked={paymentMethod === 'cash'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
+                              <div className="flex-1">
+                                <div className="font-medium text-slate-800">Płatność na miejscu</div>
+                                <div className="text-sm text-slate-500">Gotówka lub karta przy wizycie</div>
+                              </div>
+                            </label>
+                          )}
+                          {company.paymentSettings.przelewy24Enabled && (
+                            <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'przelewy24' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                              <input type="radio" name="paymentMethod" value="przelewy24" checked={paymentMethod === 'przelewy24'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
+                              <div className="flex-1">
+                                <div className="font-medium text-slate-800">Przelewy24</div>
+                                <div className="text-sm text-slate-500">BLIK, szybki przelew, karta online</div>
+                              </div>
+                              <div className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">P24</div>
+                            </label>
+                          )}
+                          {company.paymentSettings.stripeEnabled && (
+                            <label className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                              <input type="radio" name="paymentMethod" value="stripe" checked={paymentMethod === 'stripe'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-4 h-4 text-teal-500" />
+                              <div className="flex-1">
+                                <div className="font-medium text-slate-800">Karta płatnicza</div>
+                                <div className="text-sm text-slate-500">Visa, Mastercard, Apple Pay</div>
+                              </div>
+                              <div className="px-2 py-1 bg-indigo-600 text-white text-xs font-bold rounded">Stripe</div>
+                            </label>
+                          )}
                         </div>
                       </div>
                     )}
