@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar, CalendarDays, Clock, MapPin, Phone, Mail, Star,
   Facebook, Instagram, Globe as GlobeIcon, ArrowRight, Loader2,
-  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle
+  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Info
 } from 'lucide-react'
 
 interface Service {
@@ -143,6 +143,9 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   // Wykrywanie powrotu z płatności
   const [pendingPaymentAlert, setPendingPaymentAlert] = useState<{ bookingId: string; show: boolean } | null>(null)
   const [loadingServiceBookings, setLoadingServiceBookings] = useState(false)
+  // Modal szczegółów usługi
+  const [serviceDetailModal, setServiceDetailModal] = useState(false)
+  const [serviceDetailData, setServiceDetailData] = useState<Service | null>(null)
   // Uwagi do rezerwacji (dla usług elastycznych)
   const [customerNotes, setCustomerNotes] = useState<string>('')
 
@@ -1236,12 +1239,19 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   )}
                 </div>
 
-                {/* Przycisk rezerwacji - tylko dla siatki */}
+                {/* Przyciski - tylko dla siatki */}
                 {pageSettings.servicesLayout !== 'list' && (
-                  <div className="px-6 pb-6">
+                  <div className="px-6 pb-6 flex gap-2">
+                    <button
+                      onClick={() => { setServiceDetailData(service); setServiceDetailModal(true) }}
+                      className={`flex-1 py-3 text-slate-600 font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50`}
+                    >
+                      <Info className="w-4 h-4" />
+                      Szczegóły
+                    </button>
                     <button
                       onClick={() => { setSelectedService(service); setBookingModal(true) }}
-                      className={`w-full py-3 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2`}
+                      className={`flex-1 py-3 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2`}
                       style={{ backgroundColor: pageSettings.primaryColor }}
                     >
                       <Calendar className="w-4 h-4" />
@@ -2511,6 +2521,81 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   </button>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========== MODAL SZCZEGÓŁÓW USŁUGI ========== */}
+      <AnimatePresence>
+        {serviceDetailModal && serviceDetailData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setServiceDetailModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-1 rounded-full">
+                      {serviceDetailData.service_categories?.name || 'Usługa'}
+                    </span>
+                    <h2 className="text-2xl font-bold text-slate-800 mt-2">{serviceDetailData.name}</h2>
+                  </div>
+                  <button
+                    onClick={() => setServiceDetailModal(false)}
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-500" />
+                  </button>
+                </div>
+                
+                {/* Cena i czas */}
+                <div className="flex items-center gap-4 mt-4">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Clock className="w-4 h-4" />
+                    <span>{serviceDetailData.duration} min</span>
+                  </div>
+                  <div className="text-xl font-bold text-slate-800">
+                    {serviceDetailData.price || serviceDetailData.basePrice} zł
+                  </div>
+                </div>
+              </div>
+              
+              {/* Opis */}
+              <div className="p-6">
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Opis usługi</h3>
+                {serviceDetailData.description ? (
+                  <p className="text-slate-600 leading-relaxed whitespace-pre-line">{serviceDetailData.description}</p>
+                ) : (
+                  <p className="text-slate-400 italic">Brak opisu dla tej usługi.</p>
+                )}
+              </div>
+              
+              {/* Przycisk rezerwacji */}
+              <div className="p-6 border-t border-slate-100 bg-slate-50">
+                <button
+                  onClick={() => {
+                    setServiceDetailModal(false)
+                    setSelectedService(serviceDetailData)
+                    setBookingModal(true)
+                  }}
+                  className="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-5 h-5" />
+                  Zarezerwuj teraz
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
