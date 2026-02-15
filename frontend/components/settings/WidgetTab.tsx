@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { Copy, Check, Code, ExternalLink, Eye, Smartphone, Monitor, RefreshCw, Palette } from 'lucide-react'
 import { getTenantId } from '@/lib/storage'
 
-export default function WidgetTab() {
+interface WidgetTabProps {
+  subdomain?: string
+}
+
+export default function WidgetTab({ subdomain }: WidgetTabProps) {
   const [copied, setCopied] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop')
   const [tenantId, setTenantId] = useState('')
@@ -17,11 +21,12 @@ export default function WidgetTab() {
   }, [])
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.rezerwacja24.pl'
+  const bookingUrl = subdomain ? `https://${subdomain}.rezerwacja24.pl` : `${apiUrl}/booking/${tenantId}`
   const widgetUrl = `${apiUrl}/widget/${tenantId}`
   
   // Kod przycisku - prosty link
   const buttonCode = `<!-- Przycisk Rezerwacji - Rezerwacja24 -->
-<a href="${apiUrl}/booking/${tenantId}" 
+<a href="${bookingUrl}" 
    target="_blank"
    rel="noopener"
    style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:${widgetColor};color:#fff;border-radius:10px;text-decoration:none;font-family:system-ui,-apple-system,sans-serif;font-weight:600;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,0.15);transition:transform 0.2s,box-shadow 0.2s;"
@@ -45,7 +50,7 @@ export default function WidgetTab() {
   btn.style.cssText = 'position:fixed;${widgetPosition === 'bottom-right' ? 'right:24px' : 'left:24px'};bottom:24px;width:60px;height:60px;background:${widgetColor};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:9999;color:#fff;transition:transform 0.3s;';
   btn.onmouseover = function() { this.style.transform = 'scale(1.1)'; };
   btn.onmouseout = function() { this.style.transform = 'scale(1)'; };
-  btn.onclick = function() { window.open('${apiUrl}/booking/${tenantId}', '_blank'); };
+  btn.onclick = function() { window.open('${bookingUrl}', '_blank'); };
   document.body.appendChild(btn);
 })();
 </script>`

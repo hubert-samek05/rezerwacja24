@@ -651,7 +651,7 @@ export default function SettingsPage() {
           {activeTab === 'notifications' && <NotificationsTab />}
           {activeTab === 'consent' && <ConsentTab />}
           {activeTab === 'api' && <ApiTab />}
-          {activeTab === 'widget' && <WidgetTab />}
+          {activeTab === 'widget' && <WidgetTab subdomain={companyData.subdomain} />}
           {activeTab === 'integrations' && <IntegrationsTab />}
           {activeTab === 'import' && <ImportDataTab />}
           {activeTab === 'account-types' && (
