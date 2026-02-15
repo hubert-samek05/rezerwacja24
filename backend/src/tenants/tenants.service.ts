@@ -153,10 +153,16 @@ export class TenantsService {
     showOpeningHours?: boolean;
     showSocialMedia?: boolean;
     showDescription?: boolean;
+    showAddress?: boolean;
+    showPhone?: boolean;
+    showEmail?: boolean;
     primaryColor?: string;
     accentColor?: string;
     heroStyle?: 'banner' | 'minimal' | 'none';
     bookingButtonText?: string;
+    buttonStyle?: 'rounded' | 'pill' | 'square';
+    cardStyle?: 'shadow' | 'border' | 'flat';
+    pageBuilder?: any;
   }) {
     // Pobierz aktualne ustawienia
     const tenant = await this.prisma.tenants.findUnique({
@@ -176,10 +182,16 @@ export class TenantsService {
       showOpeningHours: pageSettings.showOpeningHours ?? currentSettings.showOpeningHours ?? true,
       showSocialMedia: pageSettings.showSocialMedia ?? currentSettings.showSocialMedia ?? true,
       showDescription: pageSettings.showDescription ?? currentSettings.showDescription ?? true,
+      showAddress: pageSettings.showAddress ?? currentSettings.showAddress ?? true,
+      showPhone: pageSettings.showPhone ?? currentSettings.showPhone ?? true,
+      showEmail: pageSettings.showEmail ?? currentSettings.showEmail ?? true,
       primaryColor: pageSettings.primaryColor ?? currentSettings.primaryColor ?? '#0F6048',
       accentColor: pageSettings.accentColor ?? currentSettings.accentColor ?? '#41FFBC',
       heroStyle: pageSettings.heroStyle ?? currentSettings.heroStyle ?? 'banner',
       bookingButtonText: pageSettings.bookingButtonText ?? currentSettings.bookingButtonText ?? 'Zarezerwuj',
+      buttonStyle: pageSettings.buttonStyle ?? currentSettings.buttonStyle ?? 'rounded',
+      cardStyle: pageSettings.cardStyle ?? currentSettings.cardStyle ?? 'shadow',
+      pageBuilder: pageSettings.pageBuilder ?? currentSettings.pageBuilder ?? null,
     };
 
     return this.prisma.tenants.update({

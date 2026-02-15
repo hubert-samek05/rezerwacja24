@@ -453,8 +453,7 @@ export default function SettingsPage() {
       items: [
         { id: 'company', icon: Building2, label: 'Dane firmy', desc: 'Nazwa, adres, kontakt' },
         { id: 'subdomain', icon: Globe, label: 'Subdomena', desc: 'Adres strony rezerwacji' },
-        { id: 'branding', icon: Palette, label: 'Wygląd i funkcje strony', desc: 'Personalizuj swoją stronę rezerwacji' },
-        { id: 'page-builder', icon: Palette, label: 'Edytor strony', desc: 'Szablony i zaawansowana personalizacja' },
+        { id: 'page-builder', icon: Palette, label: 'Wygląd strony WWW', desc: 'Szablony, sekcje i personalizacja' },
         { id: 'gallery', icon: Upload, label: 'Galeria zdjęć', desc: 'Zdjęcia firmy i usług' },
         { id: 'hours', icon: Clock, label: 'Godziny otwarcia', desc: 'Dni i godziny pracy' },
         { id: 'flexible-services', icon: Clock, label: 'Usługi na godziny/dni', desc: 'Ustawienia rezerwacji elastycznych' },
@@ -549,10 +548,6 @@ export default function SettingsPage() {
 
           {activeTab === 'subdomain' && (
             <SubdomainTab companyData={companyData} onUpdate={loadCompanyData} />
-          )}
-
-          {activeTab === 'branding' && (
-            <BrandingTab companyData={companyData} setCompanyData={setCompanyData} onSave={handleSaveBranding} isLoading={isLoading} />
           )}
 
           {activeTab === 'page-builder' && (
