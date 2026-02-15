@@ -1171,36 +1171,43 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                 )}
                 
                 {/* Treść karty */}
-                <div className={pageSettings.servicesLayout === 'list' ? "p-5 flex-1 flex items-center gap-6" : "p-6 flex-1"}>
+                <div className={pageSettings.servicesLayout === 'list' ? "p-4 flex-1" : "p-6 flex-1"}>
                   {pageSettings.servicesLayout === 'list' ? (
                     <>
-                      {/* Lista - układ poziomy */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-lg font-semibold text-slate-800">{service.name}</h3>
-                          <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs font-medium rounded-full">
-                            {service.service_categories?.name || (typeof service.category === 'string' ? service.category : (service.category as any)?.name) || 'Usługa'}
-                          </span>
+                      {/* Lista - układ responsywny */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                        {/* Nazwa i kategoria */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 truncate">{service.name}</h3>
+                            <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs font-medium rounded-full whitespace-nowrap">
+                              {service.service_categories?.name || (typeof service.category === 'string' ? service.category : (service.category as any)?.name) || 'Usługa'}
+                            </span>
+                          </div>
+                          <p className="text-slate-500 text-sm line-clamp-1 hidden sm:block">{service.description || ''}</p>
                         </div>
-                        <p className="text-slate-500 text-sm line-clamp-1">{service.description || ''}</p>
+                        {/* Czas, cena i przycisk */}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {pageSettings.showServiceDuration !== false && (
+                            <div className="flex items-center gap-1 text-slate-400 text-sm whitespace-nowrap">
+                              <Clock className="w-4 h-4" />
+                              <span>{service.duration} min</span>
+                            </div>
+                          )}
+                          {pageSettings.showServicePrices !== false && (
+                            <div className="text-lg sm:text-xl font-bold text-slate-800 whitespace-nowrap">{service.price || service.basePrice} zł</div>
+                          )}
+                          <button
+                            onClick={() => { setSelectedService(service); setBookingModal(true) }}
+                            className={`px-4 py-2 text-white font-medium text-sm ${getButtonRoundedClass()} transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0`}
+                            style={{ backgroundColor: pageSettings.primaryColor }}
+                          >
+                            <Calendar className="w-4 h-4" />
+                            <span className="hidden sm:inline">{pageSettings.bookingButtonText || 'Zarezerwuj'}</span>
+                            <span className="sm:hidden">Rezerwuj</span>
+                          </button>
+                        </div>
                       </div>
-                      {pageSettings.showServiceDuration !== false && (
-                        <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <Clock className="w-4 h-4" />
-                          <span>{service.duration} min</span>
-                        </div>
-                      )}
-                      {pageSettings.showServicePrices !== false && (
-                        <div className="text-xl font-bold text-slate-800">{service.price || service.basePrice} zł</div>
-                      )}
-                      <button
-                        onClick={() => { setSelectedService(service); setBookingModal(true) }}
-                        className={`px-5 py-2.5 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center gap-2`}
-                        style={{ backgroundColor: pageSettings.primaryColor }}
-                      >
-                        <Calendar className="w-4 h-4" />
-                        {pageSettings.bookingButtonText || 'Zarezerwuj'}
-                      </button>
                     </>
                   ) : (
                     <>
@@ -1409,19 +1416,19 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                 </button>
               </div>
 
-              <div className="p-6 flex-1">
-                {/* Step indicator */}
+              <div className="p-4 sm:p-6 flex-1">
+                {/* Step indicator - responsywny */}
                 {!selectedService.flexibleDuration && !selectedService.allowMultiDay && !bookingSuccess && (
-                  <div className="flex items-center justify-center gap-2 mb-6">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-4 sm:mb-6 overflow-x-auto">
                     {[{n:1,l:'Specjalista'},{n:2,l:'Data'},{n:3,l:'Godzina'},{n:4,l:'Dane'},{n:5,l:'Płatność'}].map((s,i) => (
-                      <div key={s.n} className="flex items-center">
+                      <div key={s.n} className="flex items-center flex-shrink-0">
                         <div className="flex flex-col items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${s.n<bookingStep?'bg-teal-500 text-white':s.n===bookingStep?'bg-slate-800 text-white ring-4 ring-teal-100':'bg-slate-100 text-slate-400'}`}>
-                            {s.n<bookingStep?<Check className="w-5 h-5"/>:s.n}
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm ${s.n<bookingStep?'bg-teal-500 text-white':s.n===bookingStep?'bg-slate-800 text-white ring-2 sm:ring-4 ring-teal-100':'bg-slate-100 text-slate-400'}`}>
+                            {s.n<bookingStep?<Check className="w-4 h-4 sm:w-5 sm:h-5"/>:s.n}
                           </div>
-                          <span className={`text-xs mt-1 font-medium ${s.n===bookingStep?'text-slate-800':'text-slate-400'}`}>{s.l}</span>
+                          <span className={`text-[10px] sm:text-xs mt-1 font-medium hidden sm:block ${s.n===bookingStep?'text-slate-800':'text-slate-400'}`}>{s.l}</span>
                         </div>
-                        {i<4&&<div className={`w-8 h-1 mx-1 rounded-full mb-5 ${s.n<bookingStep?'bg-teal-500':'bg-slate-200'}`}/>}
+                        {i<4&&<div className={`w-4 sm:w-8 h-0.5 sm:h-1 mx-0.5 sm:mx-1 rounded-full sm:mb-5 ${s.n<bookingStep?'bg-teal-500':'bg-slate-200'}`}/>}
                       </div>
                     ))}
                   </div>
