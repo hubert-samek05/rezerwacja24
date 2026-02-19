@@ -12,6 +12,9 @@ import { getInvoiceTemplate } from './templates/invoice.template';
 import { getBookingConfirmationTemplate } from './templates/booking-confirmation.template';
 import { getBookingReminderTemplate } from './templates/booking-reminder.template';
 import { getBookingCancelledTemplate } from './templates/booking-cancelled.template';
+import { getBookingPaidTemplate } from './templates/booking-paid.template';
+import { getPaymentFailedTemplate } from './templates/payment-failed.template';
+import { getBookingRescheduledTemplate } from './templates/booking-rescheduled.template';
 
 export interface EmailOptions {
   to: string;
@@ -573,7 +576,7 @@ export class EmailService {
 
     return this.sendEmail({
       to: data.to,
-      subject: `✅ Potwierdzenie rezerwacji - ${data.businessName}`,
+      subject: `Potwierdzenie rezerwacji - ${data.businessName}`,
       html,
     });
   }
@@ -600,7 +603,7 @@ export class EmailService {
       getBookingReminderTemplate(data)
     );
 
-    const subjectPrefix = data.hoursUntil <= 24 ? '⏰ Jutro masz wizytę' : '📅 Przypomnienie o wizycie';
+    const subjectPrefix = data.hoursUntil <= 24 ? 'Jutro masz wizytę' : 'Przypomnienie o wizycie';
 
     return this.sendEmail({
       to: data.to,
@@ -629,7 +632,88 @@ export class EmailService {
 
     return this.sendEmail({
       to: data.to,
-      subject: `❌ Rezerwacja anulowana - ${data.businessName}`,
+      subject: `Rezerwacja anulowana - ${data.businessName}`,
+      html,
+    });
+  }
+
+  /**
+   * Email o opłaceniu rezerwacji dla klienta
+   */
+  async sendBookingPaid(data: {
+    to: string;
+    customerName: string;
+    serviceName: string;
+    date: string;
+    time: string;
+    amount: string;
+    businessName: string;
+    paymentMethod?: string;
+    bookingId: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Płatność potwierdzona - ${data.businessName}`,
+      getBookingPaidTemplate(data)
+    );
+
+    return this.sendEmail({
+      to: data.to,
+      subject: `Płatność potwierdzona - ${data.businessName}`,
+      html,
+    });
+  }
+
+  /**
+   * Email o niepowodzeniu płatności dla klienta
+   */
+  async sendPaymentFailed(data: {
+    to: string;
+    customerName: string;
+    serviceName: string;
+    date: string;
+    time: string;
+    amount: string;
+    businessName: string;
+    retryUrl?: string;
+    bookingId: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Płatność nieudana - ${data.businessName}`,
+      getPaymentFailedTemplate(data)
+    );
+
+    return this.sendEmail({
+      to: data.to,
+      subject: `Płatność nieudana - ${data.businessName}`,
+      html,
+    });
+  }
+
+  /**
+   * Email o przeniesieniu rezerwacji dla klienta
+   */
+  async sendBookingRescheduled(data: {
+    to: string;
+    customerName: string;
+    serviceName: string;
+    oldDate: string;
+    oldTime: string;
+    newDate: string;
+    newTime: string;
+    employeeName: string;
+    businessName: string;
+    businessAddress?: string;
+    businessPhone?: string;
+    bookingId: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Zmiana terminu wizyty - ${data.businessName}`,
+      getBookingRescheduledTemplate(data)
+    );
+
+    return this.sendEmail({
+      to: data.to,
+      subject: `Zmiana terminu wizyty - ${data.businessName}`,
       html,
     });
   }

@@ -114,6 +114,64 @@ export class EmailController {
         });
         break;
 
+      case 'booking-cancelled':
+        result = await this.emailService.sendBookingCancelled({
+          to,
+          customerName: 'Jan Kowalski',
+          serviceName: 'Strzyżenie męskie',
+          date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          time: '14:30',
+          businessName: 'Salon Fryzjerski Test',
+          reason: 'Na prośbę klienta',
+          rebookUrl: 'https://test.rezerwacja24.pl',
+        });
+        break;
+
+      case 'booking-paid':
+        result = await this.emailService.sendBookingPaid({
+          to,
+          customerName: 'Jan Kowalski',
+          serviceName: 'Strzyżenie męskie',
+          date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          time: '14:30',
+          amount: '50.00',
+          businessName: 'Salon Fryzjerski Test',
+          paymentMethod: 'Karta płatnicza',
+          bookingId: 'test-booking-123',
+        });
+        break;
+
+      case 'payment-failed':
+        result = await this.emailService.sendPaymentFailed({
+          to,
+          customerName: 'Jan Kowalski',
+          serviceName: 'Strzyżenie męskie',
+          date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          time: '14:30',
+          amount: '50.00',
+          businessName: 'Salon Fryzjerski Test',
+          retryUrl: 'https://test.rezerwacja24.pl/pay/test-booking-123',
+          bookingId: 'test-booking-123',
+        });
+        break;
+
+      case 'booking-rescheduled':
+        result = await this.emailService.sendBookingRescheduled({
+          to,
+          customerName: 'Jan Kowalski',
+          serviceName: 'Strzyżenie męskie',
+          oldDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          oldTime: '14:30',
+          newDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          newTime: '16:00',
+          employeeName: 'Anna Nowak',
+          businessName: 'Salon Fryzjerski Test',
+          businessAddress: 'ul. Testowa 123, 00-001 Warszawa',
+          businessPhone: '+48 123 456 789',
+          bookingId: 'test-booking-123',
+        });
+        break;
+
       default:
         return { success: false, error: `Unknown email type: ${type}` };
     }
