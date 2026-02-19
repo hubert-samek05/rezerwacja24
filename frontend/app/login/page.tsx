@@ -242,14 +242,22 @@ export default function AuthPage() {
 
   const handleAppleAuth = async () => {
     const apiUrl = getApiUrl()
-    // Wykryj czy to aplikacja mobilna iOS (Capacitor)
-    const Capacitor = (window as any).Capacitor
-    const isNativeIOS = Capacitor?.isNativePlatform?.() && Capacitor?.getPlatform?.() === 'ios'
     
-    if (isNativeIOS) {
-      // Na iOS używamy natywnego Sign in with Apple
+    // Wykryj czy to aplikacja mobilna iOS (Capacitor) - sprawdź różne metody
+    const Capacitor = (window as any).Capacitor
+    const userAgent = navigator.userAgent || ''
+    const isCapacitorNative = Capacitor?.isNativePlatform?.() === true
+    const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const isInWebView = userAgent.includes('Rezerwacja24App') || (window as any).webkit?.messageHandlers
+    const isNativeIOS = isCapacitorNative && Capacitor?.getPlatform?.() === 'ios'
+    
+    console.log('[Apple Auth] Detection:', { isCapacitorNative, isIOSDevice, isInWebView, isNativeIOS, userAgent })
+    
+    // Próbuj użyć natywnego Sign in with Apple jeśli dostępny
+    if (isNativeIOS && Capacitor?.Plugins?.SignInWithApple) {
       try {
         setIsLoading(true)
+        console.log('[Apple Auth] Using native Capacitor plugin')
         const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
         
         const result = await SignInWithApple.authorize({
@@ -259,6 +267,8 @@ export default function AuthPage() {
           state: 'native_ios',
           nonce: Math.random().toString(36).substring(2, 15),
         })
+        
+        console.log('[Apple Auth] Native result:', result)
         
         // Wyślij dane do backendu
         const response = await fetch(`${apiUrl}/api/auth/apple/native`, {
@@ -275,22 +285,60 @@ export default function AuthPage() {
         })
         
         if (!response.ok) {
+          const errorText = await response.text()
+          console.error('[Apple Auth] Backend error:', errorText)
           throw new Error('Apple authentication failed')
         }
         
         const data = await response.json()
         localStorage.setItem('token', data.access_token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        
+        // Zapisz sesję
+        localStorage.setItem('rezerwacja24_session', JSON.stringify({
+          token: data.access_token,
+          user: data.user,
+          firstName: data.user.firstName,
+          role: data.user.role,
+          tenantId: data.user.tenantId,
+          loginTime: new Date().toISOString()
+        }))
+        
+        await fetch('/api/auth/set-token', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ token: data.access_token }) 
+        })
+        
         router.push('/dashboard')
       } catch (error: any) {
-        console.error('Apple Sign In error:', error)
+        console.error('[Apple Auth] Native error:', error)
         if (error.message !== 'The user canceled the authorization attempt.') {
-          toast.error(isEnglish ? 'Apple Sign In failed' : 'Logowanie przez Apple nie powiodło się')
+          // Fallback do web OAuth jeśli natywny plugin nie działa
+          console.log('[Apple Auth] Falling back to web OAuth')
+          window.location.href = `${apiUrl}/api/auth/apple`
         }
       } finally {
         setIsLoading(false)
       }
     } else {
-      // Dla przeglądarki - standardowe przekierowanie OAuth
+      // Dla przeglądarki lub gdy natywny plugin niedostępny - standardowe przekierowanie OAuth
+      console.log('[Apple Auth] Using web OAuth redirect')
+      
+      // Dla iOS w WebView - otwórz w zewnętrznej przeglądarce jeśli możliwe
+      if (isIOSDevice && isInWebView) {
+        // Spróbuj użyć Capacitor Browser plugin
+        const Browser = Capacitor?.Plugins?.Browser
+        if (Browser) {
+          try {
+            await Browser.open({ url: `${apiUrl}/api/auth/apple`, windowName: '_system' })
+            return
+          } catch (e) {
+            console.log('[Apple Auth] Browser plugin failed, using redirect')
+          }
+        }
+      }
+      
       window.location.href = `${apiUrl}/api/auth/apple`
     }
   }

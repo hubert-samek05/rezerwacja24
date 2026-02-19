@@ -266,12 +266,25 @@ export class FlySMSService {
    * Aktualizuj ustawienia SMS
    */
   async updateSMSSettings(tenantId: string, settings: any): Promise<{ success: boolean }> {
+    // Mapuj ustawienia z frontendu na format bazy danych
+    const smsSettings = {
+      reminderEnabled: settings.reminderEnabled,
+      reminder24hEnabled: settings.reminderEnabled, // Główne przypomnienie
+      reminder2hEnabled: settings.reminder2hEnabled, // Drugie przypomnienie
+      reminder2hHoursBefore: settings.reminder2hHoursBefore || 2, // Ile godzin przed dla drugiego przypomnienia
+      confirmedEnabled: settings.confirmedEnabled,
+      cancelledEnabled: settings.cancelledEnabled,
+      rescheduledEnabled: settings.rescheduledEnabled,
+      reminderHoursBefore: settings.reminderHoursBefore,
+      includeCancelLink: settings.includeCancelLink,
+    };
+    
     await this.prisma.tenants.update({
       where: { id: tenantId },
-      data: { sms_settings: settings },
+      data: { sms_settings: smsSettings },
     });
 
-    this.logger.log(`⚙️ Updated SMS settings for tenant ${tenantId}`);
+    this.logger.log(`⚙️ Updated SMS settings for tenant ${tenantId}: ${JSON.stringify(smsSettings)}`);
     return { success: true };
   }
 

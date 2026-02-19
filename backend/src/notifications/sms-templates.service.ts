@@ -46,12 +46,12 @@ export class SMSTemplatesService {
   /**
    * Zamień placeholdery na rzeczywiste wartości
    */
-  private replacePlaceholders(template: string, data: SMSTemplateData): string {
+  private replacePlaceholders(template: string, data: SMSTemplateData, appendLinks: boolean = true): string {
     // Przygotuj linki (jeśli są dostępne)
     const cancelLink = data.cancelUrl ? ` Odwołaj: ${data.cancelUrl}` : '';
     const paymentLink = data.paymentUrl ? ` Zapłać: ${data.paymentUrl}` : '';
     
-    return template
+    let result = template
       .replace(/{usługa}/g, data.serviceName || '')
       .replace(/{firma}/g, data.businessName || '')
       .replace(/{data}/g, data.date || '')
@@ -60,6 +60,21 @@ export class SMSTemplatesService {
       .replace(/{pracownik}/g, data.employeeName || '')
       .replace(/{link_odwolania}/g, cancelLink)
       .replace(/{link_platnosci}/g, paymentLink);
+    
+    // Jeśli szablon nie zawiera placeholderów dla linków, dodaj je na końcu
+    if (appendLinks) {
+      const hasLinkPlaceholder = template.includes('{link_odwolania}') || template.includes('{link_platnosci}');
+      if (!hasLinkPlaceholder) {
+        if (data.cancelUrl) {
+          result += ` Odwołaj: ${data.cancelUrl}`;
+        }
+        if (data.paymentUrl) {
+          result += ` Zapłać: ${data.paymentUrl}`;
+        }
+      }
+    }
+    
+    return result;
   }
 
   /**

@@ -41,7 +41,8 @@ export class PublicBookingController {
       },
     });
 
-    if (!booking || (booking as any).tenantId !== tenant.id) {
+    // Sprawdź czy rezerwacja istnieje i należy do tego tenanta (przez customera)
+    if (!booking || booking.customers?.tenantId !== tenant.id) {
       throw new NotFoundException('Rezerwacja nie została znaleziona');
     }
 
@@ -85,9 +86,11 @@ export class PublicBookingController {
 
     const booking = await this.prisma.bookings.findFirst({
       where: { id },
+      include: { customers: true },
     });
 
-    if (!booking || (booking as any).tenantId !== tenant.id) {
+    // Sprawdź czy rezerwacja istnieje i należy do tego tenanta (przez customera)
+    if (!booking || booking.customers?.tenantId !== tenant.id) {
       throw new NotFoundException('Rezerwacja nie została znaleziona');
     }
 

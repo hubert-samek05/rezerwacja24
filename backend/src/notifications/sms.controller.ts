@@ -47,7 +47,10 @@ export class SMSController {
       confirmedEnabled?: boolean;
       rescheduledEnabled?: boolean;
       reminderEnabled?: boolean;
+      reminder2hEnabled?: boolean;
       cancelledEnabled?: boolean;
+      reminderHoursBefore?: number;
+      includeCancelLink?: boolean;
     },
     @Req() req: any,
   ) {

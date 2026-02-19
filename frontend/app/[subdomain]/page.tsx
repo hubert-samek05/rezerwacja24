@@ -64,7 +64,7 @@ interface CompanyData {
   socialMedia?: { facebook?: string; instagram?: string; website?: string }
   pageSettings?: PageSettings
   services?: Service[]; employees?: Employee[]
-  paymentSettings?: { acceptCashPayment?: boolean; acceptOnlinePayment?: boolean; paymentProvider?: string; stripeEnabled?: boolean; przelewy24Enabled?: boolean; payuEnabled?: boolean }
+  paymentSettings?: { acceptCashPayment?: boolean; acceptOnlinePayment?: boolean; paymentProvider?: string; stripeEnabled?: boolean; przelewy24Enabled?: boolean; payuEnabled?: boolean; tpayEnabled?: boolean; autopayEnabled?: boolean }
   flexibleServiceSettings?: FlexibleServiceSettings
 }
 
@@ -131,11 +131,60 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   // Modal szczegółów usługi
   const [serviceDetailModal, setServiceDetailModal] = useState(false)
   const [serviceDetailData, setServiceDetailData] = useState<Service | null>(null)
+  // Info o płatności po powrocie ze Stripe
+  const [paymentSuccessInfo, setPaymentSuccessInfo] = useState<{ bookingId: string; status: 'paid' | 'processing' | 'cancelled' } | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       setIsEmbedded(urlParams.get('embed') === 'true')
+      
+      // Sprawdź czy to powrót z płatności Stripe
+      const paymentStatus = urlParams.get('payment')
+      const paymentBookingId = urlParams.get('bookingId')
+      
+      if (paymentStatus && paymentBookingId) {
+        // Usuń parametry z URL
+        window.history.replaceState({}, '', window.location.pathname)
+        sessionStorage.removeItem('pendingPaymentBookingId')
+        sessionStorage.removeItem('pendingPaymentTime')
+        
+        if (paymentStatus === 'success') {
+          // Weryfikuj płatność w backendzie
+          const verifyPayment = async () => {
+            try {
+              const apiUrl = window.location.hostname.includes('rezerwacja24.pl') 
+                ? 'https://api.rezerwacja24.pl' 
+                : 'http://localhost:3001'
+              
+              const response = await fetch(`${apiUrl}/api/payments/stripe/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: paymentBookingId })
+              })
+              
+              if (response.ok) {
+                const result = await response.json()
+                if (result.success) {
+                  // Pokaż stronę sukcesu
+                  setPaymentSuccessInfo({ bookingId: paymentBookingId, status: 'paid' })
+                } else {
+                  setPaymentSuccessInfo({ bookingId: paymentBookingId, status: 'processing' })
+                }
+              } else {
+                setPaymentSuccessInfo({ bookingId: paymentBookingId, status: 'processing' })
+              }
+            } catch (err) {
+              console.error('Payment verification error:', err)
+              setPaymentSuccessInfo({ bookingId: paymentBookingId, status: 'processing' })
+            }
+          }
+          verifyPayment()
+        } else if (paymentStatus === 'cancelled') {
+          setPaymentSuccessInfo({ bookingId: paymentBookingId, status: 'cancelled' })
+        }
+        return
+      }
       
       // Sprawdź czy to ponowienie płatności
       const retryPayment = urlParams.get('retryPayment')
@@ -541,12 +590,15 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             const finalAmount = isOnlinePayment ? priceAfterDiscount : depositInfo!.amount
             const isDeposit = depositRequired
             
-            // Provider: wybrany przy online, lub dostępny przy zaliczce
+            // Provider: wybrany przy online, lub wybrany przez klienta przy zaliczce
             let provider = paymentMethod
             if (depositRequired) {
-              provider = depositPaymentProvider || 
-                (company?.paymentSettings?.przelewy24Enabled ? 'przelewy24' : 
-                (company?.paymentSettings?.stripeEnabled ? 'stripe' : 'przelewy24'))
+              if (!depositPaymentProvider) {
+                alert('Wybierz metodę płatności zaliczki')
+                setBookingLoading(false)
+                return
+              }
+              provider = depositPaymentProvider
             }
             
             // Płatność online - przekieruj do bramki płatności
@@ -1403,10 +1455,10 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       {/* ========== MODAL REZERWACJI ========== */}
       <AnimatePresence>
         {bookingModal && selectedService && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setBookingModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-md md:max-w-xl lg:max-w-2xl rounded-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setBookingModal(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-[100vw] sm:max-w-md md:max-w-xl lg:max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden max-h-[100vh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden flex flex-col">
               {/* Header - elegancki gradient */}
-              <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-6 py-5 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-white">Rezerwacja</h3>
                   <p className="text-slate-300 text-sm mt-0.5">{selectedService.name}</p>
@@ -1560,14 +1612,14 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                                     <ChevronRight className="w-5 h-5 text-slate-600" />
                                   </button>
                                 </div>
-                                <div className="grid grid-cols-7 gap-1 mb-2">
+                                <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
                                   {dayNames.map(d => (
-                                    <div key={d} className="text-center text-xs font-medium text-slate-500 py-1">{d}</div>
+                                    <div key={d} className="text-center text-[10px] sm:text-xs font-medium text-slate-500 py-1">{d}</div>
                                   ))}
                                 </div>
-                                <div className="grid grid-cols-7 gap-1">
+                                <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
                                   {Array.from({ length: viewStartPadding }).map((_, i) => (
-                                    <div key={`empty-${i}`} className="h-9" />
+                                    <div key={`empty-${i}`} className="h-8 sm:h-9" />
                                   ))}
                                   {Array.from({ length: viewDaysInMonth }).map((_, i) => {
                                     const day = i + 1
@@ -1583,7 +1635,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                                         type="button"
                                         onClick={() => !past && !fullyBooked && handleDayClick(day)}
                                         disabled={past || fullyBooked}
-                                        className={`h-9 text-sm rounded-lg transition-all relative ${
+                                        className={`h-8 sm:h-9 text-xs sm:text-sm rounded-lg transition-all relative ${
                                           past || fullyBooked
                                             ? 'text-slate-300 cursor-not-allowed' 
                                             : selected 
@@ -1894,19 +1946,19 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               </div>
                               
                               {/* Dni tygodnia */}
-                              <div className="grid grid-cols-7 gap-1 mb-2">
+                              <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
                                 {dayNames.map(d => (
-                                  <div key={d} className="text-center text-xs font-medium text-slate-500 py-1">
+                                  <div key={d} className="text-center text-[10px] sm:text-xs font-medium text-slate-500 py-1">
                                     {d}
                                   </div>
                                 ))}
                               </div>
                               
                               {/* Dni miesiąca */}
-                              <div className="grid grid-cols-7 gap-1">
+                              <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
                                 {/* Puste komórki na początek */}
                                 {Array.from({ length: startPadding }).map((_, i) => (
-                                  <div key={`empty-${i}`} className="h-9" />
+                                  <div key={`empty-${i}`} className="h-8 sm:h-9" />
                                 ))}
                                 
                                 {/* Dni */}
@@ -1932,7 +1984,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                                       onClick={() => !past && !isBlocked && handleDayClick(day)}
                                       disabled={past || isBlocked}
                                       title={fullyBooked ? 'Dzień zajęty (rezerwacja całodniowa)' : hasHourlyBookings ? 'Dzień ma rezerwacje godzinowe' : booked ? 'Częściowo zajęty' : ''}
-                                      className={`h-9 text-sm rounded-lg transition-all relative ${
+                                      className={`h-8 sm:h-9 text-xs sm:text-sm rounded-lg transition-all relative ${
                                         past || isBlocked
                                           ? 'text-slate-300 cursor-not-allowed bg-slate-50' 
                                           : start || end
@@ -2427,21 +2479,58 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                           )}
                         </div>
                       </div>
-                    {/* Informacja o zaliczce */}
+                    {/* Informacja o zaliczce i wybór metody płatności */}
                     {paymentMethod === 'cash' && depositInfo?.required && depositInfo.amount > 0 && (
-                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Wallet className="w-5 h-5 text-amber-600" />
+                      <div className="space-y-4">
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Wallet className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-amber-800">Wymagana zaliczka</h4>
+                              <p className="text-sm text-amber-700 mt-1">
+                                Aby potwierdzić rezerwację, wymagana jest zaliczka w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
+                              </p>
+                              <p className="text-xs text-amber-600 mt-2">
+                                Pozostała kwota do zapłaty na miejscu.
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-amber-800">Wymagana zaliczka</h4>
-                            <p className="text-sm text-amber-700 mt-1">
-                              Aby potwierdzić rezerwację, wymagana jest zaliczka w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
-                            </p>
-                            <p className="text-xs text-amber-600 mt-2">
-                              Pozostała kwota do zapłaty na miejscu.
-                            </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Wybierz metodę płatności zaliczki</label>
+                          <div className="space-y-2">
+                            {company?.paymentSettings?.przelewy24Enabled && (
+                              <label className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${depositPaymentProvider === 'przelewy24' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                <input type="radio" name="depositProvider" value="przelewy24" checked={depositPaymentProvider === 'przelewy24'} onChange={(e) => setDepositPaymentProvider(e.target.value)} className="w-4 h-4 text-teal-500" />
+                                <div className="flex-1"><div className="font-medium text-slate-800 text-sm">Przelewy24</div><div className="text-xs text-slate-500">BLIK, szybki przelew</div></div>
+                              </label>
+                            )}
+                            {company?.paymentSettings?.stripeEnabled && (
+                              <label className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${depositPaymentProvider === 'stripe' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                <input type="radio" name="depositProvider" value="stripe" checked={depositPaymentProvider === 'stripe'} onChange={(e) => setDepositPaymentProvider(e.target.value)} className="w-4 h-4 text-teal-500" />
+                                <div className="flex-1"><div className="font-medium text-slate-800 text-sm">Karta płatnicza</div><div className="text-xs text-slate-500">Visa, Mastercard</div></div>
+                              </label>
+                            )}
+                            {company?.paymentSettings?.payuEnabled && (
+                              <label className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${depositPaymentProvider === 'payu' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                <input type="radio" name="depositProvider" value="payu" checked={depositPaymentProvider === 'payu'} onChange={(e) => setDepositPaymentProvider(e.target.value)} className="w-4 h-4 text-teal-500" />
+                                <div className="flex-1"><div className="font-medium text-slate-800 text-sm">PayU</div><div className="text-xs text-slate-500">Szybkie płatności</div></div>
+                              </label>
+                            )}
+                            {company?.paymentSettings?.tpayEnabled && (
+                              <label className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${depositPaymentProvider === 'tpay' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                <input type="radio" name="depositProvider" value="tpay" checked={depositPaymentProvider === 'tpay'} onChange={(e) => setDepositPaymentProvider(e.target.value)} className="w-4 h-4 text-teal-500" />
+                                <div className="flex-1"><div className="font-medium text-slate-800 text-sm">Tpay</div><div className="text-xs text-slate-500">BLIK, przelewy</div></div>
+                              </label>
+                            )}
+                            {company?.paymentSettings?.autopayEnabled && (
+                              <label className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${depositPaymentProvider === 'autopay' ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                <input type="radio" name="depositProvider" value="autopay" checked={depositPaymentProvider === 'autopay'} onChange={(e) => setDepositPaymentProvider(e.target.value)} className="w-4 h-4 text-teal-500" />
+                                <div className="flex-1"><div className="font-medium text-slate-800 text-sm">Autopay</div><div className="text-xs text-slate-500">BLIK, przelewy</div></div>
+                              </label>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2487,8 +2576,8 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
       {/* ========== MODAL KALENDARZA ========== */}
       <AnimatePresence>
         {calendarModal && selectedService && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCalendarModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-md md:max-w-xl lg:max-w-2xl rounded-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setCalendarModal(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-md md:max-w-xl lg:max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto flex flex-col">
               <div className="bg-slate-800 px-6 py-4 flex items-center justify-between">
                 <div><h3 className="font-semibold text-white">Wybierz termin</h3><p className="text-slate-400 text-sm">{selectedService.name}</p></div>
                 <button onClick={() => setCalendarModal(false)} className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center"><X className="w-4 h-4 text-white" /></button>
@@ -2545,14 +2634,14 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={resetGroupBookingModal}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl max-w-lg md:max-w-xl lg:max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg md:max-w-xl lg:max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {!groupBookingSuccess ? (
@@ -2743,14 +2832,14 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setServiceDetailModal(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl"
+              className="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white">
@@ -2784,6 +2873,81 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   {pageSettings.bookingButtonText || 'Zarezerwuj'} teraz
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal informacji o płatności */}
+      <AnimatePresence>
+        {paymentSuccessInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+            onClick={() => setPaymentSuccessInfo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {paymentSuccessInfo.status === 'paid' && (
+                <div className="p-8 text-center">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Płatność zakończona!</h2>
+                  <p className="text-slate-600 mb-6">Twoja rezerwacja została potwierdzona. Szczegóły otrzymasz na podany adres email.</p>
+                  <button
+                    onClick={() => setPaymentSuccessInfo(null)}
+                    className="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"
+                  >
+                    Zamknij
+                  </button>
+                </div>
+              )}
+              {paymentSuccessInfo.status === 'processing' && (
+                <div className="p-8 text-center">
+                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Przetwarzanie płatności</h2>
+                  <p className="text-slate-600 mb-6">Twoja płatność jest przetwarzana. Potwierdzenie otrzymasz na email w ciągu kilku minut.</p>
+                  <button
+                    onClick={() => setPaymentSuccessInfo(null)}
+                    className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+                  >
+                    Rozumiem
+                  </button>
+                </div>
+              )}
+              {paymentSuccessInfo.status === 'cancelled' && (
+                <div className="p-8 text-center">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Płatność anulowana</h2>
+                  <p className="text-slate-600 mb-6">Płatność została anulowana. Możesz spróbować ponownie lub wybrać inną metodę płatności.</p>
+                  <p className="text-sm text-slate-500 mb-4">Rezerwacja zostanie automatycznie anulowana jeśli nie zostanie opłacona w ciągu 10 minut.</p>
+                  <button
+                    onClick={() => setPaymentSuccessInfo(null)}
+                    className="w-full py-3 bg-slate-600 text-white font-semibold rounded-xl hover:bg-slate-700 transition-colors"
+                  >
+                    Zamknij
+                  </button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

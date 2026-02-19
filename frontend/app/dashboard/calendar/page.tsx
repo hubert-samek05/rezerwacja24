@@ -26,7 +26,9 @@ import {
   CheckCircle,
   Ticket,
   Package,
-  Banknote
+  Banknote,
+  Ban,
+  Lock
 } from 'lucide-react'
 import Link from 'next/link'
 import axios from 'axios'
@@ -85,23 +87,35 @@ export default function CalendarPage() {
   const [bookingType, setBookingType] = useState<'service' | 'package'>('service')
   const [selectedPackage, setSelectedPackage] = useState<any>(null)
   const [groupBookings, setGroupBookings] = useState<any[]>([])
+  const [externalEvents, setExternalEvents] = useState<any[]>([])
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false)
   const [paymentMethodModalBooking, setPaymentMethodModalBooking] = useState<any>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash')
   const [paymentModalCustomerPasses, setPaymentModalCustomerPasses] = useState<any[]>([])
+  
+  // Blokady czasu
+  const [timeBlocks, setTimeBlocks] = useState<any[]>([])
+  const [showBlockModal, setShowBlockModal] = useState(false)
+  const [blockFormData, setBlockFormData] = useState({
+    employeeId: '',
+    startDate: '',
+    startTime: '09:00',
+    endDate: '',
+    endTime: '17:00',
+    reason: ''
+  })
 
   useEffect(() => {
     loadData()
     fetchPackages()
     fetchGroupBookings()
+    fetchExternalEvents()
+    fetchTimeBlocks()
     
-    // Detect mobile and switch to day view
+    // Detect mobile - nie wymuszamy już widoku dziennego, użytkownik może wybrać
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024
       setIsMobile(mobile)
-      if (mobile && viewMode !== 'day') {
-        setViewMode('day')
-      }
     }
     
     checkMobile()
@@ -250,6 +264,90 @@ export default function CalendarPage() {
     }
   }
 
+  const fetchExternalEvents = async () => {
+    try {
+      const config = getTenantConfig()
+      // Pobierz wydarzenia z zewnętrznego kalendarza (Google Calendar iCal)
+      const response = await axios.get(`${API_URL}/api/calendar/external-events`, config)
+      const events = (response.data || []).map((event: any) => ({
+        id: event.id,
+        title: event.title || 'Zajęty (Google Calendar)',
+        date: new Date(event.startTime).toISOString().split('T')[0],
+        time: new Date(event.startTime).toTimeString().slice(0, 5),
+        endTime: new Date(event.endTime).toTimeString().slice(0, 5),
+        startTime: new Date(event.startTime),
+        endTimeDate: new Date(event.endTime),
+        allDay: event.allDay,
+        isExternal: true,
+        source: event.source || 'google_ical'
+      }))
+      setExternalEvents(events)
+    } catch (error) {
+      // Nie pokazuj błędu jeśli endpoint nie istnieje - integracja może być wyłączona
+      console.log('External events not available:', error)
+    }
+  }
+
+  // Pobierz blokady czasu
+  const fetchTimeBlocks = async () => {
+    try {
+      const config = getTenantConfig()
+      const response = await axios.get(`${API_URL}/api/time-off`, config)
+      setTimeBlocks(response.data || [])
+    } catch (error) {
+      console.log('Time blocks not available:', error)
+    }
+  }
+
+  // Dodaj blokadę czasu
+  const handleAddTimeBlock = async () => {
+    if (!blockFormData.employeeId || !blockFormData.startDate || !blockFormData.endDate) {
+      toast.error('Wypełnij wszystkie wymagane pola')
+      return
+    }
+
+    try {
+      const config = getTenantConfig()
+      const startTime = new Date(`${blockFormData.startDate}T${blockFormData.startTime}:00`)
+      const endTime = new Date(`${blockFormData.endDate}T${blockFormData.endTime}:00`)
+
+      await axios.post(`${API_URL}/api/time-off`, {
+        employeeId: blockFormData.employeeId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        reason: blockFormData.reason || 'Blokada'
+      }, config)
+
+      toast.success('Blokada dodana')
+      setShowBlockModal(false)
+      setBlockFormData({
+        employeeId: '',
+        startDate: '',
+        startTime: '09:00',
+        endDate: '',
+        endTime: '17:00',
+        reason: ''
+      })
+      fetchTimeBlocks()
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Nie udało się dodać blokady')
+    }
+  }
+
+  // Usuń blokadę czasu
+  const handleDeleteTimeBlock = async (blockId: string) => {
+    if (!confirm('Czy na pewno chcesz usunąć tę blokadę?')) return
+
+    try {
+      const config = getTenantConfig()
+      await axios.delete(`${API_URL}/api/time-off/${blockId}`, config)
+      toast.success('Blokada usunięta')
+      fetchTimeBlocks()
+    } catch (error) {
+      toast.error('Nie udało się usunąć blokady')
+    }
+  }
+
   const weekDays = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz']
   const hours = Array.from({ length: 13 }, (_, i) => i + 8) // 8:00 - 20:00
 
@@ -315,7 +413,56 @@ export default function CalendarPage() {
       groupData: g
     }))
 
-    return [...regularBookings, ...groupEvents]
+    // Dodaj wydarzenia z zewnętrznego kalendarza (Google Calendar)
+    const externalEventsFiltered = externalEvents.filter((e: any) => {
+      if (e.date !== dateStr) return false
+      const eHour = parseInt(e.time.split(':')[0])
+      return eHour === hour
+    }).map((e: any) => ({
+      id: e.id,
+      date: dateStr,
+      time: e.time,
+      customerName: e.title,
+      serviceName: 'Google Calendar',
+      employeeName: '',
+      price: 0,
+      status: 'external',
+      duration: Math.round((new Date(e.endTimeDate).getTime() - new Date(e.startTime).getTime()) / 60000),
+      eventType: 'external',
+      isExternal: true
+    }))
+
+    // Dodaj blokady czasu
+    const filteredBlocks = selectedEmployee === 'all'
+      ? timeBlocks
+      : timeBlocks.filter((b: any) => b.employeeId === selectedEmployee)
+    
+    const blockEvents = filteredBlocks.filter((b: any) => {
+      const blockStart = new Date(b.startTime)
+      const blockEnd = new Date(b.endTime)
+      const slotStart = new Date(date)
+      slotStart.setHours(hour, 0, 0, 0)
+      const slotEnd = new Date(date)
+      slotEnd.setHours(hour + 1, 0, 0, 0)
+      
+      // Sprawdź czy blokada nakłada się na ten slot
+      return blockStart < slotEnd && blockEnd > slotStart
+    }).map((b: any) => ({
+      id: b.id,
+      date: dateStr,
+      time: new Date(b.startTime).toTimeString().slice(0, 5),
+      customerName: b.reason || 'Zablokowane',
+      serviceName: 'Blokada',
+      employeeName: b.employee ? `${b.employee.firstName} ${b.employee.lastName}` : '',
+      price: 0,
+      status: 'blocked',
+      duration: Math.round((new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000),
+      eventType: 'block',
+      isBlock: true,
+      blockData: b
+    }))
+
+    return [...regularBookings, ...groupEvents, ...externalEventsFiltered, ...blockEvents]
   }
 
   const navigateDate = (direction: 'prev' | 'next' | 'today') => {
@@ -811,13 +958,26 @@ export default function CalendarPage() {
             <p className="text-sm sm:text-base text-[var(--text-muted)]/70">Zarządzaj rezerwacjami i harmonogramem</p>
           </div>
           
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center space-x-2 w-full sm:w-auto justify-center"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nowa rezerwacja</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button 
+              onClick={() => {
+                const today = new Date().toISOString().split('T')[0]
+                setBlockFormData(prev => ({ ...prev, startDate: today, endDate: today }))
+                setShowBlockModal(true)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors flex-1 sm:flex-none justify-center"
+            >
+              <Ban className="w-4 h-4" />
+              <span>Zablokuj</span>
+            </button>
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex-1 sm:flex-none justify-center"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nowa rezerwacja</span>
+            </button>
+          </div>
         </div>
 
         {/* Controls */}
@@ -863,36 +1023,32 @@ export default function CalendarPage() {
               </button>
             </div>
 
-            {/* View Mode */}
-            <div className="flex items-center space-x-2">
+            {/* View Mode - teraz dostępne również na mobile */}
+            <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto">
               <button
                 onClick={() => setViewMode('day')}
-                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base ${
+                className={`px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base whitespace-nowrap ${
                   viewMode === 'day' ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)]'
                 }`}
               >
                 Dzień
               </button>
-              {!isMobile && (
-                <>
-                  <button
-                    onClick={() => setViewMode('week')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      viewMode === 'week' ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)]'
-                    }`}
-                  >
-                    Tydzień
-                  </button>
-                  <button
-                    onClick={() => setViewMode('month')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      viewMode === 'month' ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)]'
-                    }`}
-                  >
-                    Miesiąc
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => setViewMode('week')}
+                className={`px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base whitespace-nowrap ${
+                  viewMode === 'week' ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)]'
+                }`}
+              >
+                Tydzień
+              </button>
+              <button
+                onClick={() => setViewMode('month')}
+                className={`px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base whitespace-nowrap ${
+                  viewMode === 'month' ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)]'
+                }`}
+              >
+                Miesiąc
+              </button>
             </div>
             
             {/* Day View Mode Toggle - tylko gdy widok dzienny */}
@@ -1061,46 +1217,67 @@ export default function CalendarPage() {
                           key={dayBookings[0].id}
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleBookingClick(dayBookings[0])
+                            if (dayBookings[0].eventType === 'block') {
+                              // Dla blokad - pokaż opcję usunięcia
+                              if (confirm(`Usunąć blokadę "${dayBookings[0].customerName}"?`)) {
+                                handleDeleteTimeBlock(dayBookings[0].id)
+                              }
+                            } else {
+                              handleBookingClick(dayBookings[0])
+                            }
                           }}
                           className={`p-3 rounded-lg cursor-pointer hover:shadow-lg transition-all ${
-                            dayBookings[0].eventType === 'group'
-                              ? 'bg-purple-500/30 border border-purple-500/50'
+                            dayBookings[0].eventType === 'block'
+                              ? 'bg-gray-600 border border-gray-700'
+                              : dayBookings[0].eventType === 'external'
+                              ? 'bg-blue-600 border border-blue-700'
+                              : dayBookings[0].eventType === 'group'
+                              ? 'bg-purple-600 border border-purple-700'
                               : dayBookings[0].status === 'confirmed' 
-                                ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                ? 'bg-emerald-600 border border-emerald-700' 
                                 : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
-                                ? 'bg-red-500/20 border border-red-500/30'
-                                : 'bg-yellow-500/20 border border-yellow-500/30'
+                                ? 'bg-red-600 border border-red-700'
+                                : 'bg-amber-500 border border-amber-600'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <div className="text-xs font-semibold text-[var(--text-primary)]">
+                                <div className="text-xs font-bold text-white">
                                   {dayBookings[0].isFullDay ? 'Cały dzień' : `${dayBookings[0].time} - ${getEndTime(dayBookings[0].time, dayBookings[0].duration)}`}
                                 </div>
                                 {dayBookings[0].isMultiDay && (
-                                  <span className="px-1.5 py-0.5 bg-blue-500/30 text-blue-300 text-[10px] font-bold rounded">
+                                  <span className="px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded">
                                     WIELODNIOWA
                                   </span>
                                 )}
+                                {dayBookings[0].eventType === 'block' && (
+                                  <span className="px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded">
+                                    BLOKADA
+                                  </span>
+                                )}
                                 {dayBookings[0].eventType === 'group' && (
-                                  <span className="px-1.5 py-0.5 bg-purple-500/30 text-purple-300 text-[10px] font-bold rounded">
+                                  <span className="px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded">
                                     GRUPOWE
                                   </span>
                                 )}
+                                {dayBookings[0].eventType === 'external' && (
+                                  <span className="px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded">
+                                    GOOGLE
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-sm text-[var(--text-primary)] font-medium mb-1">
+                              <div className="text-sm text-white font-semibold mb-1">
                                 {dayBookings[0].customerName}
                               </div>
-                              <div className="text-xs text-[var(--text-muted)]/70">
+                              <div className="text-xs text-white/80">
                                 {dayBookings[0].serviceName}
                               </div>
-                              <div className="text-xs text-[var(--text-muted)]/70 mt-1">
+                              <div className="text-xs text-white/80 mt-1">
                                 {dayBookings[0].employeeName}
                               </div>
                             </div>
-                            <div className="text-lg font-bold text-[var(--text-primary)]">
+                            <div className="text-lg font-bold text-white">
                               {dayBookings[0].price} zł{dayBookings[0].eventType === 'group' ? '/os' : ''}
                             </div>
                           </div>
@@ -1117,31 +1294,31 @@ export default function CalendarPage() {
                               }}
                               className={`p-2 rounded-lg cursor-pointer hover:shadow-lg transition-all ${
                                 booking.eventType === 'group'
-                                  ? 'bg-purple-500/30 border border-purple-500/50'
+                                  ? 'bg-purple-600 border border-purple-700'
                                   : booking.status === 'confirmed' 
-                                    ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                    ? 'bg-emerald-600 border border-emerald-700' 
                                     : booking.status === 'no_show' || booking.status === 'cancelled'
-                                    ? 'bg-red-500/20 border border-red-500/30'
-                                    : 'bg-yellow-500/20 border border-yellow-500/30'
+                                    ? 'bg-red-600 border border-red-700'
+                                    : 'bg-amber-500 border border-amber-600'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1">
-                                    <div className="text-xs text-[var(--text-primary)] font-medium truncate">
+                                    <div className="text-xs text-white font-semibold truncate">
                                       {booking.customerName}
                                     </div>
                                     {booking.eventType === 'group' && (
-                                      <span className="px-1 py-0.5 bg-purple-500/30 text-purple-300 text-[8px] font-bold rounded flex-shrink-0">
+                                      <span className="px-1 py-0.5 bg-white/20 text-white text-[8px] font-bold rounded flex-shrink-0">
                                         GR
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-xs text-[var(--text-muted)]/70 truncate">
+                                  <div className="text-xs text-white/80 truncate">
                                     {booking.serviceName}
                                   </div>
                                 </div>
-                                <div className="text-xs font-bold text-[var(--text-primary)] whitespace-nowrap">
+                                <div className="text-xs font-bold text-white whitespace-nowrap">
                                   {booking.price} zł
                                 </div>
                               </div>
@@ -1175,8 +1352,124 @@ export default function CalendarPage() {
 
         {/* Calendar Grid - Week View */}
         {viewMode === 'week' && (
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 sm:p-6 overflow-x-auto">
-            <div className="min-w-[1200px]">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 sm:p-6">
+            {/* Mobile Week View - lista dni */}
+            {isMobile ? (
+              <div className="space-y-3">
+                {getWeekDates().map((date, dayIndex) => {
+                  const isToday = date.toDateString() === new Date().toDateString()
+                  const dayBookingsAll = hours.flatMap(hour => getDayBookings(date, hour))
+                  const uniqueBookings = dayBookingsAll.filter((b, i, arr) => arr.findIndex(x => x.id === b.id) === i)
+                  
+                  return (
+                    <div 
+                      key={dayIndex} 
+                      className={`rounded-xl border ${isToday ? 'border-[var(--text-primary)] bg-[var(--text-primary)]/5' : 'border-[var(--border-color)]'}`}
+                    >
+                      {/* Day Header */}
+                      <div 
+                        className={`p-3 flex items-center justify-between cursor-pointer ${isToday ? 'bg-[var(--text-primary)]/10' : 'bg-[var(--bg-card-hover)]'} rounded-t-xl`}
+                        onClick={() => {
+                          setCurrentDate(date)
+                          setViewMode('day')
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isToday ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'bg-[var(--bg-card)]'}`}>
+                            <span className="font-bold">{date.getDate()}</span>
+                          </div>
+                          <div>
+                            <div className={`font-semibold ${isToday ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'}`}>
+                              {weekDays[dayIndex]}
+                            </div>
+                            <div className="text-xs text-[var(--text-muted)]">
+                              {date.toLocaleDateString('pl-PL', { month: 'short' })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {uniqueBookings.length > 0 && (
+                            <span className="px-2 py-1 bg-[var(--text-primary)]/20 text-[var(--text-primary)] text-xs font-bold rounded-full">
+                              {uniqueBookings.length}
+                            </span>
+                          )}
+                          <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
+                        </div>
+                      </div>
+                      
+                      {/* Day Bookings Preview */}
+                      {uniqueBookings.length > 0 ? (
+                        <div className="p-2 space-y-1.5">
+                          {uniqueBookings.slice(0, 3).map((booking) => (
+                            <div
+                              key={booking.id}
+                              onClick={() => {
+                                if (booking.eventType === 'block') {
+                                  if (confirm(`Usunąć blokadę "${booking.customerName}"?`)) {
+                                    handleDeleteTimeBlock(booking.id)
+                                  }
+                                } else {
+                                  handleBookingClick(booking)
+                                }
+                              }}
+                              className={`p-2 rounded-lg cursor-pointer flex items-center gap-2 ${
+                                booking.eventType === 'block'
+                                  ? 'bg-gray-600/20 border border-gray-600/30'
+                                  : booking.eventType === 'group'
+                                  ? 'bg-purple-600/20 border border-purple-600/30'
+                                  : booking.status === 'confirmed'
+                                  ? 'bg-emerald-600/20 border border-emerald-600/30'
+                                  : booking.status === 'no_show' || booking.status === 'cancelled'
+                                  ? 'bg-red-600/20 border border-red-600/30'
+                                  : 'bg-amber-500/20 border border-amber-500/30'
+                              }`}
+                            >
+                              <div className={`w-1 h-8 rounded-full ${
+                                booking.eventType === 'block'
+                                  ? 'bg-gray-500'
+                                  : booking.eventType === 'group'
+                                  ? 'bg-purple-500'
+                                  : booking.status === 'confirmed'
+                                  ? 'bg-emerald-500'
+                                  : booking.status === 'no_show' || booking.status === 'cancelled'
+                                  ? 'bg-red-500'
+                                  : 'bg-amber-500'
+                              }`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-[var(--text-primary)]">
+                                  {booking.time} {booking.customerName}
+                                </div>
+                                <div className="text-xs text-[var(--text-muted)] truncate">
+                                  {booking.serviceName}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {uniqueBookings.length > 3 && (
+                            <div 
+                              className="text-center text-xs text-[var(--text-muted)] py-1 cursor-pointer hover:text-[var(--text-primary)]"
+                              onClick={() => {
+                                setCurrentDate(date)
+                                setViewMode('day')
+                              }}
+                            >
+                              +{uniqueBookings.length - 3} więcej...
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-3 text-center text-sm text-[var(--text-muted)]/50">
+                          Brak wizyt
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+            /* Desktop Week View - klasyczna siatka */
+            <div className="overflow-x-auto">
+              <div className="min-w-[1000px]">
               <div className="grid grid-cols-8 gap-px bg-white/10">
                 {/* Time Column Header */}
                 <div className="bg-carbon-black p-4 sticky left-0 z-10">
@@ -1224,21 +1517,21 @@ export default function CalendarPage() {
                               }}
                               className={`p-2 rounded-lg h-full cursor-pointer hover:shadow-lg transition-all ${
                                 dayBookings[0].isFullDay
-                                  ? 'bg-blue-500/30 border border-blue-500/50'
+                                  ? 'bg-blue-600 border border-blue-700'
                                   : dayBookings[0].status === 'confirmed' 
-                                  ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                  ? 'bg-emerald-600 border border-emerald-700' 
                                   : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
-                                  ? 'bg-red-500/20 border border-red-500/30'
-                                  : 'bg-yellow-500/20 border border-yellow-500/30'
+                                  ? 'bg-red-600 border border-red-700'
+                                  : 'bg-amber-500 border border-amber-600'
                               }`}
                             >
-                              <div className="text-xs font-semibold text-[var(--text-primary)] mb-1">
+                              <div className="text-xs font-bold text-white mb-1">
                                 {dayBookings[0].isFullDay ? '📅 Cały dzień' : `${dayBookings[0].time} - ${getEndTime(dayBookings[0].time, dayBookings[0].duration)}`}
                               </div>
-                              <div className="text-xs text-[var(--text-primary)] font-medium truncate">
+                              <div className="text-xs text-white font-semibold truncate">
                                 {dayBookings[0].customerName}
                               </div>
-                              <div className="text-xs text-[var(--text-muted)]/70 truncate">
+                              <div className="text-xs text-white/80 truncate">
                                 {dayBookings[0].serviceName}
                               </div>
                             </div>
@@ -1252,13 +1545,13 @@ export default function CalendarPage() {
                                 }}
                                 className={`p-1.5 rounded cursor-pointer hover:shadow-lg transition-all ${
                                   dayBookings[0].status === 'confirmed' 
-                                    ? 'bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30' 
+                                    ? 'bg-emerald-600 border border-emerald-700' 
                                     : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
-                                    ? 'bg-red-500/20 border border-red-500/30'
-                                    : 'bg-yellow-500/20 border border-yellow-500/30'
+                                    ? 'bg-red-600 border border-red-700'
+                                    : 'bg-amber-500 border border-amber-600'
                                 }`}
                               >
-                                <div className="text-xs text-[var(--text-primary)] font-medium truncate">
+                                <div className="text-xs text-white font-semibold truncate">
                                   {dayBookings[0].customerName}
                                 </div>
                               </div>
@@ -1284,13 +1577,93 @@ export default function CalendarPage() {
                   </>
                 ))}
               </div>
+              </div>
             </div>
+            )}
           </div>
         )}
 
         {/* Month View */}
         {viewMode === 'month' && (
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-6">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 sm:p-6">
+            {/* Mobile Month View - kompaktowa siatka */}
+            {isMobile ? (
+              <div>
+                {/* Day headers - skrócone */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map((day, index) => (
+                    <div key={index} className="text-center py-2">
+                      <span className="text-xs font-semibold text-[var(--text-muted)]">{day}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Calendar days - kompaktowe */}
+                <div className="grid grid-cols-7 gap-1">
+                  {getMonthDays().map((day, index) => {
+                    const dayBookings = getMonthDayBookings(day.date)
+                    const isToday = day.date.toDateString() === new Date().toDateString()
+                    const hasBookings = dayBookings.length > 0
+                    const confirmedCount = dayBookings.filter(b => b.status === 'confirmed').length
+                    const pendingCount = dayBookings.filter(b => b.status === 'pending').length
+                    const blockedCount = dayBookings.filter(b => b.eventType === 'block').length
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`relative aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all ${
+                          !day.isCurrentMonth 
+                            ? 'opacity-30' 
+                            : isToday 
+                            ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' 
+                            : hasBookings 
+                            ? 'bg-[var(--bg-card-hover)]' 
+                            : 'hover:bg-[var(--bg-card-hover)]'
+                        }`}
+                        onClick={() => {
+                          setCurrentDate(day.date)
+                          setViewMode('day')
+                        }}
+                      >
+                        <span className={`text-sm font-semibold ${isToday ? '' : 'text-[var(--text-primary)]'}`}>
+                          {day.date.getDate()}
+                        </span>
+                        
+                        {/* Dots indicator */}
+                        {hasBookings && day.isCurrentMonth && (
+                          <div className="flex gap-0.5 mt-1">
+                            {confirmedCount > 0 && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            )}
+                            {pendingCount > 0 && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            )}
+                            {blockedCount > 0 && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Badge z liczbą */}
+                        {dayBookings.length > 0 && day.isCurrentMonth && !isToday && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-full flex items-center justify-center">
+                            <span className="text-[10px] font-bold">{dayBookings.length}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                {/* Podsumowanie dnia - po kliknięciu */}
+                <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
+                  <div className="text-center text-sm text-[var(--text-muted)]">
+                    Kliknij na dzień, aby zobaczyć szczegóły
+                  </div>
+                </div>
+              </div>
+            ) : (
+            /* Desktop Month View - pełna siatka */
             <div className="grid grid-cols-7 gap-px bg-white/10">
               {/* Day headers */}
               {weekDays.map((day, index) => (
@@ -1325,21 +1698,29 @@ export default function CalendarPage() {
                       {dayBookings.slice(0, 3).map((booking) => (
                         <div
                           key={booking.id}
-                          className={`text-xs p-1 rounded truncate ${
-                            booking.isFullDay
-                              ? 'bg-blue-500/30 text-blue-300'
+                          className={`text-xs p-1.5 rounded truncate font-semibold ${
+                            booking.eventType === 'block'
+                              ? 'bg-gray-600 text-white'
+                              : booking.isFullDay
+                              ? 'bg-blue-600 text-white'
                               : booking.status === 'confirmed'
-                              ? 'bg-[var(--text-primary)]/30 text-[var(--text-primary)]'
+                              ? 'bg-emerald-600 text-white'
                               : booking.status === 'no_show' || booking.status === 'cancelled'
-                              ? 'bg-red-500/20 text-red-300'
-                              : 'bg-yellow-500/20 text-yellow-300'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-amber-500 text-white'
                           }`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleBookingClick(booking)
+                            if (booking.eventType === 'block') {
+                              if (confirm(`Usunąć blokadę "${booking.customerName}"?`)) {
+                                handleDeleteTimeBlock(booking.id)
+                              }
+                            } else {
+                              handleBookingClick(booking)
+                            }
                           }}
                         >
-                          {booking.isFullDay ? '📅 ' : `${booking.time} `}{booking.customerName} - {booking.serviceName}
+                          {booking.eventType === 'block' ? '🔒 ' : booking.isFullDay ? '📅 ' : `${booking.time} `}{booking.customerName}
                         </div>
                       ))}
                       {dayBookings.length > 3 && (
@@ -1352,26 +1733,31 @@ export default function CalendarPage() {
                 )
               })}
             </div>
+            )}
           </div>
         )}
 
         {/* Legend */}
         <div className="mt-6 flex items-center justify-center flex-wrap gap-4">
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-[var(--text-primary)]/30 border border-[var(--text-primary)]/30 rounded"></div>
-            <span className="text-sm text-[var(--text-muted)]/70">Potwierdzona</span>
+            <div className="w-4 h-4 bg-emerald-600 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Potwierdzona</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-yellow-500/20 border border-yellow-500/30 rounded"></div>
-            <span className="text-sm text-[var(--text-muted)]/70">Oczekująca</span>
+            <div className="w-4 h-4 bg-amber-500 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Oczekująca</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-500/20 border border-red-500/30 rounded"></div>
-            <span className="text-sm text-[var(--text-muted)]/70">Nie przyszedł / Anulowana</span>
+            <div className="w-4 h-4 bg-red-600 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Nie przyszedł / Anulowana</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-white/5 border border-white/10 rounded"></div>
-            <span className="text-sm text-[var(--text-muted)]/70">Wolny termin</span>
+            <div className="w-4 h-4 bg-gray-600 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Zablokowane</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-white/10 border border-white/20 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Wolny termin</span>
           </div>
         </div>
 
@@ -2436,6 +2822,129 @@ export default function CalendarPage() {
                 >
                   <CheckCircle className="w-5 h-5" />
                   Potwierdź płatność
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal blokowania godzin */}
+        {showBlockModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-6 w-full max-w-md">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-500/20 rounded-lg">
+                    <Ban className="w-5 h-5 text-red-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[var(--text-primary)]">Zablokuj godziny</h3>
+                </div>
+                <button
+                  onClick={() => setShowBlockModal(false)}
+                  className="p-2 hover:bg-[var(--bg-primary)] rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-[var(--text-muted)]" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Pracownik */}
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                    Pracownik *
+                  </label>
+                  <select
+                    value={blockFormData.employeeId}
+                    onChange={(e) => setBlockFormData({ ...blockFormData, employeeId: e.target.value })}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                  >
+                    <option value="">Wybierz pracownika</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Data i godzina rozpoczęcia */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                      Data od *
+                    </label>
+                    <input
+                      type="date"
+                      value={blockFormData.startDate}
+                      onChange={(e) => setBlockFormData({ ...blockFormData, startDate: e.target.value, endDate: e.target.value })}
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                      Godzina od
+                    </label>
+                    <input
+                      type="time"
+                      value={blockFormData.startTime}
+                      onChange={(e) => setBlockFormData({ ...blockFormData, startTime: e.target.value })}
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Data i godzina zakończenia */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                      Data do *
+                    </label>
+                    <input
+                      type="date"
+                      value={blockFormData.endDate}
+                      onChange={(e) => setBlockFormData({ ...blockFormData, endDate: e.target.value })}
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                      Godzina do
+                    </label>
+                    <input
+                      type="time"
+                      value={blockFormData.endTime}
+                      onChange={(e) => setBlockFormData({ ...blockFormData, endTime: e.target.value })}
+                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Powód */}
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                    Powód (opcjonalnie)
+                  </label>
+                  <input
+                    type="text"
+                    value={blockFormData.reason}
+                    onChange={(e) => setBlockFormData({ ...blockFormData, reason: e.target.value })}
+                    placeholder="np. Urlop, Szkolenie, Przerwa..."
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowBlockModal(false)}
+                  className="flex-1 px-4 py-3 border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-primary)] transition-colors font-medium"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handleAddTimeBlock}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-5 h-5" />
+                  Zablokuj
                 </button>
               </div>
             </div>

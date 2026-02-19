@@ -1101,4 +1101,121 @@ export class AuthService {
 
     return { message: 'Hasło zostało zmienione' };
   }
+
+  /**
+   * Usunięcie konta użytkownika
+   * Wymagane przez Apple App Store (Guideline 5.1.1)
+   */
+  async deleteAccount(userId: string, password?: string) {
+    this.logger.log(`🗑️ Account deletion request for user: ${userId}`);
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        tenant_users: {
+          include: {
+            tenants: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Użytkownik nie istnieje');
+    }
+
+    // Jeśli użytkownik ma hasło, wymagaj potwierdzenia
+    if (user.passwordHash && password) {
+      let isPasswordValid = false;
+      try {
+        isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      } catch (e) {
+        isPasswordValid = user.passwordHash === password;
+      }
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Nieprawidłowe hasło');
+      }
+    }
+
+    // Pobierz tenant użytkownika (jeśli jest właścicielem)
+    const ownedTenants = user.tenant_users
+      .filter(tu => tu.role === 'TENANT_OWNER')
+      .map(tu => tu.tenantId);
+
+    this.logger.log(`User ${userId} owns ${ownedTenants.length} tenants`);
+
+    // Usuń wszystko w transakcji
+    // Wiele relacji ma onDelete: Cascade, więc usunięcie tenanta automatycznie usunie powiązane dane
+    await this.prisma.$transaction(async (prisma) => {
+      // Dla każdego tenanta którego użytkownik jest właścicielem
+      for (const tenantId of ownedTenants) {
+        this.logger.log(`Deleting tenant data for: ${tenantId}`);
+
+        // Usuń klientów (to usunie też rezerwacje przez cascade)
+        await prisma.customers.deleteMany({ where: { tenantId } });
+        
+        // Usuń usługi (kategorie są globalne, nie per-tenant)
+        await prisma.services.deleteMany({ where: { tenantId } });
+        
+        // Usuń konta pracowników
+        await prisma.employee_accounts.deleteMany({ where: { tenantId } });
+        
+        // Usuń pracowników
+        await prisma.employees.deleteMany({ where: { tenantId } });
+        
+        // Usuń subskrypcje
+        await prisma.subscriptions.deleteMany({ where: { tenantId } });
+        
+        // Usuń powiadomienia tenanta
+        await prisma.notifications.deleteMany({ where: { tenantId } });
+        
+        // Usuń powiązania tenant-user
+        await prisma.tenant_users.deleteMany({ where: { tenantId } });
+        
+        // Usuń tenant (cascade usunie pozostałe powiązane dane)
+        await prisma.tenants.delete({ where: { id: tenantId } });
+      }
+
+      // Usuń pozostałe powiązania użytkownika z tenantami (gdzie nie jest właścicielem)
+      await prisma.tenant_users.deleteMany({ where: { userId } });
+
+      // Usuń urządzenia push użytkownika
+      await prisma.push_devices.deleteMany({ where: { userId } });
+
+      // Usuń powiadomienia użytkownika
+      await prisma.notifications.deleteMany({ where: { userId } });
+
+      // Na końcu usuń użytkownika
+      await prisma.users.delete({ where: { id: userId } });
+    });
+
+    this.logger.log(`✅ Account deleted successfully for user: ${userId}`);
+
+    // Wyślij email potwierdzający usunięcie konta
+    if (user.email) {
+      try {
+        await this.emailService.sendEmail({
+          to: user.email,
+          subject: 'Twoje konto zostało usunięte - Rezerwacja24',
+          html: `
+            <h2>Konto usunięte</h2>
+            <p>Cześć ${user.firstName || 'Użytkowniku'},</p>
+            <p>Twoje konto w Rezerwacja24 zostało pomyślnie usunięte zgodnie z Twoją prośbą.</p>
+            <p>Wszystkie Twoje dane zostały trwale usunięte z naszych serwerów.</p>
+            <p>Jeśli to nie Ty usunąłeś konto, skontaktuj się z nami natychmiast.</p>
+            <br>
+            <p>Zespół Rezerwacja24</p>
+          `,
+        });
+      } catch (e) {
+        this.logger.warn(`Could not send account deletion email: ${e.message}`);
+      }
+    }
+
+    return { 
+      message: 'Konto zostało usunięte',
+      deleted: true,
+    };
+  }
 }

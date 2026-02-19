@@ -620,6 +620,10 @@ model tenants {
   google_calendar_connected_at  DateTime?             @db.Timestamp(6)
   google_calendar_email         String?               @db.VarChar(255)
   google_calendar_refresh_token String?
+  // Google Calendar integration via iCal link (alternative to OAuth)
+  google_calendar_ical_url      String?               @db.VarChar(500)
+  google_calendar_ical_enabled  Boolean?              @default(false)
+  google_calendar_ical_last_sync DateTime?            @db.Timestamp(6)
   marketing_consent_enabled     Boolean?              @default(false)
   marketing_consent_text        String?
   nip                           String?               @db.VarChar(20)
@@ -690,6 +694,7 @@ model tenants {
   customers                     customers[]
   employee_accounts             employee_accounts[]
   employees                     employees[]
+  external_calendar_events      external_calendar_events[]
   group_booking_types           group_booking_types[]
   group_bookings                group_bookings[]
   marketplace_listings          marketplace_listings?
@@ -705,6 +710,25 @@ model tenants {
   @@index([customDomain])
   @@index([ownerId])
   @@index([subdomain])
+}
+
+model external_calendar_events {
+  id          String   @id @default(uuid())
+  tenantId    String
+  externalId  String   // ID wydarzenia z zewnętrznego kalendarza
+  title       String?
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean  @default(false)
+  source      String   @default("google_ical") // google_ical, outlook_ical, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenants     tenants  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, externalId])
+  @@index([tenantId])
+  @@index([startTime])
+  @@index([endTime])
 }
 
 model time_blocks {

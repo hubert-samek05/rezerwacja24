@@ -345,20 +345,37 @@ export class EmployeesService {
       };
     }
 
-    // Mapuj zapisaną dostępność
-    // Jeśli są jakiekolwiek zapisane dni, to znaczy że użytkownik już edytował dostępność
-    // więc dni które nie są zapisane powinny być wyłączone (enabled: false)
+    // Mapuj zapisaną dostępność - obsługa wielokrotnych przedziałów godzin na dzień
+    // Grupuj dostępność według dnia tygodnia
+    const availabilityByDay: Record<string, any[]> = {};
+    for (const avail of employee.availability) {
+      if (avail.isActive) {
+        const dayKey = daysMap[avail.dayOfWeek];
+        if (!availabilityByDay[dayKey]) {
+          availabilityByDay[dayKey] = [];
+        }
+        availabilityByDay[dayKey].push({
+          id: avail.id,
+          startTime: avail.startTime,
+          endTime: avail.endTime,
+        });
+      }
+    }
+
     const workingHours = defaultHours.map(defaultDay => {
-      const saved = employee.availability.find(
-        a => daysMap[a.dayOfWeek] === defaultDay.day && a.isActive
-      );
+      const savedSlots = availabilityByDay[defaultDay.day];
       
-      if (saved) {
+      if (savedSlots && savedSlots.length > 0) {
+        // Sortuj przedziały według czasu rozpoczęcia
+        savedSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
         return {
           day: defaultDay.day,
           enabled: true,
-          startTime: saved.startTime,
-          endTime: saved.endTime,
+          // Pierwszy przedział jako główny (dla kompatybilności wstecznej)
+          startTime: savedSlots[0].startTime,
+          endTime: savedSlots[0].endTime,
+          // Wszystkie przedziały jako tablica
+          timeSlots: savedSlots,
         };
       }
       
@@ -366,6 +383,7 @@ export class EmployeesService {
       return {
         ...defaultDay,
         enabled: false,
+        timeSlots: [{ startTime: defaultDay.startTime, endTime: defaultDay.endTime }],
       };
     });
 
@@ -423,7 +441,7 @@ export class EmployeesService {
       sunday: 'SUNDAY',
     };
 
-    // Zapisz nowe godziny pracy
+    // Zapisz nowe godziny pracy - obsługa wielokrotnych przedziałów
     if (workingHours && Array.isArray(workingHours)) {
       const enabledDays = workingHours.filter(d => d.enabled).length;
       this.logger.debug(`Saving ${enabledDays} working days`);
@@ -436,25 +454,34 @@ export class EmployeesService {
             continue;
           }
           
-          const record = {
-            id: `avail-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            employeeId,
-            dayOfWeek: dayOfWeekEnum,
-            startTime: day.startTime,
-            endTime: day.endTime,
-            isActive: true,
-            updatedAt: new Date(),
-          };
+          // Obsługa wielokrotnych przedziałów (timeSlots) lub pojedynczego przedziału
+          const timeSlots = day.timeSlots && Array.isArray(day.timeSlots) && day.timeSlots.length > 0
+            ? day.timeSlots
+            : [{ startTime: day.startTime, endTime: day.endTime }];
           
-          try {
-            await this.prisma.availability.create({ data: record });
-          } catch (error) {
-            this.logger.error(`Error creating availability: ${error.message}`);
-            throw error;
+          for (const slot of timeSlots) {
+            if (!slot.startTime || !slot.endTime) continue;
+            
+            const record = {
+              id: `avail-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              employeeId,
+              dayOfWeek: dayOfWeekEnum,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              isActive: true,
+              updatedAt: new Date(),
+            };
+            
+            try {
+              await this.prisma.availability.create({ data: record });
+            } catch (error) {
+              this.logger.error(`Error creating availability: ${error.message}`);
+              throw error;
+            }
+            
+            // Małe opóźnienie aby uniknąć duplikatów ID
+            await new Promise(resolve => setTimeout(resolve, 10));
           }
-          
-          // Małe opóźnienie aby uniknąć duplikatów ID
-          await new Promise(resolve => setTimeout(resolve, 10));
         }
       }
       this.logger.debug('Working hours saved successfully');

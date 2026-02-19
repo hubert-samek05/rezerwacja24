@@ -319,7 +319,7 @@ export default function BookingWizard({
     switch (s) {
       case 1: return !!selectedDate
       case 2: return !!selectedTime && !!selectedEmployee
-      case 3: return !!customerName && !!customerPhone && (paymentMethod === 'cash' || !!customerEmail)
+      case 3: return !!customerName && !!customerPhone && !!customerEmail
       case 4: return paymentMethod === 'cash' || (needsDeposit ? !!depositProvider : true)
       default: return true
     }
@@ -516,7 +516,7 @@ export default function BookingWizard({
                   
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Email {paymentMethod !== 'cash' || needsDeposit ? '*' : '(opcjonalnie)'}
+                      Email *
                     </label>
                     <input
                       type="email"

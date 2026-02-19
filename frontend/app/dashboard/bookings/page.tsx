@@ -495,10 +495,10 @@ export default function BookingsPage() {
 
   const getStatusColor = (status: BookingStatus) => {
     switch (status) {
-      case 'confirmed': return 'text-accent-neon bg-accent-neon/20 border-accent-neon/30'
-      case 'pending': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30'
-      case 'cancelled': return 'text-red-400 bg-red-500/20 border-red-500/30'
-      case 'completed': return 'text-blue-400 bg-blue-500/20 border-blue-500/30'
+      case 'confirmed': return 'text-white bg-emerald-600 border-emerald-700 font-semibold'
+      case 'pending': return 'text-white bg-amber-500 border-amber-600 font-semibold'
+      case 'cancelled': return 'text-white bg-red-600 border-red-700 font-semibold'
+      case 'completed': return 'text-white bg-blue-600 border-blue-700 font-semibold'
     }
   }
 
@@ -513,9 +513,9 @@ export default function BookingsPage() {
 
   const getPaymentStatusColor = (paymentStatus: 'paid' | 'unpaid' | 'partial') => {
     switch (paymentStatus) {
-      case 'paid': return 'text-accent-neon bg-accent-neon/20 border-accent-neon/30'
-      case 'unpaid': return 'text-red-400 bg-red-500/20 border-red-500/30'
-      case 'partial': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30'
+      case 'paid': return 'text-white bg-emerald-600 border-emerald-700 font-semibold'
+      case 'unpaid': return 'text-white bg-red-600 border-red-700 font-semibold'
+      case 'partial': return 'text-white bg-amber-500 border-amber-600 font-semibold'
     }
   }
 
@@ -840,7 +840,7 @@ export default function BookingsPage() {
                         <span className="text-[var(--text-muted)]">•</span>
                         <span className="text-[var(--text-primary)]">{booking.time}</span>
                         {isToday && (
-                          <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
+                          <span className="px-2 py-0.5 bg-emerald-600 text-white text-xs font-semibold rounded-full">
                             Dziś
                           </span>
                         )}
@@ -861,20 +861,20 @@ export default function BookingsPage() {
 
                     {/* Status badges */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                        booking.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                        booking.status === 'completed' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        booking.status === 'confirmed' ? 'bg-emerald-600 text-white' :
+                        booking.status === 'pending' ? 'bg-amber-500 text-white' :
+                        booking.status === 'completed' ? 'bg-blue-600 text-white' :
+                        'bg-red-600 text-white'
                       }`}>
                         {booking.status === 'confirmed' ? 'Potwierdzona' :
                          booking.status === 'pending' ? 'Oczekująca' :
                          booking.status === 'completed' ? 'Zakończona' : 'Anulowana'}
                       </span>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        booking.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                        booking.paymentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        booking.paymentStatus === 'paid' ? 'bg-emerald-600 text-white' :
+                        booking.paymentStatus === 'partial' ? 'bg-amber-500 text-white' :
+                        'bg-red-600 text-white'
                       }`}>
                         {booking.paymentStatus === 'paid' ? '✓ Opłacone' : 
                          booking.paymentStatus === 'partial' ? `Częściowo ${booking.paidAmount}/${booking.price} zł` : 
@@ -882,12 +882,12 @@ export default function BookingsPage() {
                       </span>
                       {/* Znacznik zaliczki */}
                       {booking.depositRequired && booking.depositAmount && booking.depositAmount > 0 && (
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
                           booking.depositStatus === 'paid' 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
+                            ? 'bg-emerald-600 text-white' 
                             : booking.depositStatus === 'pending'
-                            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-slate-600 text-white'
                         }`}>
                           <Wallet className="w-3 h-3" />
                           {booking.depositStatus === 'paid' ? `Zaliczka ${booking.depositAmount} zł ✓` : 
@@ -1035,11 +1035,11 @@ export default function BookingsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                            booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                            booking.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                            booking.status === 'completed' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' :
-                            'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            booking.status === 'confirmed' ? 'bg-emerald-600 text-white' :
+                            booking.status === 'pending' ? 'bg-amber-500 text-white' :
+                            booking.status === 'completed' ? 'bg-blue-600 text-white' :
+                            'bg-red-600 text-white'
                           }`}>
                             {booking.status === 'confirmed' ? 'Potwierdzona' :
                              booking.status === 'pending' ? 'Oczekująca' :
@@ -1050,10 +1050,10 @@ export default function BookingsPage() {
                           <div className="flex flex-col gap-1">
                             <button
                               onClick={() => handleOpenPaymentModal(booking)}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80 ${
-                                booking.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                                booking.paymentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-opacity hover:opacity-80 ${
+                                booking.paymentStatus === 'paid' ? 'bg-emerald-600 text-white' :
+                                booking.paymentStatus === 'partial' ? 'bg-amber-500 text-white' :
+                                'bg-red-600 text-white'
                               }`}
                             >
                               {booking.paymentStatus === 'paid' ? '✓ Opłacone' : 
@@ -1062,12 +1062,12 @@ export default function BookingsPage() {
                             </button>
                             {/* Znacznik zaliczki */}
                             {booking.depositRequired && booking.depositAmount && booking.depositAmount > 0 && (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                                 booking.depositStatus === 'paid' 
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
+                                  ? 'bg-emerald-600 text-white' 
                                   : booking.depositStatus === 'pending'
-                                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                  ? 'bg-orange-500 text-white'
+                                  : 'bg-slate-600 text-white'
                               }`}>
                                 <Wallet className="w-3 h-3" />
                                 {booking.depositAmount} zł {booking.depositStatus === 'paid' ? '✓' : ''}
@@ -1203,20 +1203,20 @@ export default function BookingsPage() {
 
               {/* Status & Payment */}
               <div className="flex items-center gap-2 p-5 border-b border-[var(--border-color)]">
-                <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                  selectedBooking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                  selectedBooking.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                  selectedBooking.status === 'completed' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' :
-                  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                  selectedBooking.status === 'confirmed' ? 'bg-emerald-600 text-white' :
+                  selectedBooking.status === 'pending' ? 'bg-amber-500 text-white' :
+                  selectedBooking.status === 'completed' ? 'bg-blue-600 text-white' :
+                  'bg-red-600 text-white'
                 }`}>
                   {selectedBooking.status === 'confirmed' ? 'Potwierdzona' :
                    selectedBooking.status === 'pending' ? 'Oczekująca' :
                    selectedBooking.status === 'completed' ? 'Zakończona' : 'Anulowana'}
                 </span>
-                <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                  selectedBooking.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                  selectedBooking.paymentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                  selectedBooking.paymentStatus === 'paid' ? 'bg-emerald-600 text-white' :
+                  selectedBooking.paymentStatus === 'partial' ? 'bg-amber-500 text-white' :
+                  'bg-red-600 text-white'
                 }`}>
                   {selectedBooking.paymentStatus === 'paid' ? '✓ Opłacone' : 
                    selectedBooking.paymentStatus === 'partial' ? 'Częściowo opłacone' : 
@@ -1283,14 +1283,14 @@ export default function BookingsPage() {
                           <p className="font-medium text-[var(--text-primary)]">{selectedBooking.depositAmount} zł</p>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         selectedBooking.depositStatus === 'paid' 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                          ? 'bg-emerald-600 text-white' 
                           : selectedBooking.depositStatus === 'pending'
-                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                          ? 'bg-amber-500 text-white'
                           : selectedBooking.depositStatus === 'refunded'
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-600 text-white'
                       }`}>
                         {selectedBooking.depositStatus === 'paid' ? '✓ Opłacona' : 
                          selectedBooking.depositStatus === 'pending' ? 'Oczekuje' : 

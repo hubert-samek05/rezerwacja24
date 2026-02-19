@@ -382,40 +382,61 @@ export class PaymentsService {
     }
 
     try {
-      this.logger.log(`Creating Stripe payment for booking ${bookingId}`);
+      this.logger.log(`Creating Stripe Checkout Session for booking ${bookingId}, amount: ${amount} PLN`);
       
       const stripe = new Stripe(tenant.stripeSecretKey, {
         apiVersion: '2023-10-16',
       });
 
-      // Utwórz Payment Intent z tenantId w metadata (dla optymalizacji webhook)
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // w groszach
-        currency: 'pln',
-        description: `Rezerwacja: ${booking.services.name}`,
-        receipt_email: customerEmail,
+      // Użyj Stripe Checkout Session - przekierowanie do strony płatności Stripe
+      const baseUrl = process.env.FRONTEND_URL || 'https://rezerwacja24.pl';
+      const subdomain = tenant.subdomain;
+      const successUrl = `https://${subdomain}.rezerwacja24.pl?payment=success&bookingId=${bookingId}`;
+      const cancelUrl = `https://${subdomain}.rezerwacja24.pl?payment=cancelled&bookingId=${bookingId}`;
+
+      // Użyj automatycznego wyboru metod płatności (Stripe sam wybierze dostępne dla konta)
+      // Nie podajemy payment_method_types - Stripe automatycznie pokaże wszystkie włączone metody
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer_email: customerEmail,
+        line_items: [
+          {
+            price_data: {
+              currency: 'pln',
+              product_data: {
+                name: booking.services.name,
+                description: `Rezerwacja usługi: ${booking.services.name}`,
+              },
+              unit_amount: Math.round(amount * 100), // w groszach
+            },
+            quantity: 1,
+          },
+        ],
         metadata: {
           bookingId,
-          tenantId: userId, // Dodane dla optymalizacji webhook
-          userId, // Zachowane dla kompatybilności wstecznej
+          tenantId: userId,
+          userId,
         },
+        success_url: successUrl,
+        cancel_url: cancelUrl,
       });
 
       // Zaktualizuj rezerwację
       await this.prisma.bookings.update({
         where: { id: bookingId },
         data: {
-          stripePaymentIntentId: paymentIntent.id,
+          stripePaymentIntentId: session.payment_intent as string || session.id,
           paymentMethod: 'stripe',
           updatedAt: new Date(),
         },
       });
 
-      this.logger.log(`Stripe payment created successfully: ${paymentIntent.id}`);
+      this.logger.log(`Stripe Checkout Session created successfully: ${session.id}, URL: ${session.url}`);
 
+      // Zwróć URL do przekierowania (tak jak inne bramki płatności)
       return {
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
+        paymentUrl: session.url,
+        sessionId: session.id,
       };
     } catch (error) {
       this.logger.error(`Stripe payment creation failed: ${error.message}`, error.stack);
@@ -431,6 +452,115 @@ export class PaymentsService {
       throw new BadRequestException(
         `Nie udało się utworzyć płatności Stripe: ${error.message}`
       );
+    }
+  }
+
+  /**
+   * Weryfikuj płatność Stripe po powrocie klienta (bez webhooka)
+   * Sprawdza status płatności bezpośrednio w Stripe API
+   */
+  async verifyStripePaymentByBooking(bookingId: string) {
+    this.logger.log(`Verifying Stripe payment for booking ${bookingId}`);
+
+    // Pobierz rezerwację z danymi usługi
+    const booking = await this.prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: { 
+        services: { 
+          select: { tenantId: true } 
+        } 
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Rezerwacja nie znaleziona');
+    }
+
+    // Jeśli już opłacona - zwróć sukces
+    if (booking.isPaid) {
+      return { success: true, status: 'paid', message: 'Płatność już potwierdzona' };
+    }
+
+    // Pobierz tenanta
+    const tenantId = booking.services?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Nie można znaleźć tenanta');
+    }
+
+    const tenant = await this.prisma.tenants.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant?.stripeEnabled || !tenant?.stripeSecretKey) {
+      throw new BadRequestException('Stripe nie jest skonfigurowane');
+    }
+
+    // Sprawdź czy mamy ID płatności Stripe
+    const stripePaymentId = booking.stripePaymentIntentId;
+    if (!stripePaymentId) {
+      return { success: false, status: 'no_payment', message: 'Brak płatności Stripe' };
+    }
+
+    try {
+      const stripe = new Stripe(tenant.stripeSecretKey, {
+        apiVersion: '2023-10-16',
+      });
+
+      // Sprawdź czy to Checkout Session czy Payment Intent
+      let isPaid = false;
+      let amountPaid = 0;
+
+      if (stripePaymentId.startsWith('cs_')) {
+        // To jest Checkout Session
+        const session = await stripe.checkout.sessions.retrieve(stripePaymentId);
+        isPaid = session.payment_status === 'paid';
+        amountPaid = (session.amount_total || 0) / 100;
+      } else if (stripePaymentId.startsWith('pi_')) {
+        // To jest Payment Intent
+        const paymentIntent = await stripe.paymentIntents.retrieve(stripePaymentId);
+        isPaid = paymentIntent.status === 'succeeded';
+        amountPaid = paymentIntent.amount / 100;
+      } else {
+        // Spróbuj jako Checkout Session (może być bez prefiksu)
+        try {
+          const session = await stripe.checkout.sessions.retrieve(stripePaymentId);
+          isPaid = session.payment_status === 'paid';
+          amountPaid = (session.amount_total || 0) / 100;
+        } catch {
+          return { success: false, status: 'unknown', message: 'Nieznany format ID płatności' };
+        }
+      }
+
+      if (isPaid) {
+        // Zaktualizuj rezerwację jako opłaconą
+        await this.prisma.bookings.update({
+          where: { id: bookingId },
+          data: {
+            isPaid: true,
+            paidAmount: amountPaid,
+            paidAt: new Date(),
+            status: 'CONFIRMED',
+            updatedAt: new Date(),
+          },
+        });
+
+        this.logger.log(`Stripe payment verified and confirmed for booking ${bookingId}`);
+
+        // Utwórz powiadomienie
+        await this.createPaymentNotification(
+          tenantId,
+          'Płatność otrzymana',
+          `Otrzymano płatność ${amountPaid.toFixed(2)} PLN za rezerwację (Stripe)`,
+          bookingId
+        );
+
+        return { success: true, status: 'paid', message: 'Płatność potwierdzona' };
+      } else {
+        return { success: false, status: 'pending', message: 'Płatność w trakcie przetwarzania' };
+      }
+    } catch (error) {
+      this.logger.error(`Stripe payment verification failed: ${error.message}`);
+      return { success: false, status: 'error', message: error.message };
     }
   }
 
@@ -672,6 +802,7 @@ export class PaymentsService {
 
   /**
    * Utwórz płatność Autopay (Blue Media)
+   * Dokumentacja: https://github.com/bluepayment-plugin/bm-sdk
    */
   async createAutopayPayment(userId: string, bookingId: string, amount: number, customerEmail: string, customerName: string) {
     const tenant: any = await this.prisma.tenants.findUnique({
@@ -695,71 +826,76 @@ export class PaymentsService {
       throw new NotFoundException('Rezerwacja nie znaleziona');
     }
 
-    // Generuj unikalny orderId
-    const orderId = `AUTOPAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generuj unikalny orderId (max 32 znaki dla Autopay)
+    const orderId = `AP${Date.now()}`;
 
     try {
-      this.logger.log(`Creating Autopay payment for booking ${bookingId}`);
+      this.logger.log(`Creating Autopay payment for booking ${bookingId}, orderId: ${orderId}`);
       
-      // Autopay (Blue Media) API
-      const apiUrl = process.env.AUTOPAY_SANDBOX === 'true'
-        ? 'https://pay-accept.bm.pl/payment'
-        : 'https://pay.bm.pl/payment';
+      // Autopay (Blue Media) API - używamy formularza przekierowania
+      const gatewayUrl = process.env.AUTOPAY_SANDBOX === 'true'
+        ? 'https://testpay.autopay.eu'
+        : 'https://pay.autopay.eu';
 
-      // Generuj hash dla Autopay
-      const hashString = `${tenant.autopayServiceId}|${orderId}|${amount.toFixed(2)}|PLN|${tenant.autopaySharedKey}`;
+      const serviceId = tenant.autopayServiceId;
+      const sharedKey = tenant.autopaySharedKey;
+      const amountStr = amount.toFixed(2);
+      const description = `Rezerwacja: ${booking.services?.name || 'Usługa'}`.substring(0, 100);
+      const returnUrl = this.getReturnUrl(tenant.subdomain, bookingId);
+      
+      // Hash zgodnie z SDK Autopay - kolejność pól jest kluczowa!
+      // Wszystkie pola które wysyłamy muszą być w hash, w tej samej kolejności jak w params
+      const hashData = [
+        serviceId,
+        orderId,
+        amountStr,
+        description,
+        'PLN',
+        customerEmail,
+        returnUrl,
+      ];
+      const hashString = hashData.join('|') + '|' + sharedKey;
       const hash = crypto.createHash('sha256').update(hashString).digest('hex');
 
-      const transactionData = {
-        ServiceID: tenant.autopayServiceId,
+      this.logger.log(`Autopay hash generated for order ${orderId}, returnUrl: ${returnUrl}`);
+      
+      // Budujemy URL do przekierowania (metoda GET/POST form)
+      const params = new URLSearchParams({
+        ServiceID: serviceId,
         OrderID: orderId,
-        Amount: amount.toFixed(2),
+        Amount: amountStr,
+        Description: description,
         Currency: 'PLN',
         CustomerEmail: customerEmail,
-        Title: `Rezerwacja: ${booking.services.name}`,
+        ReturnURL: returnUrl,
         Hash: hash,
-        ValidityTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minut
-        LinkValidityTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      };
-
-      const response = await axios.post(apiUrl, transactionData, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
       });
 
-      if (response.data && response.data.paymentUrl) {
-        const paymentUrl = response.data.paymentUrl;
+      // Autopay wymaga przekierowania użytkownika na bramkę z parametrami
+      const paymentUrl = `${gatewayUrl}/payment?${params.toString()}`;
 
-        // Zaktualizuj rezerwację
-        await this.prisma.bookings.update({
-          where: { id: bookingId },
-          data: {
-            paymentMethod: 'autopay',
-            autopayOrderId: orderId,
-            paymentStatus: 'pending',
-            updatedAt: new Date(),
-          },
-        });
+      // Zaktualizuj rezerwację
+      await this.prisma.bookings.update({
+        where: { id: bookingId },
+        data: {
+          paymentMethod: 'autopay',
+          autopayOrderId: orderId,
+          paymentStatus: 'pending',
+          updatedAt: new Date(),
+        },
+      });
 
-        this.logger.log(`Autopay payment created successfully: ${orderId}`);
+      this.logger.log(`Autopay payment URL created: ${paymentUrl.substring(0, 100)}...`);
 
-        return {
-          orderId,
-          paymentUrl,
-        };
-      } else {
-        throw new Error('Invalid response from Autopay');
-      }
+      return {
+        orderId,
+        paymentUrl,
+      };
     } catch (error) {
       this.logger.error(`Autopay payment creation failed: ${error.message}`, error.stack);
       
-      await this.prisma.bookings.update({
-        where: { id: bookingId },
-        data: { updatedAt: new Date() },
-      });
-
       throw new BadRequestException(
-        `Nie udało się utworzyć płatności Autopay: ${error.response?.data?.message || error.message}`
+        `Nie udało się utworzyć płatności Autopay: ${error.message}`
       );
     }
   }
@@ -956,6 +1092,41 @@ export class PaymentsService {
 
     // Obsłuż różne typy eventów
     switch (event.type) {
+      case 'checkout.session.completed':
+        // Stripe Checkout Session zakończona sukcesem
+        const session = event.data.object as Stripe.Checkout.Session;
+        const sessionBookingId = session.metadata?.bookingId;
+
+        if (!sessionBookingId) {
+          this.logger.warn('Brak bookingId w metadata checkout session');
+          break;
+        }
+
+        const amountTotal = session.amount_total || 0;
+        
+        await this.prisma.bookings.update({
+          where: { id: sessionBookingId },
+          data: {
+            isPaid: true,
+            paidAmount: amountTotal / 100,
+            paidAt: new Date(),
+            status: 'CONFIRMED',
+            stripePaymentIntentId: session.payment_intent as string || session.id,
+            updatedAt: new Date(),
+          },
+        });
+
+        this.logger.log(`Płatność Stripe Checkout za rezerwację ${sessionBookingId} potwierdzona (${amountTotal / 100} PLN)`);
+
+        // 🔔 Utwórz powiadomienie o płatności
+        await this.createPaymentNotification(
+          matchedTenant.id,
+          'Płatność otrzymana',
+          `Otrzymano płatność ${(amountTotal / 100).toFixed(2)} PLN za rezerwację (Stripe)`,
+          sessionBookingId
+        );
+        break;
+
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const bookingId = paymentIntent.metadata?.bookingId;
@@ -1177,9 +1348,32 @@ export class PaymentsService {
   async handleAutopayWebhook(data: any) {
     this.logger.log(`Autopay webhook received: ${JSON.stringify(data)}`);
 
-    // Autopay wysyła dane w formacie { OrderID, PaymentStatus, ... }
-    const orderId = data.OrderID;
-    const status = data.PaymentStatus;
+    // Autopay wysyła ITN jako XML zakodowany w base64 w polu 'transactions'
+    let orderId: string | undefined;
+    let status: string | undefined;
+    
+    // Sprawdź czy to ITN w formacie base64
+    if (data.transactions) {
+      try {
+        const xmlData = Buffer.from(data.transactions, 'base64').toString('utf-8');
+        this.logger.log(`Autopay ITN XML: ${xmlData}`);
+        
+        // Parsuj XML - szukamy orderID i paymentStatus
+        const orderIdMatch = xmlData.match(/<orderID>([^<]+)<\/orderID>/);
+        const statusMatch = xmlData.match(/<paymentStatus>([^<]+)<\/paymentStatus>/);
+        
+        orderId = orderIdMatch ? orderIdMatch[1] : undefined;
+        status = statusMatch ? statusMatch[1] : undefined;
+      } catch (e) {
+        this.logger.error(`Autopay ITN decode error: ${e.message}`);
+      }
+    }
+    
+    // Fallback - może być też w formacie JSON
+    if (!orderId) {
+      orderId = data.OrderID || data.orderID;
+      status = data.PaymentStatus || data.paymentStatus;
+    }
 
     if (!orderId) {
       this.logger.error('Autopay webhook: missing OrderID');
@@ -1293,5 +1487,114 @@ export class PaymentsService {
     } catch (error) {
       this.logger.error(`Błąd tworzenia powiadomienia: ${error}`);
     }
+  }
+
+  /**
+   * Potwierdź płatność po powrocie z bramki (Autopay, PayU, etc.)
+   * Użytkownik wraca z bramki z parametrami - jeśli wrócił z OrderID i Hash, płatność się powiodła
+   */
+  async confirmPaymentReturn(data: { orderId: string; serviceId?: string; hash?: string }) {
+    const { orderId, serviceId, hash } = data;
+    
+    this.logger.log(`Payment return confirmation for orderId: ${orderId}`);
+
+    if (!orderId) {
+      return { success: false, message: 'Brak identyfikatora zamówienia' };
+    }
+
+    // Znajdź rezerwację po orderId (Autopay)
+    let booking = await this.prisma.bookings.findFirst({
+      where: { autopayOrderId: orderId },
+      include: { employees: true },
+    });
+
+    // Fallback - szukaj po innych polach
+    if (!booking) {
+      booking = await this.prisma.bookings.findFirst({
+        where: { payuOrderId: orderId },
+        include: { employees: true },
+      });
+    }
+    if (!booking) {
+      booking = await this.prisma.bookings.findFirst({
+        where: { tpayTransactionId: orderId },
+        include: { employees: true },
+      });
+    }
+
+    if (!booking) {
+      this.logger.error(`Payment return: booking not found for orderId ${orderId}`);
+      return { success: false, message: 'Nie znaleziono rezerwacji' };
+    }
+
+    // Jeśli już opłacone - zwróć sukces
+    if (booking.isPaid) {
+      return { success: true, message: 'Płatność już została potwierdzona', bookingId: booking.id };
+    }
+
+    // Weryfikacja hash dla Autopay (opcjonalna, ale zalecana)
+    if (serviceId && hash && booking.autopayOrderId) {
+      const tenant = await this.prisma.tenants.findFirst({
+        where: { employees: { some: { id: booking.employeeId || '' } } },
+      });
+      
+      if (tenant?.autopaySharedKey) {
+        const expectedHash = crypto
+          .createHash('sha256')
+          .update(`${serviceId}|${orderId}|${tenant.autopaySharedKey}`)
+          .digest('hex');
+        
+        if (hash !== expectedHash) {
+          this.logger.error(`Payment return: invalid hash for orderId ${orderId}`);
+          return { success: false, message: 'Nieprawidłowa suma kontrolna' };
+        }
+      }
+    }
+
+    // Oznacz jako opłacone
+    const isDeposit = booking.deposit_required && booking.deposit_status === 'pending';
+    
+    if (isDeposit) {
+      // Opłata zaliczki
+      await this.prisma.bookings.update({
+        where: { id: booking.id },
+        data: {
+          deposit_status: 'paid',
+          deposit_paid_at: new Date(),
+          deposit_payment_method: booking.paymentMethod || 'autopay',
+          paymentStatus: 'completed',
+          status: 'CONFIRMED',
+          updatedAt: new Date(),
+        },
+      });
+      this.logger.log(`Payment return: deposit paid for booking ${booking.id}`);
+    } else {
+      // Pełna płatność
+      await this.prisma.bookings.update({
+        where: { id: booking.id },
+        data: {
+          isPaid: true,
+          paidAmount: booking.totalPrice,
+          paidAt: new Date(),
+          paymentStatus: 'completed',
+          status: 'CONFIRMED',
+          updatedAt: new Date(),
+        },
+      });
+      this.logger.log(`Payment return: full payment confirmed for booking ${booking.id}`);
+    }
+
+    // Powiadomienie
+    if (booking.employees?.userId) {
+      const amount = isDeposit ? Number(booking.deposit_amount) : Number(booking.totalPrice);
+      await this.createPaymentNotification(
+        booking.employees.userId,
+        'Płatność otrzymana',
+        `Otrzymano płatność ${amount.toFixed(2)} PLN za rezerwację`,
+        booking.id
+      );
+    }
+
+    return { success: true, message: 'Płatność potwierdzona', bookingId: booking.id };
   }
 }

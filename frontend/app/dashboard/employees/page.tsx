@@ -373,9 +373,8 @@ export default function EmployeesPage() {
     setSavingPermissions(true)
     try {
       const config = getTenantConfig()
-      // Wysyłamy tylko uprawnienia bez accountType (backend go nie obsługuje)
-      const { accountType, ...permissionsToSend } = permissions
-      await axios.patch(`${API_URL}/api/employee-accounts/${accountModal.account.id}/permissions`, permissionsToSend, config)
+      // Wysyłamy uprawnienia razem z accountType (backend zaktualizuje title)
+      await axios.patch(`${API_URL}/api/employee-accounts/${accountModal.account.id}/permissions`, permissions, config)
       toast.success('Uprawnienia zostały zapisane')
       setShowPermissions(false)
       // Odśwież listę kont

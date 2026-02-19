@@ -348,13 +348,68 @@ export class EmployeeAccountsService {
     canManagePayments?: boolean;
     onlyOwnBookings?: boolean;
     onlyOwnCalendar?: boolean;
+    // Pola z frontendu które nie istnieją w bazie - ignorujemy
+    canViewOtherBookings?: boolean;
+    onlyOwnCustomers?: boolean;
+    canViewAllServices?: boolean;
+    canViewPrices?: boolean;
+    // Typ konta - mapowany na title w employees
+    accountType?: string;
   }) {
     const account = await this.findOne(tenantId, accountId);
 
+    // Filtruj tylko pola które istnieją w schemacie bazy danych
+    const validPermissions = {
+      canViewCalendar: permissions.canViewCalendar,
+      canManageBookings: permissions.canManageBookings,
+      canViewCustomers: permissions.canViewCustomers,
+      canManageCustomers: permissions.canManageCustomers,
+      canViewServices: permissions.canViewServices,
+      canManageServices: permissions.canManageServices,
+      canViewEmployees: permissions.canViewEmployees,
+      canManageEmployees: permissions.canManageEmployees,
+      canViewAnalytics: permissions.canViewAnalytics,
+      canViewSettings: permissions.canViewSettings,
+      canManageSettings: permissions.canManageSettings,
+      canViewPayments: permissions.canViewPayments,
+      canManagePayments: permissions.canManagePayments,
+      onlyOwnBookings: permissions.onlyOwnBookings,
+      onlyOwnCalendar: permissions.onlyOwnCalendar,
+    };
+
+    // Usuń undefined wartości
+    Object.keys(validPermissions).forEach(key => {
+      if (validPermissions[key] === undefined) {
+        delete validPermissions[key];
+      }
+    });
+
     await this.prisma.employee_permissions.update({
       where: { employeeAccountId: account.id },
-      data: permissions,
+      data: validPermissions,
     });
+
+    // Aktualizuj title w employees na podstawie accountType
+    if (permissions.accountType) {
+      const titleMap: Record<string, string> = {
+        'manager': 'Menadżer',
+        'receptionist': 'Recepcja',
+        'secretary': 'Sekretariat',
+        'accountant': 'Księgowość',
+        'assistant': 'Asystent',
+        'employee': 'Pracownik',
+        'employee_extended': 'Pracownik+',
+        'custom': 'Własne uprawnienia',
+      };
+      const title = titleMap[permissions.accountType] || 'Pracownik';
+      
+      await this.prisma.employees.update({
+        where: { id: account.employeeId },
+        data: { title },
+      });
+      
+      this.logger.log(`Updated employee ${account.employeeId} title to: ${title}`);
+    }
 
     return this.findOne(tenantId, accountId);
   }

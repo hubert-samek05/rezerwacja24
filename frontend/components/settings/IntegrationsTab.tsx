@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, Loader2, ExternalLink, Copy } from 'lucide-react'
+import { Check, Loader2, ExternalLink, Copy, Info, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 // Loga integracji
@@ -116,6 +116,15 @@ export default function IntegrationsTab() {
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [tenantId, setTenantId] = useState<string>('')
+  
+  // Google Calendar iCal Link state
+  const [icalEnabled, setIcalEnabled] = useState(false)
+  const [icalUrl, setIcalUrl] = useState('')
+  const [icalLastSync, setIcalLastSync] = useState<string | null>(null)
+  const [icalEventsCount, setIcalEventsCount] = useState(0)
+  const [icalInputUrl, setIcalInputUrl] = useState('')
+  const [icalLoading, setIcalLoading] = useState(false)
+  const [showGoogleCalendarInfo, setShowGoogleCalendarInfo] = useState(false)
 
   // Pobierz API URL
   const getApiUrl = () => {
@@ -150,6 +159,25 @@ export default function IntegrationsTab() {
           if (data.connected) {
             setConnectedIntegrations(prev => [...prev.filter(i => i !== 'google-calendar'), 'google-calendar'])
             setGoogleCalendarEmail(data.email)
+          }
+        }
+
+        // Sprawdź status integracji iCal
+        const icalResponse = await fetch(`${apiUrl}/api/integrations/google-calendar-ical/status`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-tenant-id': currentTenantId,
+          },
+        })
+
+        if (icalResponse.ok) {
+          const icalData = await icalResponse.json()
+          setIcalEnabled(icalData.enabled || false)
+          setIcalUrl(icalData.url || '')
+          setIcalLastSync(icalData.lastSync)
+          setIcalEventsCount(icalData.eventsCount || 0)
+          if (icalData.url) {
+            setIcalInputUrl(icalData.url)
           }
         }
       } catch (error) {
@@ -234,6 +262,115 @@ export default function IntegrationsTab() {
     toast.success('Skopiowano link iCal!')
   }
 
+  // Włącz synchronizację Google Calendar przez link iCal
+  const handleEnableICalSync = async () => {
+    if (!icalInputUrl) {
+      toast.error('Wklej link do kalendarza Google')
+      return
+    }
+
+    try {
+      setIcalLoading(true)
+      const token = localStorage.getItem('token')
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const currentTenantId = user.tenantId || ''
+
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/integrations/google-calendar-ical/enable`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-tenant-id': currentTenantId,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: icalInputUrl }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setIcalEnabled(true)
+        setIcalUrl(icalInputUrl)
+        setIcalEventsCount(data.eventsCount || 0)
+        setIcalLastSync(new Date().toISOString())
+        toast.success(`Synchronizacja włączona! Zaimportowano ${data.eventsCount || 0} wydarzeń.`)
+      } else {
+        toast.error(data.error || 'Nie udało się włączyć synchronizacji')
+      }
+    } catch (error) {
+      console.error('Error enabling iCal sync:', error)
+      toast.error('Błąd połączenia')
+    } finally {
+      setIcalLoading(false)
+    }
+  }
+
+  // Wyłącz synchronizację iCal
+  const handleDisableICalSync = async () => {
+    try {
+      setIcalLoading(true)
+      const token = localStorage.getItem('token')
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const currentTenantId = user.tenantId || ''
+
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/integrations/google-calendar-ical/disable`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-tenant-id': currentTenantId,
+        },
+      })
+
+      if (response.ok) {
+        setIcalEnabled(false)
+        setIcalUrl('')
+        setIcalEventsCount(0)
+        setIcalLastSync(null)
+        toast.success('Synchronizacja wyłączona')
+      }
+    } catch (error) {
+      console.error('Error disabling iCal sync:', error)
+      toast.error('Błąd rozłączania')
+    } finally {
+      setIcalLoading(false)
+    }
+  }
+
+  // Ręczna synchronizacja
+  const handleManualSync = async () => {
+    try {
+      setIcalLoading(true)
+      const token = localStorage.getItem('token')
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const currentTenantId = user.tenantId || ''
+
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/integrations/google-calendar-ical/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-tenant-id': currentTenantId,
+        },
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setIcalEventsCount(data.eventsCount || 0)
+        setIcalLastSync(new Date().toISOString())
+        toast.success(`Zsynchronizowano ${data.eventsCount || 0} wydarzeń`)
+      } else {
+        toast.error(data.error || 'Błąd synchronizacji')
+      }
+    } catch (error) {
+      console.error('Error syncing:', error)
+      toast.error('Błąd synchronizacji')
+    } finally {
+      setIcalLoading(false)
+    }
+  }
+
   const integrations: Integration[] = [
     { id: 'google-calendar', name: 'Google Calendar', description: 'Synchronizuj rezerwacje z kalendarzem Google', logo: <GoogleCalendarLogo />, status: 'available', category: 'calendar' },
     { id: 'outlook', name: 'Microsoft Outlook', description: 'Synchronizacja z kalendarzem Outlook', logo: <OutlookLogo />, status: 'coming_soon', category: 'calendar' },
@@ -310,7 +447,18 @@ export default function IntegrationsTab() {
                           {integration.logo}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-[var(--text-primary)]">{integration.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-[var(--text-primary)]">{integration.name}</h4>
+                            {integration.id === 'google-calendar' && (
+                              <button
+                                onClick={() => setShowGoogleCalendarInfo(true)}
+                                className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition-colors"
+                                title="Informacje o integracji"
+                              >
+                                <Info className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                           <p className="text-sm text-[var(--text-muted)] mt-0.5">{integration.description}</p>
                         </div>
                       </div>
@@ -318,31 +466,99 @@ export default function IntegrationsTab() {
                         {isComingSoon ? (
                           <button disabled className="w-full py-2.5 bg-[var(--bg-card)] text-[var(--text-muted)] rounded-xl text-sm font-medium cursor-not-allowed">Niedostępne</button>
                         ) : integration.id === 'google-calendar' ? (
-                          // Google Calendar - specjalna obsługa
-                          isConnected ? (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-center gap-2 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium">
-                                <Check className="w-4 h-4" />
-                                <span>Połączono{googleCalendarEmail ? `: ${googleCalendarEmail}` : ''}</span>
-                              </div>
-                              <button 
-                                onClick={handleGoogleCalendarDisconnect} 
-                                disabled={isLoading}
-                                className="w-full py-2 bg-[var(--bg-card)] text-[var(--text-muted)] rounded-xl text-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
-                              >
-                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Rozłącz'}
-                              </button>
+                          // Google Calendar - dwie opcje: OAuth lub link iCal
+                          <div className="space-y-3">
+                            {/* Opcja 1: OAuth */}
+                            <div className="p-3 bg-[var(--bg-card)] rounded-xl">
+                              <p className="text-xs font-medium text-[var(--text-primary)] mb-2">Opcja 1: Pełna integracja (OAuth)</p>
+                              {isConnected ? (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-center gap-2 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-xs font-medium">
+                                    <Check className="w-3 h-3" />
+                                    <span>Połączono{googleCalendarEmail ? `: ${googleCalendarEmail}` : ''}</span>
+                                  </div>
+                                  <button 
+                                    onClick={handleGoogleCalendarDisconnect} 
+                                    disabled={isLoading}
+                                    className="w-full py-1.5 bg-[var(--bg-primary)] text-[var(--text-muted)] rounded-lg text-xs hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
+                                  >
+                                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : 'Rozłącz'}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button 
+                                  onClick={handleGoogleCalendarConnect} 
+                                  disabled={isLoading}
+                                  className="w-full py-2 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg text-xs font-medium hover:opacity-90 flex items-center justify-center gap-2"
+                                >
+                                  {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
+                                  {isLoading ? 'Łączenie...' : 'Połącz z Google'}
+                                </button>
+                              )}
                             </div>
-                          ) : (
-                            <button 
-                              onClick={handleGoogleCalendarConnect} 
-                              disabled={isLoading}
-                              className="w-full py-2.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2"
-                            >
-                              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-                              {isLoading ? 'Łączenie...' : 'Połącz z Google'}
-                            </button>
-                          )
+                            
+                            {/* Opcja 2: Link iCal */}
+                            <div className="p-3 bg-[var(--bg-card)] rounded-xl">
+                              <p className="text-xs font-medium text-[var(--text-primary)] mb-2">Opcja 2: Synchronizacja przez link</p>
+                              {icalEnabled ? (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-center gap-2 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-xs font-medium">
+                                    <Check className="w-3 h-3" />
+                                    <span>Synchronizacja aktywna ({icalEventsCount} wydarzeń)</span>
+                                  </div>
+                                  {icalLastSync && (
+                                    <p className="text-[10px] text-[var(--text-muted)] text-center">
+                                      Ostatnia sync: {new Date(icalLastSync).toLocaleString('pl-PL')}
+                                    </p>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={handleManualSync} 
+                                      disabled={icalLoading}
+                                      className="flex-1 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-xs font-medium hover:opacity-90"
+                                    >
+                                      {icalLoading ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : 'Synchronizuj'}
+                                    </button>
+                                    <button 
+                                      onClick={handleDisableICalSync} 
+                                      disabled={icalLoading}
+                                      className="flex-1 py-1.5 bg-[var(--bg-primary)] text-[var(--text-muted)] rounded-lg text-xs hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
+                                    >
+                                      Wyłącz
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Wklej link iCal z Google Calendar"
+                                    value={icalInputUrl}
+                                    onChange={(e) => setIcalInputUrl(e.target.value)}
+                                    className="w-full text-xs bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[var(--text-primary)]"
+                                  />
+                                  <button 
+                                    onClick={handleEnableICalSync} 
+                                    disabled={icalLoading || !icalInputUrl}
+                                    className="w-full py-2 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+                                  >
+                                    {icalLoading ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : 'Włącz synchronizację'}
+                                  </button>
+                                  <div className="text-[10px] text-[var(--text-muted)] space-y-1 mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                    <p className="font-medium text-blue-700 dark:text-blue-300">Jak uzyskać link iCal:</p>
+                                    <ol className="list-decimal list-inside space-y-0.5 text-blue-600 dark:text-blue-400">
+                                      <li>Otwórz calendar.google.com</li>
+                                      <li>Kliknij ⚙️ → Ustawienia</li>
+                                      <li>Wybierz swój kalendarz z listy</li>
+                                      <li>Przewiń do "Integruj kalendarz"</li>
+                                      <li>Skopiuj "Tajny adres w formacie iCal"</li>
+                                    </ol>
+                                    <p className="text-blue-500 dark:text-blue-400 mt-1">✨ Wydarzenia z Google Calendar będą blokować terminy w systemie rezerwacji</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         ) : integration.id === 'apple-calendar' ? (
                           // Apple Calendar (iCal) - pokaż link do skopiowania
                           <div className="space-y-2">
@@ -391,6 +607,102 @@ export default function IntegrationsTab() {
         <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Potrzebujesz innej integracji?</h4>
         <p className="text-sm text-blue-700 dark:text-blue-400">Skontaktuj się z nami, a rozważymy dodanie nowej integracji!</p>
       </div>
+
+      {/* Modal informacyjny Google Calendar */}
+      {showGoogleCalendarInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--bg-primary)] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <GoogleCalendarLogo />
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">Integracja Google Calendar</h3>
+                </div>
+                <button
+                  onClick={() => setShowGoogleCalendarInfo(false)}
+                  className="p-2 rounded-full hover:bg-[var(--bg-card)] text-[var(--text-muted)] transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-sm">
+                {/* Opcja 1 */}
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                  <h4 className="font-semibold text-green-800 dark:text-green-300 mb-2">✅ Opcja 1: Pełna integracja (OAuth)</h4>
+                  <p className="text-green-700 dark:text-green-400 mb-2">Wymaga zalogowania się do konta Google.</p>
+                  <div className="space-y-1 text-green-600 dark:text-green-400">
+                    <p><strong>Co daje:</strong></p>
+                    <ul className="list-disc list-inside ml-2 space-y-0.5">
+                      <li>Automatyczne dodawanie rezerwacji do Google Calendar</li>
+                      <li>Aktualizacja wydarzeń przy zmianie rezerwacji</li>
+                      <li>Usuwanie wydarzeń przy anulowaniu rezerwacji</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Opcja 2 */}
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">🔗 Opcja 2: Synchronizacja przez link iCal</h4>
+                  <p className="text-blue-700 dark:text-blue-400 mb-2">Nie wymaga logowania - wystarczy wkleić link.</p>
+                  <div className="space-y-1 text-blue-600 dark:text-blue-400">
+                    <p><strong>Co daje:</strong></p>
+                    <ul className="list-disc list-inside ml-2 space-y-0.5">
+                      <li>Pobieranie wydarzeń z Twojego Google Calendar</li>
+                      <li>Blokowanie terminów w formularzu rezerwacji</li>
+                      <li>Wyświetlanie wydarzeń w kalendarzu panelu</li>
+                      <li>Synchronizacja co 5 minut</li>
+                    </ul>
+                    <p className="mt-2"><strong>Co blokuje:</strong></p>
+                    <ul className="list-disc list-inside ml-2 space-y-0.5">
+                      <li>Klienci nie mogą rezerwować terminów zajętych w Google Calendar</li>
+                      <li>Dotyczy wszystkich wydarzeń (spotkania, urlopy, prywatne)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Przekazywane dane */}
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <h4 className="font-semibold text-[var(--text-primary)] mb-2">🔒 Jakie dane są przekazywane?</h4>
+                  <div className="space-y-2 text-[var(--text-muted)]">
+                    <p><strong>Opcja 1 (OAuth):</strong></p>
+                    <ul className="list-disc list-inside ml-2 space-y-0.5">
+                      <li>Tytuł rezerwacji (imię klienta, usługa)</li>
+                      <li>Data i godzina rezerwacji</li>
+                      <li>Opis z danymi kontaktowymi</li>
+                    </ul>
+                    <p className="mt-2"><strong>Opcja 2 (Link iCal):</strong></p>
+                    <ul className="list-disc list-inside ml-2 space-y-0.5">
+                      <li>Pobieramy tylko: tytuł, datę rozpoczęcia i zakończenia</li>
+                      <li>Nie mamy dostępu do szczegółów wydarzeń</li>
+                      <li>Dane są przechowywane tylko w Twoim koncie</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Rekomendacja */}
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                  <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">💡 Rekomendacja</h4>
+                  <p className="text-amber-700 dark:text-amber-400">
+                    Dla pełnej dwukierunkowej synchronizacji użyj <strong>obu opcji</strong>:
+                  </p>
+                  <ul className="list-disc list-inside ml-2 mt-1 text-amber-600 dark:text-amber-400">
+                    <li>Opcja 1 → rezerwacje trafiają do Google</li>
+                    <li>Opcja 2 → wydarzenia z Google blokują terminy</li>
+                  </ul>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowGoogleCalendarInfo(false)}
+                className="w-full mt-6 py-3 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl font-medium hover:opacity-90 transition-opacity"
+              >
+                Rozumiem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

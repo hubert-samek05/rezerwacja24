@@ -8,6 +8,8 @@ interface NotificationSettings {
   notifications: {
     bookingConfirmation: boolean
     bookingReminder: boolean
+    bookingReminder2h: boolean
+    reminder2hHoursBefore: number
     bookingCancellation: boolean
     bookingReschedule: boolean
     reminderHoursBefore: number
@@ -41,6 +43,8 @@ export default function NotificationsTab() {
     notifications: {
       bookingConfirmation: true,
       bookingReminder: true,
+      bookingReminder2h: false,
+      reminder2hHoursBefore: 2,
       bookingCancellation: true,
       bookingReschedule: true,
       reminderHoursBefore: 24,
@@ -88,6 +92,8 @@ export default function NotificationsTab() {
             notifications: {
               bookingConfirmation: smsSettings.confirmedEnabled !== false,
               bookingReminder: smsSettings.reminderEnabled !== false,
+              bookingReminder2h: smsSettings.reminder2hEnabled === true,
+              reminder2hHoursBefore: smsSettings.reminder2hHoursBefore || 2,
               bookingCancellation: smsSettings.cancelledEnabled !== false,
               bookingReschedule: smsSettings.rescheduledEnabled !== false,
               reminderHoursBefore: smsSettings.reminderHoursBefore || 24,
@@ -125,6 +131,8 @@ export default function NotificationsTab() {
             rescheduledEnabled: settings.notifications.bookingReschedule,
             cancelledEnabled: settings.notifications.bookingCancellation,
             reminderEnabled: settings.notifications.bookingReminder,
+            reminder2hEnabled: settings.notifications.bookingReminder2h,
+            reminder2hHoursBefore: settings.notifications.reminder2hHoursBefore,
             reminderHoursBefore: settings.notifications.reminderHoursBefore,
             includeCancelLink: settings.notifications.includeCancelLink,
           }),
@@ -310,6 +318,45 @@ export default function NotificationsTab() {
                       <option value={12}>12 godzin przed</option>
                       <option value={24}>24 godziny przed (dzień wcześniej)</option>
                       <option value={48}>48 godzin przed (2 dni wcześniej)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Drugie przypomnienie */}
+              <div className="p-3 bg-[var(--bg-card)] rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-4 h-4 text-orange-500" />
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">Drugie przypomnienie</p>
+                      <p className="text-xs text-[var(--text-muted)]">Dodatkowe przypomnienie przed wizytą</p>
+                    </div>
+                  </div>
+                  <Toggle 
+                    checked={settings.notifications.bookingReminder2h} 
+                    onChange={() => setSettings({ ...settings, notifications: { ...settings.notifications, bookingReminder2h: !settings.notifications.bookingReminder2h } })} 
+                  />
+                </div>
+                {settings.notifications.bookingReminder2h && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border-color)]">
+                    <label className="text-xs text-[var(--text-muted)] mb-2 block">Wyślij drugie przypomnienie na:</label>
+                    <select
+                      value={settings.notifications.reminder2hHoursBefore}
+                      onChange={(e) => setSettings({ 
+                        ...settings, 
+                        notifications: { 
+                          ...settings.notifications, 
+                          reminder2hHoursBefore: parseInt(e.target.value) 
+                        } 
+                      })}
+                      className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-muted)]"
+                    >
+                      <option value={1}>1 godzinę przed</option>
+                      <option value={2}>2 godziny przed</option>
+                      <option value={3}>3 godziny przed</option>
+                      <option value={4}>4 godziny przed</option>
+                      <option value={6}>6 godzin przed</option>
                     </select>
                   </div>
                 )}

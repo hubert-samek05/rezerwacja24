@@ -676,13 +676,13 @@ export default function GroupBookingsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full">Otwarta</span>;
+        return <span className="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-full">Otwarta</span>;
       case 'FULL':
-        return <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full">Pełna</span>;
+        return <span className="px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">Pełna</span>;
       case 'CANCELLED':
-        return <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-bold rounded-full">Anulowana</span>;
+        return <span className="px-2.5 py-1 bg-red-600 text-white text-xs font-bold rounded-full">Anulowana</span>;
       case 'COMPLETED':
-        return <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full">Zakończona</span>;
+        return <span className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">Zakończona</span>;
       default:
         return null;
     }

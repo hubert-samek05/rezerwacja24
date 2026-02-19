@@ -131,6 +131,7 @@ export default function PayBookingPage() {
       case 'stripe': return 'Karta płatnicza'
       case 'payu': return 'PayU'
       case 'tpay': return 'Tpay'
+      case 'autopay': return 'Autopay (BLIK, przelewy)'
       default: return provider
     }
   }

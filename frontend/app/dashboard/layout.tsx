@@ -29,6 +29,7 @@ import { useDashboardTranslation } from '@/hooks/useDashboardTranslation'
 import { useProfileSetup } from '@/hooks/useProfileSetup'
 import { usePermissions } from '@/hooks/usePermissions'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { usePlatform } from '@/hooks/usePlatform'
 import ProfileSetupWizard from '@/components/ProfileSetupWizard'
 import { Crown } from 'lucide-react'
 
@@ -53,6 +54,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { showWizard: showProfileWizard, dismissWizard: dismissProfileWizard } = useProfileSetup()
   const { isOwner, isEmployee, canView, canManage, permissions } = usePermissions()
   const { isNative: isPushNative } = usePushNotifications() // Inicjalizuj push notifications
+  const { hidePayments } = usePlatform() // Ukryj płatności na iOS (Apple App Store requirement)
   const [planInfo, setPlanInfo] = useState<{ name: string; daysLeft: number | null } | null>(null)
 
   // Funkcja do pobierania liczby nieprzeczytanych - wywoływana natychmiast
@@ -239,7 +241,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AuthCheck>
       <div className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
         {/* Top Navigation */}
-        <nav className="fixed top-0 w-full z-50 bg-[var(--bg-card)]/80 backdrop-blur-xl border-b border-[var(--border-color)]">
+        <nav className="fixed top-0 w-full z-50 bg-[var(--bg-card)] border-b border-[var(--border-color)]">
           <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo - use English logo for EU region */}

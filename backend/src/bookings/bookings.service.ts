@@ -11,6 +11,7 @@ import { PassesService } from '../passes/passes.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { AuditLogService } from '../common/services/audit-log.service';
 import { getRegionFromRequest, Region } from '../common/utils/region.util';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class BookingsService {
@@ -26,6 +27,7 @@ export class BookingsService {
     private passesService: PassesService,
     private loyaltyService: LoyaltyService,
     private auditLogService: AuditLogService,
+    private emailService: EmailService,
     @Inject(REQUEST) private request: Request,
   ) {}
   
@@ -191,13 +193,14 @@ export class BookingsService {
     // 📱 Wyślij SMS z potwierdzeniem TYLKO jeśli status to CONFIRMED (płatność gotówką lub już opłacone)
     // Dla płatności online SMS zostanie wysłany po potwierdzeniu płatności (w webhook lub update)
     if (booking.customers?.phone && booking.status === 'CONFIRMED') {
-      // Pobierz nazwę firmy i subdomenę
+      // Pobierz nazwę firmy, subdomenę i ustawienia SMS
       const tenant = await this.prisma.tenants.findUnique({
         where: { id: tenantId },
-        select: { name: true, subdomain: true },
+        select: { name: true, subdomain: true, sms_settings: true },
       });
       const businessName = tenant?.name || 'Firma';
       const subdomain = tenant?.subdomain;
+      const smsSettings = (tenant?.sms_settings as any) || {};
       
       // Pobierz custom szablony SMS
       const customTemplates = await this.flySMSService.getSMSTemplates(tenantId);
@@ -208,9 +211,10 @@ export class BookingsService {
       const dateStr = this.formatDate(bookingDate, region);
       const timeStr = this.formatTime(bookingDate, region);
       
-      // Generuj linki do odwołania i płatności
-      const frontendUrl = process.env.FRONTEND_URL || 'https://rezerwacja24.pl';
-      const cancelUrl = subdomain ? `${frontendUrl}/${subdomain}/cancel/${booking.id}` : undefined;
+      // Generuj linki do odwołania i płatności (tylko jeśli includeCancelLink jest włączone lub nie ustawione)
+      const includeCancelLink = smsSettings.includeCancelLink !== false; // domyślnie true
+      // Użyj krótszego formatu linku: https://subdomain.rezerwacja24.pl/cancel/ID
+      const cancelUrl = (includeCancelLink && subdomain) ? `https://${subdomain}.rezerwacja24.pl/cancel/${booking.id}` : undefined;
       
       // Link do płatności tylko gdy:
       // 1. Status PENDING (nieopłacone) LUB
@@ -226,7 +230,8 @@ export class BookingsService {
         (paymentMethod !== 'cash') ||
         (depositRequired && !depositPaid)
       );
-      const paymentUrl = needsPaymentLink ? `${frontendUrl}/${subdomain}/pay/${booking.id}` : undefined;
+      // Użyj krótszego formatu linku: https://subdomain.rezerwacja24.pl/pay/ID
+      const paymentUrl = needsPaymentLink ? `https://${subdomain}.rezerwacja24.pl/pay/${booking.id}` : undefined;
       
       // Użyj szablonu SMS dla odpowiedniego regionu z custom szablonami
       const message = this.smsTemplatesService.getConfirmedTemplate({
@@ -239,6 +244,8 @@ export class BookingsService {
         bookingId: booking.id,
         subdomain,
       }, region, customTemplates);
+      
+      this.logger.log(`📱 SMS message to send: "${message}" (length: ${message.length}, cancelUrl: ${cancelUrl || 'none'})`);
       
       this.flySMSService.sendSMS(tenantId, booking.customers.phone, message, 'confirmed').catch(err => {
         this.logger.error('SMS sending failed:', err);
@@ -514,10 +521,10 @@ export class BookingsService {
       },
     });
 
-    // Pobierz nazwę firmy dla SMSów
+    // Pobierz nazwę firmy, subdomenę i ustawienia SMS
     const tenant = await this.prisma.tenants.findUnique({
       where: { id: tenantId },
-      select: { name: true },
+      select: { name: true, subdomain: true, sms_settings: true },
     });
     const businessName = tenant?.name || 'Firma';
 
@@ -675,12 +682,22 @@ export class BookingsService {
         const dateStr = this.formatDate(bookingDate, region);
         const timeStr = this.formatTime(bookingDate, region);
         
+        // Pobierz ustawienia SMS i wygeneruj link do anulowania
+        const smsSettings = (tenant?.sms_settings as any) || {};
+        const includeCancelLink = smsSettings.includeCancelLink !== false;
+        const cancelUrl = (includeCancelLink && tenant?.subdomain) 
+          ? `https://${tenant.subdomain}.rezerwacja24.pl/cancel/${updatedBooking.id}` 
+          : undefined;
+        
         const message = this.smsTemplatesService.getConfirmedTemplate({
           serviceName: updatedBooking.services?.name,
           businessName,
           date: dateStr,
           time: timeStr,
+          cancelUrl,
         }, region, customTemplates);
+        
+        this.logger.log(`📱 SMS message: "${message}" (cancelUrl: ${cancelUrl || 'none'})`);
         
         this.flySMSService.sendSMS(tenantId, updatedBooking.customers.phone, message, 'confirmed').catch(err => {
           this.logger.error('SMS sending failed:', err);
@@ -782,20 +799,34 @@ export class BookingsService {
 
       // Jeśli zmienił się czas lub inne dane - aktualizuj event
       if (eventId) {
+        // Mapowanie statusu na kolor Google Calendar
+        // 11 = Tomato (czerwony) dla NO_SHOW
+        // 10 = Basil (ciemny zielony) dla COMPLETED
+        // 2 = Sage (zielony) dla CONFIRMED
+        // 5 = Banana (żółty) dla PENDING
+        const statusColorMap: Record<string, string> = {
+          'NO_SHOW': '11',    // Czerwony
+          'COMPLETED': '10',  // Ciemny zielony
+          'CONFIRMED': '2',   // Zielony
+          'PENDING': '5',     // Żółty
+        };
+        const colorId = statusColorMap[updatedBooking.status] || undefined;
+        
         await this.googleCalendarService.updateEvent(tenantId, eventId, {
-          summary: `${updatedBooking.services?.name || 'Rezerwacja'} - ${updatedBooking.customers?.firstName || ''} ${updatedBooking.customers?.lastName || ''}`.trim(),
+          summary: `${updatedBooking.status === 'NO_SHOW' ? '❌ ' : ''}${updatedBooking.services?.name || 'Rezerwacja'} - ${updatedBooking.customers?.firstName || ''} ${updatedBooking.customers?.lastName || ''}`.trim(),
           description: [
             `👤 Klient: ${updatedBooking.customers?.firstName || ''} ${updatedBooking.customers?.lastName || ''}`,
             updatedBooking.customers?.phone ? `📱 Tel: ${updatedBooking.customers.phone}` : '',
             `💇 Usługa: ${updatedBooking.services?.name || 'Rezerwacja'}`,
             `👨‍💼 Pracownik: ${updatedBooking.employees?.firstName || ''} ${updatedBooking.employees?.lastName || ''}`,
             `💰 Cena: ${updatedBooking.totalPrice} PLN`,
-            `📊 Status: ${updatedBooking.status}`,
+            `📊 Status: ${updatedBooking.status}${updatedBooking.status === 'NO_SHOW' ? ' (Nie przyszedł)' : ''}`,
           ].filter(Boolean).join('\n'),
           startTime: new Date(updatedBooking.startTime),
           endTime: new Date(updatedBooking.endTime),
+          colorId,
         });
-        this.logger.log(`Updated Google Calendar event for booking: ${updatedBooking.id}`);
+        this.logger.log(`Updated Google Calendar event for booking: ${updatedBooking.id} with color: ${colorId}`);
       } else {
         // Jeśli nie ma eventu, a rezerwacja nie jest anulowana - utwórz nowy
         if (updatedBooking.status !== 'CANCELLED') {
@@ -998,12 +1029,20 @@ export class BookingsService {
     this.logger.log(`Found ${bookings.length} bookings for service ${serviceId} (isFullDayService=${isFullDayService}): ${JSON.stringify(bookings.map(b => ({ start: b.startTime, end: b.endTime })))}`);
     
     return {
-      bookings: bookings.map(b => ({
-        startTime: b.startTime.toISOString(),
-        endTime: b.endTime.toISOString(),
-        // Oznacz jako całodniową jeśli usługa ma allowMultiDay=true
-        isFullDay: isFullDayService,
-      })),
+      bookings: bookings.map(b => {
+        // Sprawdź czy rezerwacja jest całodniowa na podstawie czasu trwania
+        // Rezerwacja jest całodniowa jeśli trwa >= 8 godzin (480 minut)
+        const durationMs = b.endTime.getTime() - b.startTime.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60);
+        const isFullDay = durationHours >= 8;
+        
+        return {
+          startTime: b.startTime.toISOString(),
+          endTime: b.endTime.toISOString(),
+          // Oznacz jako całodniową tylko jeśli rezerwacja trwa >= 8 godzin
+          isFullDay,
+        };
+      }),
       isFullDayService,
     };
   }
@@ -1109,9 +1148,25 @@ export class BookingsService {
       select: { startTime: true, endTime: true },
     });
     
-    this.logger.log(`Service-only: Found ${existingBookings.length} bookings for service ${serviceId} on ${date}`);
+    // Pobierz wydarzenia z zewnętrznego kalendarza (Google Calendar iCal)
+    const externalEvents = await this.prisma.external_calendar_events.findMany({
+      where: {
+        tenantId,
+        OR: [
+          { startTime: { gte: startOfDay, lte: endOfDay } },
+          { endTime: { gte: startOfDay, lte: endOfDay } },
+          { startTime: { lte: startOfDay }, endTime: { gte: endOfDay } },
+        ],
+      },
+      select: { startTime: true, endTime: true },
+    });
     
-    return this.generateSlots(bookingDate, openTime, closeTime, serviceDuration, existingBookings, [], [], 'service', bufferBefore, bufferAfter);
+    this.logger.log(`Service-only ${serviceId} for ${date}: ${existingBookings.length} bookings, ${externalEvents.length} external events`);
+    if (externalEvents.length > 0) {
+      this.logger.log(`External events for ${date}: ${JSON.stringify(externalEvents.map(e => ({ start: e.startTime, end: e.endTime })))}`);
+    }
+    
+    return this.generateSlots(bookingDate, openTime, closeTime, serviceDuration, existingBookings, [], [], 'service', bufferBefore, bufferAfter, externalEvents);
   }
 
   /**
@@ -1173,7 +1228,7 @@ export class BookingsService {
 
   /**
    * PRZYPADEK 3: Konkretny pracownik
-   * Sprawdza tylko tego pracownika
+   * Sprawdza tylko tego pracownika - obsługuje wielokrotne przedziały godzin pracy
    */
   private async checkSingleEmployeeAvailability(
     tenantId: string,
@@ -1187,14 +1242,15 @@ export class BookingsService {
   ) {
     const dayOfWeekEnum = dayOfWeek.toUpperCase() as 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
     
-    // Sprawdź dostępność pracownika w tym dniu
-    const employeeAvailability = await this.prisma.availability.findFirst({
+    // Pobierz WSZYSTKIE przedziały dostępności pracownika w tym dniu (wielokrotne przedziały)
+    const employeeAvailabilities = await this.prisma.availability.findMany({
       where: {
         employeeId,
         dayOfWeek: dayOfWeekEnum,
         specificDate: null,
         isActive: true,
       },
+      orderBy: { startTime: 'asc' },
     });
     
     // Sprawdź czy pracownik ma JAKĄKOLWIEK zdefiniowaną dostępność
@@ -1202,17 +1258,20 @@ export class BookingsService {
       where: { employeeId, specificDate: null, isActive: true },
     });
     
-    let openTime: string;
-    let closeTime: string;
+    // Tablica przedziałów godzin pracy
+    let workingTimeSlots: { openTime: string; closeTime: string }[] = [];
     
     if (anyAvailability) {
       // Pracownik ma zdefiniowaną dostępność
-      if (!employeeAvailability) {
+      if (employeeAvailabilities.length === 0) {
         // Nie pracuje w tym dniu
         return { available: false, availableSlots: [], message: `Pracownik nie pracuje w ${this.getDayNamePL(dayOfWeek)}` };
       }
-      openTime = employeeAvailability.startTime;
-      closeTime = employeeAvailability.endTime;
+      // Użyj wszystkich przedziałów z bazy
+      workingTimeSlots = employeeAvailabilities.map(a => ({
+        openTime: a.startTime,
+        closeTime: a.endTime,
+      }));
     } else {
       // Brak zdefiniowanej dostępności - użyj godzin firmy
       const tenant = await this.prisma.tenants.findUnique({
@@ -1232,8 +1291,7 @@ export class BookingsService {
         return { available: false, availableSlots: [], message: 'Zamknięte w tym dniu' };
       }
       
-      openTime = dayConfig.open || '09:00';
-      closeTime = dayConfig.close || '17:00';
+      workingTimeSlots = [{ openTime: dayConfig.open || '09:00', closeTime: dayConfig.close || '17:00' }];
     }
     
     const startOfDay = new Date(bookingDate); startOfDay.setHours(0, 0, 0, 0);
@@ -1268,15 +1326,59 @@ export class BookingsService {
       select: { startTime: true, endTime: true },
     });
     
-    this.logger.log(`Single-employee ${employeeId}: ${existingBookings.length} bookings, ${timeBlocks.length} blocks, ${groupBookings.length} group bookings`);
+    // Pobierz wydarzenia z zewnętrznego kalendarza (Google Calendar iCal)
+    const externalEvents = await this.prisma.external_calendar_events.findMany({
+      where: {
+        tenantId,
+        OR: [
+          { startTime: { gte: startOfDay, lte: endOfDay } },
+          { endTime: { gte: startOfDay, lte: endOfDay } },
+          { startTime: { lte: startOfDay }, endTime: { gte: endOfDay } },
+        ],
+      },
+      select: { startTime: true, endTime: true },
+    });
     
-    return this.generateSlots(bookingDate, openTime, closeTime, serviceDuration, existingBookings, timeBlocks, groupBookings, employeeId, bufferBefore, bufferAfter);
+    this.logger.log(`Single-employee ${employeeId} for ${date}: ${existingBookings.length} bookings, ${timeBlocks.length} blocks, ${groupBookings.length} group bookings, ${externalEvents.length} external events, ${workingTimeSlots.length} time slots`);
+    
+    // Generuj sloty dla każdego przedziału godzin pracy i połącz wyniki
+    const allSlots: { time: string; available: boolean; employeeId: string }[] = [];
+    
+    for (const slot of workingTimeSlots) {
+      const result = this.generateSlots(
+        bookingDate, 
+        slot.openTime, 
+        slot.closeTime, 
+        serviceDuration, 
+        existingBookings, 
+        timeBlocks, 
+        groupBookings, 
+        employeeId, 
+        bufferBefore, 
+        bufferAfter, 
+        externalEvents
+      );
+      allSlots.push(...result.availableSlots);
+    }
+    
+    // Usuń duplikaty i posortuj
+    const uniqueSlots = allSlots.filter((slot, index, self) => 
+      index === self.findIndex(s => s.time === slot.time)
+    ).sort((a, b) => a.time.localeCompare(b.time));
+    
+    return {
+      available: uniqueSlots.length > 0,
+      availableSlots: uniqueSlots,
+      serviceDuration,
+      workingTimeSlots, // Dodaj info o przedziałach pracy
+    };
   }
 
   /**
    * Generuje sloty czasowe i sprawdza konflikty
    * @param bufferBefore - bufor przed rezerwacją (w minutach) - tylko jeśli skonfigurowany
    * @param bufferAfter - bufor po rezerwacji (w minutach) - tylko jeśli skonfigurowany
+   * @param externalEvents - wydarzenia z zewnętrznego kalendarza (Google Calendar iCal)
    */
   private generateSlots(
     bookingDate: Date,
@@ -1288,7 +1390,8 @@ export class BookingsService {
     groupBookings: { startTime: Date; endTime: Date }[],
     employeeId: string,
     bufferBefore: number = 0,
-    bufferAfter: number = 0
+    bufferAfter: number = 0,
+    externalEvents: { startTime: Date; endTime: Date }[] = []
   ) {
     const availableSlots: { time: string; available: boolean; employeeId: string }[] = [];
     
@@ -1330,11 +1433,12 @@ export class BookingsService {
       
       const hasTimeOffConflict = timeBlocks.some(b => slotStart < new Date(b.endTime) && slotEnd > new Date(b.startTime));
       const hasGroupConflict = groupBookings.some(b => slotStart < new Date(b.endTime) && slotEnd > new Date(b.startTime));
+      const hasExternalConflict = externalEvents.some(b => slotStart < new Date(b.endTime) && slotEnd > new Date(b.startTime));
       const isPast = slotStart < now;
       
       const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
       
-      if (!hasBookingConflict && !hasTimeOffConflict && !hasGroupConflict && !isPast) {
+      if (!hasBookingConflict && !hasTimeOffConflict && !hasGroupConflict && !hasExternalConflict && !isPast) {
         availableSlots.push({ time: timeString, available: true, employeeId });
       }
       
@@ -1543,6 +1647,52 @@ export class BookingsService {
         WHERE id = ${booking.id}
       `;
       this.logger.log(`Deposit required for booking ${booking.id}: ${data.depositAmount} PLN`);
+    }
+    
+    // 📧 Wyślij email potwierdzający rezerwację do klienta
+    if (data.customerEmail) {
+      try {
+        // Pobierz dane firmy
+        const tenant = await this.prisma.tenants.findUnique({
+          where: { id: tenantId },
+          select: { name: true, address: true, phone: true, subdomain: true },
+        });
+        
+        // Pobierz dane pracownika
+        let employeeName = 'Dowolny specjalista';
+        if (data.employeeId && data.employeeId !== 'any') {
+          const employee = await this.prisma.employees.findUnique({
+            where: { id: data.employeeId },
+            select: { firstName: true, lastName: true },
+          });
+          if (employee) employeeName = `${employee.firstName} ${employee.lastName || ''}`.trim();
+        }
+        
+        const region = this.getRegion();
+        const dateFormatted = this.formatDate(startTime, region);
+        const timeFormatted = this.formatTime(startTime, region);
+        
+        await this.emailService.sendBookingConfirmation({
+          to: data.customerEmail,
+          customerName: data.customerName,
+          serviceName: service.name,
+          employeeName,
+          date: dateFormatted,
+          time: timeFormatted,
+          duration: data.duration || service.duration || 60,
+          price: basePrice.toFixed(2),
+          businessName: tenant?.name || 'Firma',
+          businessAddress: tenant?.address || undefined,
+          businessPhone: tenant?.phone || undefined,
+          bookingId: booking.id,
+          cancelUrl: tenant?.subdomain ? `https://${tenant.subdomain}.rezerwacja24.pl/cancel?id=${booking.id}` : undefined,
+        });
+        
+        this.logger.log(`📧 Email potwierdzający wysłany do: ${data.customerEmail}`);
+      } catch (emailError) {
+        this.logger.error(`❌ Błąd wysyłania emaila potwierdzającego: ${emailError}`);
+        // Nie przerywamy - rezerwacja została utworzona
+      }
     }
     
     return booking;

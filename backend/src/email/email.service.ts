@@ -9,6 +9,9 @@ import { getTrialEndedTodayTemplate } from './templates/trial-ended.template';
 import { getSubscriptionActiveTemplate } from './templates/subscription-active.template';
 import { getPasswordResetTemplate } from './templates/password-reset.template';
 import { getInvoiceTemplate } from './templates/invoice.template';
+import { getBookingConfirmationTemplate } from './templates/booking-confirmation.template';
+import { getBookingReminderTemplate } from './templates/booking-reminder.template';
+import { getBookingCancelledTemplate } from './templates/booking-cancelled.template';
 
 export interface EmailOptions {
   to: string;
@@ -537,6 +540,96 @@ export class EmailService {
     return this.sendEmail({
       to: data.to,
       subject: `🔑 Nowe hasło do konta pracownika - ${data.businessName}`,
+      html,
+    });
+  }
+
+  // ============================================
+  // POWIADOMIENIA DLA KLIENTÓW O REZERWACJACH
+  // ============================================
+
+  /**
+   * Email potwierdzający rezerwację dla klienta
+   */
+  async sendBookingConfirmation(data: {
+    to: string;
+    customerName: string;
+    serviceName: string;
+    employeeName: string;
+    date: string;
+    time: string;
+    duration: number;
+    price: string;
+    businessName: string;
+    businessAddress?: string;
+    businessPhone?: string;
+    bookingId: string;
+    cancelUrl?: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Potwierdzenie rezerwacji - ${data.businessName}`,
+      getBookingConfirmationTemplate(data)
+    );
+
+    return this.sendEmail({
+      to: data.to,
+      subject: `✅ Potwierdzenie rezerwacji - ${data.businessName}`,
+      html,
+    });
+  }
+
+  /**
+   * Email przypominający o wizycie dla klienta
+   */
+  async sendBookingReminder(data: {
+    to: string;
+    customerName: string;
+    serviceName: string;
+    employeeName: string;
+    date: string;
+    time: string;
+    duration: number;
+    businessName: string;
+    businessAddress?: string;
+    businessPhone?: string;
+    hoursUntil: number;
+    cancelUrl?: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Przypomnienie o wizycie - ${data.businessName}`,
+      getBookingReminderTemplate(data)
+    );
+
+    const subjectPrefix = data.hoursUntil <= 24 ? '⏰ Jutro masz wizytę' : '📅 Przypomnienie o wizycie';
+
+    return this.sendEmail({
+      to: data.to,
+      subject: `${subjectPrefix} - ${data.businessName}`,
+      html,
+    });
+  }
+
+  /**
+   * Email o anulowaniu rezerwacji dla klienta
+   */
+  async sendBookingCancelled(data: {
+    to: string;
+    customerName: string;
+    serviceName: string;
+    date: string;
+    time: string;
+    businessName: string;
+    reason?: string;
+    rebookUrl?: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Rezerwacja anulowana - ${data.businessName}`,
+      getBookingCancelledTemplate(data)
+    );
+
+    return this.sendEmail({
+      to: data.to,
+      subject: `❌ Rezerwacja anulowana - ${data.businessName}`,
       html,
     });
   }

@@ -11,39 +11,77 @@ export default function BookingPaymentSuccessPage({ params }: { params: { subdom
   const [status, setStatus] = useState<'loading' | 'success' | 'pending' | 'cancelled'>('loading')
   const [message, setMessage] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  
+  // Parametry z różnych bramek płatności
   const bookingId = searchParams.get('bookingId')
+  const orderId = searchParams.get('OrderID') || searchParams.get('orderId') // Autopay
+  const serviceId = searchParams.get('ServiceID')
+  const hash = searchParams.get('Hash')
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
+      const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') 
+        ? 'https://api.rezerwacja24.pl' 
+        : 'http://localhost:3001'
+
+      // Jeśli mamy OrderID i Hash (z Autopay) - płatność się powiodła
+      if (orderId && hash) {
+        try {
+          const response = await fetch(`${apiUrl}/api/payments/confirm-return`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, serviceId, hash })
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              setStatus('success')
+              setMessage('Twoja rezerwacja została potwierdzona i opłacona!')
+            } else {
+              setStatus('cancelled')
+              setMessage(data.message || 'Nie udało się potwierdzić płatności.')
+            }
+          } else {
+            setStatus('cancelled')
+            setMessage('Wystąpił błąd podczas potwierdzania płatności.')
+          }
+        } catch (err) {
+          setStatus('cancelled')
+          setMessage('Wystąpił błąd podczas potwierdzania płatności.')
+        }
+        return
+      }
+
+      // Jeśli mamy tylko OrderID bez Hash - użytkownik anulował lub błąd
+      if (orderId && !hash) {
+        setStatus('cancelled')
+        setMessage('Płatność została anulowana lub nie powiodła się. Twoja rezerwacja wymaga opłacenia.')
+        return
+      }
+
+      // Standardowa ścieżka z bookingId
       if (!bookingId) {
         setStatus('cancelled')
-        setMessage('Brak identyfikatora rezerwacji')
+        setMessage('Płatność nie została zrealizowana. Spróbuj ponownie.')
         return
       }
 
       try {
-        const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') 
-          ? 'https://api.rezerwacja24.pl' 
-          : 'http://localhost:3001'
-        
         const response = await fetch(`${apiUrl}/api/bookings/${bookingId}/status`)
         
         if (response.ok) {
           const data = await response.json()
           
           if (data.status === 'CONFIRMED' || data.isPaid === true) {
-            // Płatność potwierdzona!
             setStatus('success')
             setMessage('Twoja rezerwacja została potwierdzona!')
           } else if (data.status === 'PENDING') {
-            // Płatność jeszcze nie przetworzona - sprawdź ponownie za chwilę
             if (retryCount < 5) {
-              // Czekaj i sprawdź ponownie (webhook może jeszcze nie dotrzeć)
               setStatus('pending')
               setMessage('Sprawdzamy status płatności...')
               setTimeout(() => setRetryCount(prev => prev + 1), 2000)
             } else {
-              // Po 5 próbach - pokaż że płatność nie przeszła
               setStatus('cancelled')
               setMessage('Płatność nie została zrealizowana lub została anulowana.')
             }
@@ -65,7 +103,7 @@ export default function BookingPaymentSuccessPage({ params }: { params: { subdom
     }
 
     checkPaymentStatus()
-  }, [bookingId, retryCount])
+  }, [bookingId, orderId, retryCount, searchParams])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">

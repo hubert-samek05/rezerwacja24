@@ -7,7 +7,21 @@ interface CalendarEvent {
   startTime: Date;
   endTime: Date;
   location?: string;
+  colorId?: string; // Google Calendar color ID (1-11)
 }
+
+// Google Calendar Color IDs:
+// 1 = Lavender (fioletowy)
+// 2 = Sage (zielony)
+// 3 = Grape (ciemny fiolet)
+// 4 = Flamingo (różowy)
+// 5 = Banana (żółty)
+// 6 = Tangerine (pomarańczowy)
+// 7 = Peacock (turkusowy)
+// 8 = Graphite (szary)
+// 9 = Blueberry (niebieski)
+// 10 = Basil (ciemny zielony)
+// 11 = Tomato (czerwony) - używamy dla NO_SHOW
 
 interface GoogleTokens {
   access_token: string;
@@ -209,7 +223,7 @@ export class GoogleCalendarService {
     event: CalendarEvent,
   ): Promise<boolean> {
     try {
-      const googleEvent = {
+      const googleEvent: any = {
         summary: event.summary,
         description: event.description,
         start: {
@@ -222,6 +236,11 @@ export class GoogleCalendarService {
         },
         location: event.location,
       };
+      
+      // Dodaj kolor jeśli podany
+      if (event.colorId) {
+        googleEvent.colorId = event.colorId;
+      }
 
       const result = await this.googleCalendarRequest(
         tenantId,

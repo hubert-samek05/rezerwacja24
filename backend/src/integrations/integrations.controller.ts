@@ -1,10 +1,14 @@
-import { Controller, Get, Param, Query, Res, Header, Req, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Res, Header, Req, Delete, Body } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { ExternalCalendarService } from './external-calendar.service';
 
 @Controller('integrations')
 export class IntegrationsController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private externalCalendarService: ExternalCalendarService,
+  ) {}
 
   private getRedirectUri() {
     return `${process.env.API_URL || 'https://api.rezerwacja24.pl'}/api/integrations/google-calendar/callback`;
@@ -18,7 +22,7 @@ export class IntegrationsController {
   getGoogleCalendarAuthUrl(@Req() req: Request) {
     const clientId = process.env.GOOGLE_CLIENT_ID || '';
     const redirectUri = this.getRedirectUri();
-    const scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
+    const scope = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
     
     // Przekaż tenantId w state
     const tenantId = req.headers['x-tenant-id'] as string || '';
@@ -168,6 +172,84 @@ export class IntegrationsController {
 
     return { success: true };
   }
+
+  // ============================================
+  // Google Calendar iCal Link Integration
+  // ============================================
+
+  /**
+   * GET /api/integrations/google-calendar-ical/status
+   * Pobiera status integracji przez link iCal
+   */
+  @Get('google-calendar-ical/status')
+  async getICalStatus(@Req() req: Request) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    
+    if (!tenantId) {
+      return { enabled: false, url: null, lastSync: null, eventsCount: 0 };
+    }
+
+    return this.externalCalendarService.getSyncStatus(tenantId);
+  }
+
+  /**
+   * POST /api/integrations/google-calendar-ical/enable
+   * Włącza synchronizację przez link iCal
+   */
+  @Post('google-calendar-ical/enable')
+  async enableICalSync(@Req() req: Request, @Body() body: { url: string }) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    
+    if (!tenantId) {
+      return { success: false, error: 'No tenant ID' };
+    }
+
+    if (!body.url) {
+      return { success: false, error: 'URL is required' };
+    }
+
+    return this.externalCalendarService.enableSync(tenantId, body.url);
+  }
+
+  /**
+   * DELETE /api/integrations/google-calendar-ical/disable
+   * Wyłącza synchronizację przez link iCal
+   */
+  @Delete('google-calendar-ical/disable')
+  async disableICalSync(@Req() req: Request) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    
+    if (!tenantId) {
+      return { success: false, error: 'No tenant ID' };
+    }
+
+    await this.externalCalendarService.disableSync(tenantId);
+    return { success: true };
+  }
+
+  /**
+   * POST /api/integrations/google-calendar-ical/sync
+   * Ręczna synchronizacja kalendarza
+   */
+  @Post('google-calendar-ical/sync')
+  async manualSync(@Req() req: Request) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    
+    if (!tenantId) {
+      return { success: false, error: 'No tenant ID' };
+    }
+
+    const tenant = await this.prisma.tenants.findUnique({
+      where: { id: tenantId },
+      select: { google_calendar_ical_url: true, google_calendar_ical_enabled: true },
+    });
+
+    if (!tenant?.google_calendar_ical_enabled || !tenant?.google_calendar_ical_url) {
+      return { success: false, error: 'iCal sync not enabled' };
+    }
+
+    return this.externalCalendarService.syncTenantCalendar(tenantId, tenant.google_calendar_ical_url);
+  }
 }
 
 /**
@@ -176,6 +258,36 @@ export class IntegrationsController {
 @Controller('calendar')
 export class CalendarController {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * GET /api/calendar/external-events
+   * Pobiera wydarzenia z zewnętrznego kalendarza (Google Calendar iCal) dla panelu
+   */
+  @Get('external-events')
+  async getExternalEvents(@Req() req: Request) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    
+    if (!tenantId) {
+      return [];
+    }
+
+    // Pobierz wydarzenia z ostatnich 30 dni i 90 dni w przód
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const ninetyDaysFromNow = new Date();
+    ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
+
+    const events = await this.prisma.external_calendar_events.findMany({
+      where: {
+        tenantId,
+        startTime: { gte: thirtyDaysAgo, lte: ninetyDaysFromNow },
+      },
+      orderBy: { startTime: 'asc' },
+    });
+
+    return events;
+  }
 
   /**
    * GET /api/calendar/ical/:tenantId

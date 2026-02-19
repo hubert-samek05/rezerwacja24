@@ -8,7 +8,7 @@ export class UnpaidBookingScheduler implements OnModuleInit {
   private readonly logger = new Logger(UnpaidBookingScheduler.name);
 
   // Domyślny czas na opłacenie rezerwacji (w minutach)
-  private readonly DEFAULT_PAYMENT_TIMEOUT_MINUTES = 30;
+  private readonly DEFAULT_PAYMENT_TIMEOUT_MINUTES = 10;
 
   constructor(
     private prisma: PrismaService,
@@ -20,10 +20,10 @@ export class UnpaidBookingScheduler implements OnModuleInit {
   }
 
   /**
-   * Sprawdzaj nieopłacone rezerwacje co 5 minut
-   * Anuluje rezerwacje które przekroczyły limit czasu na płatność
+   * Sprawdzaj nieopłacone rezerwacje co minutę
+   * Anuluje rezerwacje które przekroczyły limit czasu na płatność (domyślnie 10 min)
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
   async checkUnpaidBookings() {
     this.logger.log('🔍 Checking for unpaid bookings...');
 
@@ -32,18 +32,29 @@ export class UnpaidBookingScheduler implements OnModuleInit {
 
       // Pobierz wszystkie rezerwacje które:
       // 1. Mają status PENDING (oczekujące)
-      // 2. Wymagają płatności online (paymentMethod != 'cash')
-      // 3. Nie są opłacone (paymentStatus != 'paid')
+      // 2. Wymagają płatności online LUB zaliczki
+      // 3. Nie są opłacone
       // 4. Zostały utworzone więcej niż X minut temu
       const unpaidBookings = await this.prisma.bookings.findMany({
         where: {
           status: 'PENDING',
-          paymentMethod: {
-            not: 'cash',
-          },
-          paymentStatus: {
-            not: 'paid',
-          },
+          OR: [
+            // Płatność online nieopłacona
+            {
+              paymentMethod: { not: 'cash' },
+              isPaid: false,
+            },
+            // Zaliczka wymagana ale nieopłacona (status pending)
+            {
+              deposit_required: true,
+              deposit_status: 'pending',
+            },
+            // Zaliczka wymagana ale status null (nie ustawiony)
+            {
+              deposit_required: true,
+              deposit_status: null,
+            },
+          ],
           // Rezerwacja musi być starsza niż timeout
           createdAt: {
             lt: new Date(now.getTime() - this.DEFAULT_PAYMENT_TIMEOUT_MINUTES * 60 * 1000),
@@ -83,14 +94,13 @@ export class UnpaidBookingScheduler implements OnModuleInit {
         return;
       }
 
-      // Pobierz ustawienia tenanta (może mieć własny timeout)
+      // Pobierz ustawienia tenanta
       const tenant = await this.prisma.tenants.findUnique({
         where: { id: tenantId },
         select: {
           id: true,
           name: true,
           ownerId: true,
-          paymentTimeoutMinutes: true,
         },
       });
 
@@ -99,8 +109,8 @@ export class UnpaidBookingScheduler implements OnModuleInit {
         return;
       }
 
-      // Użyj timeout z ustawień tenanta lub domyślny
-      const timeoutMinutes = (tenant as any).paymentTimeoutMinutes || this.DEFAULT_PAYMENT_TIMEOUT_MINUTES;
+      // Stały timeout 1 minuta dla wszystkich
+      const timeoutMinutes = this.DEFAULT_PAYMENT_TIMEOUT_MINUTES;
       const bookingAge = (Date.now() - new Date(booking.createdAt).getTime()) / (60 * 1000);
 
       // Sprawdź czy rezerwacja przekroczyła timeout

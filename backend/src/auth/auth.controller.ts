@@ -257,13 +257,31 @@ export class AuthController {
   @Post('apple/callback')
   async appleAuthCallback(@Req() req: Request, @Res() res: Response) {
     // Apple wysyła dane jako POST form-data
-    const { code, id_token, state, user } = req.body as any;
+    const { code, id_token, state, user, error: appleError } = req.body as any;
     
     this.logger.log(`🍎 Apple OAuth callback received`);
+    this.logger.debug(`Apple callback body keys: ${Object.keys(req.body || {}).join(', ')}`);
+    
+    // Sprawdź czy Apple zwrócił błąd
+    if (appleError) {
+      this.logger.error(`Apple OAuth returned error: ${appleError}`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      return res.redirect(`${frontendUrl}/login?error=apple_auth_denied`);
+    }
+    
+    // Sprawdź czy mamy id_token
+    if (!id_token) {
+      this.logger.error('Apple OAuth callback missing id_token');
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      return res.redirect(`${frontendUrl}/login?error=apple_auth_failed&reason=no_token`);
+    }
     
     try {
       // Dekoduj id_token (JWT) żeby wyciągnąć dane użytkownika
       const tokenParts = id_token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid id_token format');
+      }
       const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
       
       // Parsuj dane użytkownika (Apple wysyła je tylko przy pierwszej autoryzacji)
@@ -374,5 +392,56 @@ export class AuthController {
       throw new Error('Unauthorized');
     }
     return this.authService.changePassword(userId, dto.currentPassword, dto.newPassword);
+  }
+
+  /**
+   * Usunięcie konta użytkownika
+   * Wymagane przez Apple App Store (Guideline 5.1.1)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('delete-account')
+  async deleteAccount(@Req() req: Request, @Body() body: { password?: string; confirmDelete?: boolean }) {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    
+    // Wymagaj potwierdzenia
+    if (!body.confirmDelete) {
+      return { 
+        requiresConfirmation: true,
+        message: 'Proszę potwierdzić usunięcie konta. Ta operacja jest nieodwracalna.',
+      };
+    }
+    
+    this.logger.log(`🗑️ Account deletion requested by user: ${userId}`);
+    return this.authService.deleteAccount(userId, body.password);
+  }
+
+  /**
+   * Pobierz informacje o koncie do usunięcia
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('delete-account/info')
+  async getDeleteAccountInfo(@Req() req: Request) {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    
+    return {
+      message: 'Usunięcie konta spowoduje trwałe usunięcie wszystkich danych:',
+      dataToBeDeleted: [
+        'Twoje konto użytkownika',
+        'Wszystkie rezerwacje',
+        'Dane klientów',
+        'Usługi i kategorie',
+        'Pracownicy i ich konta',
+        'Historia płatności',
+        'Subskrypcja',
+        'Ustawienia firmy',
+      ],
+      warning: 'Ta operacja jest nieodwracalna. Wszystkie dane zostaną trwale usunięte.',
+    };
   }
 }

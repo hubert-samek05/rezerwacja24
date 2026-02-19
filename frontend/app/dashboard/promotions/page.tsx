@@ -158,10 +158,10 @@ export default function PromotionsPage() {
   const isLimitReached = (coupon: Coupon) => coupon.usageLimit && coupon.usageCount >= coupon.usageLimit
 
   const getStatus = (coupon: Coupon) => {
-    if (!coupon.isActive) return { label: 'Nieaktywny', class: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }
-    if (isExpired(coupon)) return { label: 'Wygasł', class: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }
-    if (isLimitReached(coupon)) return { label: 'Limit', class: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }
-    return { label: 'Aktywny', class: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' }
+    if (!coupon.isActive) return { label: 'Nieaktywny', class: 'bg-slate-600 text-white font-semibold' }
+    if (isExpired(coupon)) return { label: 'Wygasł', class: 'bg-red-600 text-white font-semibold' }
+    if (isLimitReached(coupon)) return { label: 'Limit', class: 'bg-amber-500 text-white font-semibold' }
+    return { label: 'Aktywny', class: 'bg-emerald-600 text-white font-semibold' }
   }
 
   return (

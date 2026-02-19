@@ -79,17 +79,17 @@ export class SMSReminderScheduler implements OnModuleInit {
       );
     }
 
-    // Przypomnienie krótkie (kilka godzin przed)
-    if (settings.reminderShortEnabled) {
-      const hoursBeforeShort = settings.reminderShortHoursBefore || 3;
-      const reminderShortStart = new Date(now.getTime() + (hoursBeforeShort - 0.5) * 60 * 60 * 1000);
-      const reminderShortEnd = new Date(now.getTime() + (hoursBeforeShort + 0.5) * 60 * 60 * 1000);
+    // Drugie przypomnienie (konfigurowalne - domyślnie 2h przed wizytą)
+    if (settings.reminder2hEnabled === true) {
+      const hoursBefore = settings.reminder2hHoursBefore || 2;
+      const reminder2hStart = new Date(now.getTime() + (hoursBefore - 0.5) * 60 * 60 * 1000);
+      const reminder2hEnd = new Date(now.getTime() + (hoursBefore + 0.5) * 60 * 60 * 1000);
       
       await this.sendRemindersForTimeRange(
         tenant,
-        reminderShortStart,
-        reminderShortEnd,
-        'reminder_short',
+        reminder2hStart,
+        reminder2hEnd,
+        'reminder_2h',
         templates
       );
     }
@@ -102,7 +102,7 @@ export class SMSReminderScheduler implements OnModuleInit {
     tenant: any,
     startTime: Date,
     endTime: Date,
-    reminderType: 'reminder_24h' | 'reminder_short',
+    reminderType: 'reminder_24h' | 'reminder_2h',
     templates: any
   ) {
     // Pobierz rezerwacje w danym zakresie czasowym

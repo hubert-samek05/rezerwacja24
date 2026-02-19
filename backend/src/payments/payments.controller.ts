@@ -168,4 +168,18 @@ export class PaymentsController {
   handleAutopayWebhook(@Body() data: any) {
     return this.paymentsService.handleAutopayWebhook(data);
   }
+
+  @Public()
+  @Post('confirm-return')
+  @ApiOperation({ summary: 'Potwierdź płatność po powrocie z bramki (Autopay, PayU, etc.)' })
+  confirmPaymentReturn(@Body() data: any) {
+    return this.paymentsService.confirmPaymentReturn(data);
+  }
+
+  @Public()
+  @Post('stripe/verify')
+  @ApiOperation({ summary: 'Weryfikuj płatność Stripe po powrocie klienta (bez webhooka)' })
+  async verifyStripePayment(@Body() data: { bookingId: string }) {
+    return this.paymentsService.verifyStripePaymentByBooking(data.bookingId);
+  }
 }

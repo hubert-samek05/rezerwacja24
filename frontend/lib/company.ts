@@ -51,8 +51,10 @@ export interface CompanyData {
   paymentMethods?: {
     stripe?: { enabled: boolean; publicKey?: string; secretKey?: string }
     cash?: { enabled: boolean }
-    przelewy24?: { enabled: boolean; merchantId?: string; crcKey?: string }
-    payu?: { enabled: boolean; posId?: string; clientId?: string; clientSecret?: string }
+    przelewy24?: { enabled: boolean; merchantId?: string; posId?: string; crcKey?: string; apiKey?: string }
+    payu?: { enabled: boolean; posId?: string; secondKey?: string; clientId?: string; clientSecret?: string }
+    tpay?: { enabled: boolean; clientId?: string; clientSecret?: string; merchantId?: string; securityCode?: string }
+    autopay?: { enabled: boolean; serviceId?: string; sharedKey?: string }
   }
   pageSettings?: PageSettings
   gallery?: string[]
@@ -98,7 +100,9 @@ export const getCompanyData = (): CompanyData | null => {
           cash: { enabled: true },
           stripe: { enabled: false },
           przelewy24: { enabled: false },
-          payu: { enabled: false }
+          payu: { enabled: false },
+          tpay: { enabled: false },
+          autopay: { enabled: false }
         },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

@@ -8,28 +8,54 @@ interface SmartsuppProps {
 
 export default function Smartsupp({ userRole }: SmartsuppProps) {
   const [error, setError] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     // Sprawdź czy skrypt już istnieje
     if (typeof window === 'undefined') return;
     
-    // NIE pokazuj dla admina
-    if (userRole === 'admin' || userRole === 'super_admin') return;
+    const hostname = window.location.hostname;
+    console.log('[Smartsupp] Init check - hostname:', hostname, 'userRole:', userRole, 'loaded:', loaded);
+    
+    // Poczekaj aż userRole się załaduje (może być null na początku)
+    // Ale jeśli już załadowaliśmy skrypt, nie sprawdzaj ponownie
+    if (loaded) {
+      console.log('[Smartsupp] Already loaded, skipping');
+      return;
+    }
+    
+    // NIE pokazuj dla super_admin
+    if (userRole === 'super_admin') {
+      console.log('[Smartsupp] Hidden for super_admin');
+      return;
+    }
     
     // NIE ładuj Smartsupp na subdomenach (stronach biznesowych klientów)
-    const hostname = window.location.hostname;
+    // ALE pokazuj na app.rezerwacja24.pl (dashboard)
     const isSubdomain = hostname.endsWith('.rezerwacja24.pl') && 
                         hostname !== 'rezerwacja24.pl' && 
                         hostname !== 'www.rezerwacja24.pl' &&
-                        hostname !== 'api.rezerwacja24.pl';
-    if (isSubdomain) return;
+                        hostname !== 'api.rezerwacja24.pl' &&
+                        hostname !== 'app.rezerwacja24.pl';
+    if (isSubdomain) {
+      console.log('[Smartsupp] Hidden on subdomain:', hostname);
+      return;
+    }
     
     // Jeśli skrypt już załadowany, nie dodawaj ponownie
-    if (document.getElementById('smartsupp-script')) return;
+    if (document.getElementById('smartsupp-script')) {
+      console.log('[Smartsupp] Script already exists in DOM');
+      setLoaded(true);
+      return;
+    }
     
     // Jeśli był błąd, nie próbuj ponownie
-    if (error) return;
+    if (error) {
+      console.log('[Smartsupp] Previous error, skipping');
+      return;
+    }
 
+    console.log('[Smartsupp] Loading chat widget...');
     try {
       // Konfiguracja Smartsupp - musi być przed skryptem
       (window as any)._smartsupp = (window as any)._smartsupp || {};
@@ -63,12 +89,13 @@ export default function Smartsupp({ userRole }: SmartsuppProps) {
         };
         
         s?.parentNode?.insertBefore(c, s);
+        setLoaded(true);
       })(document);
     } catch (err) {
       console.warn('Smartsupp initialization error:', err);
       setError(true);
     }
-  }, [error])
+  }, [error, userRole, loaded])
 
   return null
 }

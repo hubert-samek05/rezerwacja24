@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { CheckCircle, Calendar, Loader2 } from 'lucide-react'
+import { CheckCircle, Calendar, Loader2, CreditCard } from 'lucide-react'
 
 // Wykryj domenę
 function detectDomain() {
@@ -25,6 +25,7 @@ export default function PaymentSuccessPage() {
   const [isClient, setIsClient] = useState(false)
   const [syncing, setSyncing] = useState(true)
   const [error, setError] = useState('')
+  const [paymentType, setPaymentType] = useState<'subscription' | 'booking'>('subscription')
   
   // Wykryj domenę po stronie klienta
   useEffect(() => {
@@ -34,8 +35,61 @@ export default function PaymentSuccessPage() {
   }, [])
 
   useEffect(() => {
-    const syncSubscription = async () => {
+    const processPayment = async () => {
       try {
+        const currentApiUrl = detectDomain().apiUrl
+        
+        // Sprawdź parametry URL - Autopay/PayU zwracają OrderID, ServiceID, Hash
+        const bookingId = searchParams.get('bookingId')
+        const orderId = searchParams.get('OrderID') || searchParams.get('orderId')
+        const serviceId = searchParams.get('ServiceID') || searchParams.get('serviceId')
+        const hash = searchParams.get('Hash') || searchParams.get('hash')
+        
+        // ============================================
+        // PRZYPADEK 1: Płatność za rezerwację (Autopay/PayU/Tpay)
+        // ============================================
+        if (orderId) {
+          setPaymentType('booking')
+          console.log('💳 Płatność za rezerwację - automatyczna weryfikacja...', { orderId, serviceId })
+          
+          // Wywołaj endpoint potwierdzający płatność (bez webhooka!)
+          const response = await fetch(`${currentApiUrl}/api/payments/confirm-return`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, serviceId, hash }),
+          })
+          
+          const result = await response.json()
+          console.log('📡 Confirm payment result:', result)
+          
+          setSyncing(false)
+          
+          if (result.success) {
+            // Płatność potwierdzona - pokaż sukces
+            setTimeout(() => {
+              // Wróć do strony firmy (subdomena)
+              const currentHost = window.location.hostname
+              if (currentHost.includes('.rezerwacja24.pl') || currentHost.includes('.bookings24.eu')) {
+                window.location.href = '/'
+              } else {
+                window.location.href = '/'
+              }
+            }, 3000)
+          } else {
+            // Błąd weryfikacji - ale klient zapłacił, więc pokaż info
+            console.warn('⚠️ Weryfikacja nie powiodła się, ale płatność mogła się udać')
+            setTimeout(() => {
+              window.location.href = '/'
+            }, 3000)
+          }
+          return
+        }
+        
+        // ============================================
+        // PRZYPADEK 2: Subskrypcja Stripe (panel właściciela)
+        // ============================================
+        setPaymentType('subscription')
+        
         const token = localStorage.getItem('token')
         const userData = localStorage.getItem('user')
         const tenantId = userData ? JSON.parse(userData).tenantId : null
@@ -44,14 +98,11 @@ export default function PaymentSuccessPage() {
         if (!token) {
           console.log('⚠️ Brak tokena - płatność zakończona, przekierowanie do logowania')
           setSyncing(false)
-          // Poczekaj 3 sekundy i przekieruj do logowania z komunikatem
           setTimeout(() => {
             window.location.href = '/login?payment=success'
           }, 3000)
           return
         }
-
-        const currentApiUrl = detectDomain().apiUrl
 
         // Synchronizuj subskrypcję ze Stripe
         const headers: Record<string, string> = {
@@ -59,7 +110,6 @@ export default function PaymentSuccessPage() {
           'Content-Type': 'application/json',
         }
         
-        // Dodaj tenant ID jeśli dostępny
         if (tenantId) {
           headers['x-tenant-id'] = tenantId
         }
@@ -74,32 +124,24 @@ export default function PaymentSuccessPage() {
         if (response.ok) {
           const data = await response.json()
           console.log('✅ Subskrypcja zsynchronizowana:', data)
-          
-          // Poczekaj 2 sekundy i przekieruj do dashboardu
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 2000)
-        } else {
-          // Nawet jeśli sync nie zadziałał, płatność się udała
-          // Przekieruj do dashboardu - subskrypcja zsynchronizuje się przez webhook
-          console.warn('⚠️ Sync failed, but payment succeeded - redirecting to dashboard')
-          setSyncing(false)
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 2000)
         }
-      } catch (err) {
-        console.error('Błąd synchronizacji:', err)
-        // Nawet przy błędzie - płatność się udała
+        
         setSyncing(false)
         setTimeout(() => {
           window.location.href = '/dashboard'
         }, 2000)
+        
+      } catch (err) {
+        console.error('Błąd przetwarzania płatności:', err)
+        setSyncing(false)
+        setTimeout(() => {
+          window.location.href = paymentType === 'booking' ? '/' : '/dashboard'
+        }, 2000)
       }
     }
 
-    syncSubscription()
-  }, [router])
+    processPayment()
+  }, [router, searchParams])
 
   return (
     <div className="min-h-screen bg-carbon-black flex items-center justify-center p-4">
@@ -128,11 +170,14 @@ export default function PaymentSuccessPage() {
               </h1>
               
               <p className="text-neutral-gray mb-4">
-                {isEnglish ? 'Syncing your subscription...' : 'Synchronizujemy Twoją subskrypcję...'}
+                {paymentType === 'booking' 
+                  ? (isEnglish ? 'Confirming your booking...' : 'Potwierdzamy Twoją rezerwację...')
+                  : (isEnglish ? 'Syncing your subscription...' : 'Synchronizujemy Twoją subskrypcję...')
+                }
               </p>
               
               <p className="text-sm text-neutral-gray/70">
-                {isEnglish ? 'You will be redirected to the dashboard shortly' : 'Za chwilę zostaniesz przekierowany do panelu'}
+                {isEnglish ? 'Please wait...' : 'Proszę czekać...'}
               </p>
             </>
           ) : error ? (
@@ -153,10 +198,10 @@ export default function PaymentSuccessPage() {
               </p>
               
               <button
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => window.location.href = '/'}
                 className="w-full bg-accent-neon hover:bg-accent-neon/90 text-carbon-black font-bold py-3 px-6 rounded-lg transition-all"
               >
-                {isEnglish ? 'Go to dashboard' : 'Przejdź do panelu'}
+                {isEnglish ? 'Go back' : 'Wróć'}
               </button>
             </>
           ) : (
@@ -174,11 +219,21 @@ export default function PaymentSuccessPage() {
               </div>
 
               <h1 className="text-2xl font-bold text-white mb-4">
-                {isEnglish ? 'All set!' : 'Wszystko gotowe!'}
+                {paymentType === 'booking'
+                  ? (isEnglish ? 'Booking confirmed!' : 'Rezerwacja potwierdzona!')
+                  : (isEnglish ? 'All set!' : 'Wszystko gotowe!')
+                }
               </h1>
               
-              <p className="text-neutral-gray">
-                {isEnglish ? 'Redirecting to dashboard...' : 'Przekierowywanie do panelu...'}
+              <p className="text-neutral-gray mb-2">
+                {paymentType === 'booking'
+                  ? (isEnglish ? 'Your payment has been received.' : 'Twoja płatność została przyjęta.')
+                  : (isEnglish ? 'Your subscription is active.' : 'Twoja subskrypcja jest aktywna.')
+                }
+              </p>
+              
+              <p className="text-sm text-neutral-gray/70">
+                {isEnglish ? 'Redirecting...' : 'Przekierowywanie...'}
               </p>
             </>
           )}

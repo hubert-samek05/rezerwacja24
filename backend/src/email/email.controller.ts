@@ -81,6 +81,39 @@ export class EmailController {
         result = await this.emailService.sendTestEmail(to);
         break;
 
+      case 'booking-confirmation':
+        result = await this.emailService.sendBookingConfirmation({
+          to,
+          customerName: 'Jan Kowalski',
+          serviceName: 'Strzyżenie męskie',
+          employeeName: 'Anna Nowak',
+          date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          time: '14:30',
+          duration: 45,
+          price: '50.00',
+          businessName: 'Salon Fryzjerski Test',
+          businessAddress: 'ul. Testowa 123, 00-001 Warszawa',
+          businessPhone: '+48 123 456 789',
+          bookingId: 'test-booking-123',
+        });
+        break;
+
+      case 'booking-reminder':
+        result = await this.emailService.sendBookingReminder({
+          to,
+          customerName: 'Jan Kowalski',
+          serviceName: 'Strzyżenie męskie',
+          employeeName: 'Anna Nowak',
+          date: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          time: '14:30',
+          duration: 45,
+          businessName: 'Salon Fryzjerski Test',
+          businessAddress: 'ul. Testowa 123, 00-001 Warszawa',
+          businessPhone: '+48 123 456 789',
+          hoursUntil: 24,
+        });
+        break;
+
       default:
         return { success: false, error: `Unknown email type: ${type}` };
     }

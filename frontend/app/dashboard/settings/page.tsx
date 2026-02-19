@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet } from 'lucide-react'
+import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
   getCompanyData, 
@@ -34,7 +34,9 @@ import FlexibleServicesTab from '@/components/settings/FlexibleServicesTab'
 import AccountTypesTab from '@/components/settings/AccountTypesTab'
 import DepositsTab from '@/components/settings/DepositsTab'
 import PageBuilderTab from '@/components/settings/PageBuilderTab'
+import DeleteAccountTab from '@/components/settings/DeleteAccountTab'
 import { useDashboardTranslation } from '@/hooks/useDashboardTranslation'
+import { usePlatform } from '@/hooks/usePlatform'
 
 export default function SettingsPage() {
   const { t, language } = useDashboardTranslation()
@@ -46,6 +48,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const { isSuspended, suspendedReason } = useAccountStatus()
+  const { hidePayments } = usePlatform() // Ukryj płatności na iOS (Apple App Store requirement)
   
   // Stan zmiany hasła
   const [passwordForm, setPasswordForm] = useState({
@@ -101,7 +104,9 @@ export default function SettingsPage() {
           cash: { enabled: true },
           stripe: { enabled: false },
           przelewy24: { enabled: false },
-          payu: { enabled: false }
+          payu: { enabled: false },
+          tpay: { enabled: false },
+          autopay: { enabled: false }
         }
         
         if (paymentsResponse?.ok) {
@@ -109,7 +114,11 @@ export default function SettingsPage() {
             const paymentsData = await paymentsResponse.json()
             paymentMethods = {
               cash: { enabled: paymentsData.acceptCashPayment !== false },
-              stripe: { enabled: paymentsData.stripeEnabled || false } as any,
+              stripe: { 
+                enabled: paymentsData.stripeEnabled || false,
+                publicKey: paymentsData.stripePublishableKey || '',
+                secretKey: paymentsData.stripeSecretKey || ''
+              } as any,
               przelewy24: { 
                 enabled: paymentsData.przelewy24Enabled || false,
                 merchantId: paymentsData.przelewy24MerchantId || '',
@@ -117,7 +126,25 @@ export default function SettingsPage() {
                 crcKey: paymentsData.przelewy24CrcKey || '',
                 apiKey: paymentsData.przelewy24ApiKey || ''
               } as any,
-              payu: { enabled: paymentsData.payuEnabled || false } as any
+              payu: { 
+                enabled: paymentsData.payuEnabled || false,
+                posId: paymentsData.payuPosId || '',
+                secondKey: paymentsData.payuSecondKey || '',
+                clientId: paymentsData.payuOAuthClientId || '',
+                clientSecret: paymentsData.payuOAuthClientSecret || ''
+              } as any,
+              tpay: {
+                enabled: paymentsData.tpayEnabled || false,
+                clientId: paymentsData.tpayClientId || '',
+                clientSecret: paymentsData.tpayClientSecret || '',
+                merchantId: paymentsData.tpayMerchantId || '',
+                securityCode: paymentsData.tpaySecurityCode || ''
+              } as any,
+              autopay: {
+                enabled: paymentsData.autopayEnabled || false,
+                serviceId: paymentsData.autopayServiceId || '',
+                sharedKey: paymentsData.autopaySharedKey || ''
+              } as any
             }
           } catch (e) {}
         }
@@ -500,6 +527,12 @@ export default function SettingsPage() {
       items: [
         { id: 'import', icon: Upload, label: 'Import z Booksy', desc: 'Przenieś klientów z pliku CSV' },
       ]
+    },
+    {
+      title: 'Konto',
+      items: [
+        { id: 'delete-account', icon: Trash2, label: 'Usuń konto', desc: 'Trwale usuń swoje konto i dane', danger: true },
+      ]
     }
   ]
 
@@ -742,6 +775,19 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+
+          {activeTab === 'delete-account' && (
+            <div className="p-6 lg:p-8">
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-red-600">Usuń konto</h2>
+                <p className="text-[var(--text-muted)] mt-1">Trwale usuń swoje konto i wszystkie dane</p>
+              </div>
+              
+              <div className="bg-[var(--bg-primary)] rounded-2xl p-6">
+                <DeleteAccountTab language={language as 'pl' | 'en'} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -762,20 +808,29 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
               {category.items.map((item) => {
                 const Icon = item.icon
+                const isDanger = (item as any).danger
                 return (
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className="flex items-start gap-4 p-5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl text-left hover:border-[var(--text-muted)] hover:shadow-sm transition-all group"
+                    className={`flex items-start gap-4 p-5 bg-[var(--bg-card)] border rounded-2xl text-left hover:shadow-sm transition-all group ${
+                      isDanger 
+                        ? 'border-red-200 hover:border-red-300 hover:bg-red-50/50' 
+                        : 'border-[var(--border-color)] hover:border-[var(--text-muted)]'
+                    }`}
                   >
-                    <div className="p-3 bg-[var(--bg-primary)] rounded-xl group-hover:bg-[var(--bg-card-hover)] transition-colors">
-                      <Icon className="w-5 h-5 text-[var(--text-muted)]" />
+                    <div className={`p-3 rounded-xl transition-colors ${
+                      isDanger 
+                        ? 'bg-red-100 group-hover:bg-red-200' 
+                        : 'bg-[var(--bg-primary)] group-hover:bg-[var(--bg-card-hover)]'
+                    }`}>
+                      <Icon className={`w-5 h-5 ${isDanger ? 'text-red-600' : 'text-[var(--text-muted)]'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[var(--text-primary)] mb-1">{item.label}</h3>
-                      <p className="text-sm text-[var(--text-muted)]">{item.desc}</p>
+                      <h3 className={`font-medium mb-1 ${isDanger ? 'text-red-700' : 'text-[var(--text-primary)]'}`}>{item.label}</h3>
+                      <p className={`text-sm ${isDanger ? 'text-red-600/70' : 'text-[var(--text-muted)]'}`}>{item.desc}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
+                    <ChevronRight className={`w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity mt-1 ${isDanger ? 'text-red-500' : 'text-[var(--text-muted)]'}`} />
                   </button>
                 )
               })}
