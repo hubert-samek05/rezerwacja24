@@ -2516,7 +2516,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                                 Pozostała kwota do zapłaty na miejscu.
                               </p>
                               <p className="text-xs text-amber-700 mt-2 font-medium">
-                                ⚠️ Opłata rezerwacyjna jest bezzwrotna i nie podlega zwrotowi w przypadku anulowania lub niestawienia się na wizytę (zgodnie z art. 38 pkt 12 ustawy o prawach konsumenta).
+                                ⚠️ Opłata rezerwacyjna jest bezzwrotna. W przypadku anulowania rezerwacji lub niestawienia się na wizytę, opłata nie podlega zwrotowi.
                               </p>
                             </div>
                           </div>
