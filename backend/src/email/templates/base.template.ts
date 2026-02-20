@@ -4,7 +4,7 @@
  * Kompatybilny z Outlook, iCloud, Gmail
  */
 export function getBaseTemplate(title: string, content: string, businessName?: string): string {
-  const logoUrl = 'https://rezerwacja24.pl/logo-dark.png';
+  const logoUrl = 'https://rezerwacja24.pl/logo.png';
   const year = new Date().getFullYear();
   
   return `
@@ -46,12 +46,12 @@ export function getBaseTemplate(title: string, content: string, businessName?: s
         <td>
         <![endif]-->
         
-        <!-- Header with logo - full width dark -->
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 700px; background-color: #0f172a;">
+        <!-- Header with logo -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 700px; background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
           <tr>
             <td style="padding: 24px 40px;">
               <a href="https://rezerwacja24.pl" target="_blank" style="text-decoration: none;">
-                <img src="${logoUrl}" alt="Rezerwacja24" width="200" height="auto" style="display: block; max-width: 200px; height: auto; border: 0;" />
+                <img src="${logoUrl}" alt="Rezerwacja24" width="150" height="auto" style="display: block; max-width: 150px; height: auto; border: 0;" />
               </a>
             </td>
           </tr>

@@ -119,11 +119,10 @@ export class SMSReminderScheduler implements OnModuleInit {
           in: ['CONFIRMED', 'PENDING'],
         },
         // Sprawdź czy przypomnienie nie zostało już wysłane
-        NOT: {
-          internalNotes: {
-            contains: reminderType,
-          },
-        },
+        OR: [
+          { internalNotes: null },
+          { internalNotes: { not: { contains: reminderType } } },
+        ],
       },
       include: {
         customers: true,

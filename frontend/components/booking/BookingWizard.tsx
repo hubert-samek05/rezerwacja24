@@ -60,6 +60,7 @@ interface BookingWizardProps {
   companyId: string
   paymentSettings?: PaymentSettings
   depositInfo?: DepositInfo | null
+  bookingAdvanceDays?: number // Maksymalne wyprzedzenie rezerwacji (0 = bez limitu)
   onFetchSlots: (date: string, employeeId?: string) => Promise<TimeSlot[]>
   onSubmit: (data: BookingData) => Promise<{ success: boolean; paymentUrl?: string; error?: string }>
 }
@@ -102,11 +103,13 @@ const StepIndicator = ({ currentStep, totalSteps, labels }: { currentStep: numbe
 const MiniCalendar = ({ 
   selectedDate, 
   onSelectDate,
-  minDate = new Date()
+  minDate = new Date(),
+  maxDate
 }: { 
   selectedDate: string
   onSelectDate: (date: string) => void
   minDate?: Date
+  maxDate?: Date // Maksymalna data rezerwacji (limit wyprzedzenia)
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień']
@@ -138,7 +141,15 @@ const MiniCalendar = ({
   const isDateDisabled = (date: Date) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return date < today
+    // Sprawdź czy data jest w przeszłości
+    if (date < today) return true
+    // Sprawdź czy data przekracza maksymalny limit wyprzedzenia
+    if (maxDate) {
+      const maxDateCopy = new Date(maxDate)
+      maxDateCopy.setHours(23, 59, 59, 999)
+      if (date > maxDateCopy) return true
+    }
+    return false
   }
 
   const days = getDaysInMonth(currentMonth)
@@ -206,6 +217,7 @@ export default function BookingWizard({
   companyId,
   paymentSettings,
   depositInfo,
+  bookingAdvanceDays = 0,
   onFetchSlots,
   onSubmit
 }: BookingWizardProps) {
@@ -418,6 +430,11 @@ export default function BookingWizard({
                 <MiniCalendar
                   selectedDate={selectedDate}
                   onSelectDate={setSelectedDate}
+                  maxDate={bookingAdvanceDays > 0 ? (() => {
+                    const max = new Date()
+                    max.setDate(max.getDate() + bookingAdvanceDays)
+                    return max
+                  })() : undefined}
                 />
               </motion.div>
             )}

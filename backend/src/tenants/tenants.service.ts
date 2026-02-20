@@ -163,6 +163,7 @@ export class TenantsService {
     buttonStyle?: 'rounded' | 'pill' | 'square';
     cardStyle?: 'shadow' | 'border' | 'flat';
     pageBuilder?: any;
+    bookingAdvanceDays?: number; // Maksymalne wyprzedzenie rezerwacji (0 = bez limitu)
   }) {
     // Pobierz aktualne ustawienia
     const tenant = await this.prisma.tenants.findUnique({
@@ -192,6 +193,7 @@ export class TenantsService {
       buttonStyle: pageSettings.buttonStyle ?? currentSettings.buttonStyle ?? 'rounded',
       cardStyle: pageSettings.cardStyle ?? currentSettings.cardStyle ?? 'shadow',
       pageBuilder: pageSettings.pageBuilder ?? currentSettings.pageBuilder ?? null,
+      bookingAdvanceDays: pageSettings.bookingAdvanceDays ?? currentSettings.bookingAdvanceDays ?? 0,
     };
 
     return this.prisma.tenants.update({

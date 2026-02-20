@@ -6,6 +6,65 @@ export class EmailController {
   constructor(private readonly emailService: EmailService) {}
 
   /**
+   * POST /api/email/send-custom
+   * Endpoint do wysyłania customowych maili z własnymi danymi
+   */
+  @Post('send-custom')
+  @HttpCode(HttpStatus.OK)
+  async sendCustomEmail(@Body() body: { to: string; type: string; data: any }) {
+    const { to, type, data } = body;
+
+    if (!to || !type || !data) {
+      return { success: false, error: 'to, type and data are required' };
+    }
+
+    let result = false;
+
+    switch (type) {
+      case 'booking-confirmation':
+        result = await this.emailService.sendBookingConfirmation({
+          to,
+          ...data,
+        });
+        break;
+      case 'booking-reminder':
+        result = await this.emailService.sendBookingReminder({
+          to,
+          ...data,
+        });
+        break;
+      case 'booking-cancelled':
+        result = await this.emailService.sendBookingCancelled({
+          to,
+          ...data,
+        });
+        break;
+      case 'booking-paid':
+        result = await this.emailService.sendBookingPaid({
+          to,
+          ...data,
+        });
+        break;
+      case 'payment-failed':
+        result = await this.emailService.sendPaymentFailed({
+          to,
+          ...data,
+        });
+        break;
+      case 'booking-rescheduled':
+        result = await this.emailService.sendBookingRescheduled({
+          to,
+          ...data,
+        });
+        break;
+      default:
+        return { success: false, error: `Unknown email type: ${type}` };
+    }
+
+    return { success: result, type, to };
+  }
+
+  /**
    * POST /api/email/test
    * Endpoint do testowania wysyłania maili (tylko dla admina)
    */

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Param, Query, Req, Body } from '@
 import { NotificationsService } from './notifications.service';
 import { PushNotificationService } from './push-notification.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { SMSReminderScheduler } from './sms-reminder.scheduler';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -9,7 +10,16 @@ export class NotificationsController {
     private readonly notificationsService: NotificationsService,
     private readonly pushNotificationService: PushNotificationService,
     private readonly prisma: PrismaService,
+    private readonly smsReminderScheduler: SMSReminderScheduler,
   ) {}
+
+  /**
+   * Ręczne uruchomienie sprawdzania przypomnień SMS
+   */
+  @Post('sms-reminders/trigger')
+  async triggerSMSReminders() {
+    return this.smsReminderScheduler.triggerManualCheck();
+  }
 
   /**
    * Pobiera powiadomienia dla zalogowanego użytkownika

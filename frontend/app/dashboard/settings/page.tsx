@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet, Trash2 } from 'lucide-react'
+import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet, Trash2, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
   getCompanyData, 
@@ -35,6 +35,7 @@ import AccountTypesTab from '@/components/settings/AccountTypesTab'
 import DepositsTab from '@/components/settings/DepositsTab'
 import PageBuilderTab from '@/components/settings/PageBuilderTab'
 import DeleteAccountTab from '@/components/settings/DeleteAccountTab'
+import BookingSettingsTab from '@/components/settings/BookingSettingsTab'
 import { useDashboardTranslation } from '@/hooks/useDashboardTranslation'
 import { usePlatform } from '@/hooks/usePlatform'
 
@@ -484,6 +485,7 @@ export default function SettingsPage() {
         { id: 'gallery', icon: Upload, label: 'Galeria zdjęć', desc: 'Zdjęcia firmy i usług' },
         { id: 'hours', icon: Clock, label: 'Godziny otwarcia', desc: 'Dni i godziny pracy' },
         { id: 'flexible-services', icon: Clock, label: 'Usługi na godziny/dni', desc: 'Ustawienia rezerwacji elastycznych' },
+        { id: 'booking-settings', icon: Calendar, label: 'Zasady rezerwacji', desc: 'Wyprzedzenie i limity rezerwacji' },
       ]
     },
     {
@@ -671,6 +673,10 @@ export default function SettingsPage() {
 
           {activeTab === 'flexible-services' && (
             <FlexibleServicesTab companyData={companyData} setCompanyData={setCompanyData} onSave={handleSave} isLoading={isLoading} />
+          )}
+
+          {activeTab === 'booking-settings' && (
+            <BookingSettingsTab companyData={companyData} setCompanyData={setCompanyData} onSave={handleSave} isLoading={isLoading} />
           )}
 
           {activeTab === 'payments' && (

@@ -49,6 +49,7 @@ interface PageSettings {
   bookingButtonText?: string
   buttonStyle?: 'rounded' | 'pill' | 'square'
   cardStyle?: 'shadow' | 'border' | 'flat'
+  bookingAdvanceDays?: number // Maksymalne wyprzedzenie rezerwacji (0 = bez limitu)
 }
 
 interface FlexibleServiceSettings {
@@ -651,7 +652,24 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const resetBookingModal = () => { setBookingModal(false); setCalendarModal(false); setSelectedService(null); setSelectedEmployee(''); setSelectedDate(''); setSelectedTime(''); setSelectedSlotEmployee(''); setCustomerName(''); setCustomerPhone(''); setCustomerEmail(''); setCustomerNotes(''); setBookingStep(1); setBookingSuccess(false); setAvailableSlots([]); resetCoupon(); setSelectedDuration(60); setSelectedEndDate(''); setDepositInfo(null) }
   const getAvailableEmployees = () => { if (!selectedService || !company?.employees) return []; return company.employees.filter(emp => emp.services?.includes(selectedService.id)) }
   const getMinDate = () => { const today = new Date(); return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}` }
-  const getMaxDate = () => { const maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30); return `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}` }
+  // Maksymalna data rezerwacji - używa bookingAdvanceDays z pageSettings (0 = bez limitu, domyślnie 90 dni)
+  const getMaxDate = () => { 
+    const advanceDays = company?.pageSettings?.bookingAdvanceDays || 0
+    const maxDays = advanceDays > 0 ? advanceDays : 90 // Domyślnie 90 dni jeśli bez limitu
+    const maxDate = new Date(); 
+    maxDate.setDate(maxDate.getDate() + maxDays); 
+    return `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}` 
+  }
+  // Sprawdź czy data przekracza maksymalny limit wyprzedzenia
+  const isDateBeyondLimit = (dateStr: string): boolean => {
+    const advanceDays = company?.pageSettings?.bookingAdvanceDays || 0
+    if (advanceDays <= 0) return false // Bez limitu
+    const date = new Date(dateStr)
+    const maxDate = new Date()
+    maxDate.setDate(maxDate.getDate() + advanceDays)
+    maxDate.setHours(23, 59, 59, 999)
+    return date > maxDate
+  }
 
   // Funkcja zapisu na zajęcia grupowe (wielu uczestników)
   const handleGroupBookingSubmit = async () => {
@@ -1598,7 +1616,16 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                             
                             const isPast = (day: number) => {
                               const dateStr = formatLocalDate(calendarViewYear, calendarViewMonth, day)
-                              return dateStr < getMinDate()
+                              // Sprawdź czy data jest w przeszłości lub przekracza limit wyprzedzenia
+                              return dateStr < getMinDate() || isDateBeyondLimit(dateStr)
+                            }
+                            
+                            const isDayFullyBooked = (dateStr: string) => {
+                              // ...
+                            }
+                            
+                            const isDayPartiallyBooked = (dateStr: string) => {
+                              // ...
                             }
                             
                             return (
@@ -1919,7 +1946,8 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                           
                           const isPast = (day: number) => {
                             const dateStr = formatLocalDate(year, month, day)
-                            return dateStr < getMinDate()
+                            // Sprawdź czy data jest w przeszłości lub przekracza limit wyprzedzenia
+                            return dateStr < getMinDate() || isDateBeyondLimit(dateStr)
                           }
                           
                           return (

@@ -1050,6 +1050,36 @@ export class BookingsService {
   async checkAvailability(tenantId: string, serviceId: string, employeeId: string, date: string, customDuration?: number) {
     this.logger.log(`Checking availability for tenant: ${tenantId}, service: ${serviceId}, employee: ${employeeId}, date: ${date}, customDuration: ${customDuration}`);
     
+    // 📅 Sprawdź limit wyprzedzenia rezerwacji
+    const tenantForAdvance = await this.prisma.tenants.findUnique({
+      where: { id: tenantId },
+      select: { pageSettings: true },
+    });
+    
+    const pageSettings = (tenantForAdvance?.pageSettings as any) || {};
+    const bookingAdvanceDays = pageSettings.bookingAdvanceDays || 0; // 0 = bez limitu
+    
+    if (bookingAdvanceDays > 0) {
+      const requestedDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + bookingAdvanceDays);
+      maxDate.setHours(23, 59, 59, 999);
+      
+      if (requestedDate > maxDate) {
+        const maxDateStr = maxDate.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+        return { 
+          available: false, 
+          availableSlots: [], 
+          message: `Rezerwacja możliwa tylko do ${bookingAdvanceDays} dni w przód (do ${maxDateStr})`,
+          bookingAdvanceDays,
+          maxBookingDate: maxDate.toISOString().split('T')[0],
+        };
+      }
+    }
+    
     // Pobierz usługę
     const service = await this.prisma.services.findUnique({
       where: { id: serviceId },
@@ -1469,6 +1499,33 @@ export class BookingsService {
     })}`);
     
     const tenantId = data.tenantId;
+    
+    // 📅 Sprawdź limit wyprzedzenia rezerwacji
+    const tenant = await this.prisma.tenants.findUnique({
+      where: { id: tenantId },
+      select: { pageSettings: true },
+    });
+    
+    const pageSettings = (tenant?.pageSettings as any) || {};
+    const bookingAdvanceDays = pageSettings.bookingAdvanceDays || 0; // 0 = bez limitu
+    
+    if (bookingAdvanceDays > 0) {
+      const bookingDate = new Date(data.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + bookingAdvanceDays);
+      maxDate.setHours(23, 59, 59, 999);
+      
+      if (bookingDate > maxDate) {
+        const maxDateStr = maxDate.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+        throw new BadRequestException(
+          `Rezerwacja możliwa tylko do ${bookingAdvanceDays} dni w przód (maksymalnie do ${maxDateStr})`
+        );
+      }
+      this.logger.log(`📅 Booking advance check passed: ${bookingDate.toISOString()} <= ${maxDate.toISOString()}`);
+    }
     
     // Pobierz usługę z przypisanymi pracownikami
     const serviceForCheck = await this.prisma.services.findUnique({

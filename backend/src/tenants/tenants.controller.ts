@@ -260,6 +260,7 @@ export class TenantsController {
       accentColor: '#41FFBC',
       heroStyle: 'banner',
       bookingButtonText: 'Zarezerwuj',
+      bookingAdvanceDays: 0, // 0 = bez limitu wyprzedzenia
     };
     
     return {
