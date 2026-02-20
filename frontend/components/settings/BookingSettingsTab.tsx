@@ -208,13 +208,22 @@ export default function BookingSettingsTab({ companyData, setCompanyData, onSave
           ))}
         </div>
 
-        {/* Info box */}
+        {/* Info box - bez zaliczki */}
         <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
           <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-700 dark:text-amber-400">
-            <strong>Uwaga:</strong> To ustawienie dotyczy firm <strong>bez włączonych zaliczek</strong>. 
-            Jeśli masz włączone zaliczki, klient może anulować rezerwację w każdej chwili - 
-            zaliczka zostanie automatycznie zatrzymana jako rekompensata.
+            <strong>Dla firm bez zaliczek:</strong> Klient nie będzie mógł anulować ani przesunąć 
+            rezerwacji jeśli do wizyty zostało mniej niż ustawiony czas.
+          </div>
+        </div>
+
+        {/* Info box - z zaliczką */}
+        <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+          <Info className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-green-700 dark:text-green-400">
+            <strong>Dla firm z zaliczkami:</strong> Klient może anulować rezerwację w każdej chwili. 
+            Zaliczka (opłata rezerwacyjna) jest <strong>bezzwrotna</strong> i zostaje automatycznie 
+            zatrzymana jako rekompensata za anulowaną wizytę.
           </div>
         </div>
       </div>
