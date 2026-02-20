@@ -20,6 +20,7 @@ const advanceOptions = [
   { value: 3, label: '3 dni', description: 'Rezerwacje do 3 dni w przód' },
   { value: 7, label: '1 tydzień', description: 'Rezerwacje do tygodnia w przód' },
   { value: 14, label: '2 tygodnie', description: 'Rezerwacje do 2 tygodni w przód' },
+  { value: 21, label: '3 tygodnie', description: 'Rezerwacje do 3 tygodni w przód' },
   { value: 30, label: '1 miesiąc', description: 'Rezerwacje do miesiąca w przód' },
   { value: 60, label: '2 miesiące', description: 'Rezerwacje do 2 miesięcy w przód' },
   { value: 90, label: '3 miesiące', description: 'Rezerwacje do 3 miesięcy w przód' },
