@@ -94,9 +94,27 @@ export class ExternalCalendarService {
         const ninetyDaysFromNow = new Date();
         ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
 
+        // Pobierz ID eventów Google Calendar z rezerwacji tego tenanta
+        // aby nie importować wydarzeń które sami utworzyliśmy
+        const existingBookings = await tx.bookings.findMany({
+          where: {
+            customers: { tenantId },
+            google_calendar_event_id: { not: null },
+          },
+          select: { google_calendar_event_id: true },
+        });
+        const ourEventIds = new Set(existingBookings.map(b => b.google_calendar_event_id));
+
         for (const event of events) {
           // Filtruj tylko wydarzenia w zakresie czasowym
           if (event.endTime < thirtyDaysAgo || event.startTime > ninetyDaysFromNow) {
+            continue;
+          }
+
+          // Pomiń wydarzenia które sami utworzyliśmy przez Google Calendar API
+          // (porównaj externalId z google_calendar_event_id z rezerwacji)
+          if (ourEventIds.has(event.externalId)) {
+            this.logger.debug(`Skipping our own event: ${event.externalId}`);
             continue;
           }
 
@@ -121,6 +139,17 @@ export class ExternalCalendarService {
               startTime: event.startTime,
               endTime: event.endTime,
               allDay: event.allDay,
+            },
+          });
+        }
+
+        // Usuń zduplikowane wydarzenia które zostały wcześniej zaimportowane
+        // ale teraz wiemy że to nasze własne eventy
+        if (ourEventIds.size > 0) {
+          await tx.external_calendar_events.deleteMany({
+            where: {
+              tenantId,
+              externalId: { in: Array.from(ourEventIds) as string[] },
             },
           });
         }
