@@ -46,11 +46,17 @@ export class PublicBookingController {
       throw new NotFoundException('Rezerwacja nie została znaleziona');
     }
 
-    const cancelDeadlineHours = (tenant as any).cancel_deadline_hours || 24;
+    // Pobierz minCancellationHours z pageSettings (nowe) lub cancel_deadline_hours (stare)
+    const pageSettings = (tenant as any).pageSettings || {};
+    const cancelDeadlineHours = pageSettings.minCancellationHours ?? (tenant as any).cancel_deadline_hours ?? 0;
+    
     const bookingTime = new Date(booking.startTime).getTime();
     const now = Date.now();
     const hoursUntilBooking = (bookingTime - now) / (1000 * 60 * 60);
-    const canCancel = hoursUntilBooking >= cancelDeadlineHours && booking.status !== 'CANCELLED';
+    
+    // Jeśli firma ma włączone zaliczki i rezerwacja ma zaliczkę - klient może anulować zawsze
+    const hasDeposit = (booking as any).depositAmount > 0;
+    const canCancel = (hasDeposit || hoursUntilBooking >= cancelDeadlineHours) && booking.status !== 'CANCELLED';
 
     return {
       id: booking.id,
@@ -66,6 +72,7 @@ export class PublicBookingController {
       businessName: tenant.name,
       canCancel,
       cancelDeadlineHours,
+      hasDeposit,
     };
   }
 
@@ -98,14 +105,20 @@ export class PublicBookingController {
       throw new BadRequestException('Ta rezerwacja została już anulowana');
     }
 
-    const cancelDeadlineHours = (tenant as any).cancel_deadline_hours || 24;
+    // Pobierz minCancellationHours z pageSettings (nowe) lub cancel_deadline_hours (stare)
+    const pageSettings = (tenant as any).pageSettings || {};
+    const cancelDeadlineHours = pageSettings.minCancellationHours ?? (tenant as any).cancel_deadline_hours ?? 0;
+    
     const bookingTime = new Date(booking.startTime).getTime();
     const now = Date.now();
     const hoursUntilBooking = (bookingTime - now) / (1000 * 60 * 60);
+    
+    // Jeśli rezerwacja ma zaliczkę - klient może anulować zawsze (traci zaliczkę)
+    const hasDeposit = (booking as any).depositAmount > 0;
 
-    if (hoursUntilBooking < cancelDeadlineHours) {
+    if (!hasDeposit && cancelDeadlineHours > 0 && hoursUntilBooking < cancelDeadlineHours) {
       throw new BadRequestException(
-        'Anulowanie jest możliwe do ' + cancelDeadlineHours + ' godzin przed wizytą',
+        `Anulowanie jest możliwe do ${cancelDeadlineHours} godzin przed wizytą`,
       );
     }
 
@@ -114,7 +127,11 @@ export class PublicBookingController {
       data: { status: 'CANCELLED' },
     });
 
-    return { success: true, message: 'Rezerwacja została anulowana' };
+    const message = hasDeposit 
+      ? 'Rezerwacja została anulowana. Zaliczka nie podlega zwrotowi.'
+      : 'Rezerwacja została anulowana';
+
+    return { success: true, message };
   }
 
   @Public()

@@ -261,6 +261,7 @@ export class TenantsController {
       heroStyle: 'banner',
       bookingButtonText: 'Zarezerwuj',
       bookingAdvanceDays: 0, // 0 = bez limitu wyprzedzenia
+      minCancellationHours: 0, // 0 = bez ograniczeń anulowania
     };
     
     return {

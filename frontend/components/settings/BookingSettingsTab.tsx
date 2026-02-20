@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar, Save, Loader2, Info } from 'lucide-react'
+import { Calendar, Save, Loader2, Info, Clock, XCircle } from 'lucide-react'
 import { getApiUrl } from '@/lib/api-url'
 import { getTenantId, getTenantConfig } from '@/lib/tenant'
 import toast from 'react-hot-toast'
@@ -26,6 +26,18 @@ const advanceOptions = [
   { value: 90, label: '3 miesiące', description: 'Rezerwacje do 3 miesięcy w przód' },
 ]
 
+// Opcje minimalnego czasu przed anulowaniem/przesunięciem
+const cancellationOptions = [
+  { value: 0, label: 'Bez ograniczeń', description: 'Klient może anulować/przesunąć w każdej chwili' },
+  { value: 1, label: '1 godzina', description: 'Minimum 1 godzina przed wizytą' },
+  { value: 2, label: '2 godziny', description: 'Minimum 2 godziny przed wizytą' },
+  { value: 4, label: '4 godziny', description: 'Minimum 4 godziny przed wizytą' },
+  { value: 12, label: '12 godzin', description: 'Minimum 12 godzin przed wizytą' },
+  { value: 24, label: '24 godziny (1 dzień)', description: 'Minimum 24 godziny przed wizytą' },
+  { value: 48, label: '48 godzin (2 dni)', description: 'Minimum 48 godzin przed wizytą' },
+  { value: 72, label: '72 godziny (3 dni)', description: 'Minimum 72 godziny przed wizytą' },
+]
+
 export default function BookingSettingsTab({ companyData, setCompanyData, onSave, isLoading }: Props) {
   const [saving, setSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -33,6 +45,7 @@ export default function BookingSettingsTab({ companyData, setCompanyData, onSave
   // Pobierz aktualne ustawienie z pageSettings
   const pageSettings = companyData?.pageSettings || {}
   const bookingAdvanceDays = pageSettings.bookingAdvanceDays ?? 0 // 0 = bez limitu
+  const minCancellationHours = pageSettings.minCancellationHours ?? 0 // 0 = bez ograniczeń
 
   const updateBookingAdvanceDays = (days: number) => {
     setCompanyData({
@@ -40,6 +53,16 @@ export default function BookingSettingsTab({ companyData, setCompanyData, onSave
       pageSettings: {
         ...pageSettings,
         bookingAdvanceDays: days
+      }
+    })
+  }
+
+  const updateMinCancellationHours = (hours: number) => {
+    setCompanyData({
+      ...companyData,
+      pageSettings: {
+        ...pageSettings,
+        minCancellationHours: hours
       }
     })
   }
@@ -62,7 +85,8 @@ export default function BookingSettingsTab({ companyData, setCompanyData, onSave
         body: JSON.stringify({
           pageSettings: {
             ...pageSettings,
-            bookingAdvanceDays
+            bookingAdvanceDays,
+            minCancellationHours
           }
         })
       })
@@ -142,6 +166,55 @@ export default function BookingSettingsTab({ companyData, setCompanyData, onSave
             <strong>Przykład:</strong> Jeśli ustawisz "2 tygodnie", klient rezerwujący 1 stycznia 
             będzie mógł wybrać terminy tylko do 15 stycznia. Terminy późniejsze nie będą widoczne 
             w kalendarzu rezerwacji.
+          </div>
+        </div>
+      </div>
+
+      {/* Minimalny czas anulowania/przesunięcia */}
+      <div className="bg-[var(--bg-primary)] rounded-2xl p-6 space-y-6">
+        <div>
+          <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <XCircle className="w-5 h-5" />
+            Minimalny czas na anulowanie/przesunięcie
+          </h3>
+          <p className="text-sm text-[var(--text-muted)] mt-1">
+            Określ, z jakim minimalnym wyprzedzeniem klient może anulować lub przesunąć rezerwację
+          </p>
+        </div>
+
+        <div className="grid gap-3">
+          {cancellationOptions.map((option) => (
+            <label
+              key={option.value}
+              className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all border-2 ${
+                minCancellationHours === option.value
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                  : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-orange-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="minCancellationHours"
+                value={option.value}
+                checked={minCancellationHours === option.value}
+                onChange={() => updateMinCancellationHours(option.value)}
+                className="mt-1 w-4 h-4 text-orange-500 focus:ring-orange-500"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-[var(--text-primary)]">{option.label}</div>
+                <div className="text-sm text-[var(--text-muted)]">{option.description}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {/* Info box */}
+        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+          <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-700 dark:text-amber-400">
+            <strong>Uwaga:</strong> To ustawienie dotyczy firm <strong>bez włączonych zaliczek</strong>. 
+            Jeśli masz włączone zaliczki, klient może anulować rezerwację w każdej chwili - 
+            zaliczka zostanie automatycznie zatrzymana jako rekompensata.
           </div>
         </div>
       </div>

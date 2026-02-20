@@ -164,6 +164,7 @@ export class TenantsService {
     cardStyle?: 'shadow' | 'border' | 'flat';
     pageBuilder?: any;
     bookingAdvanceDays?: number; // Maksymalne wyprzedzenie rezerwacji (0 = bez limitu)
+    minCancellationHours?: number; // Minimalny czas przed anulowaniem/przesunięciem (0 = bez ograniczeń)
   }) {
     // Pobierz aktualne ustawienia
     const tenant = await this.prisma.tenants.findUnique({
@@ -194,6 +195,7 @@ export class TenantsService {
       cardStyle: pageSettings.cardStyle ?? currentSettings.cardStyle ?? 'shadow',
       pageBuilder: pageSettings.pageBuilder ?? currentSettings.pageBuilder ?? null,
       bookingAdvanceDays: pageSettings.bookingAdvanceDays ?? currentSettings.bookingAdvanceDays ?? 0,
+      minCancellationHours: pageSettings.minCancellationHours ?? currentSettings.minCancellationHours ?? 0,
     };
 
     return this.prisma.tenants.update({
