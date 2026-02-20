@@ -2388,10 +2388,10 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Email (opcjonalnie)</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Email *</label>
                       <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-0 transition-colors bg-slate-50 focus:bg-white" placeholder="jan@example.com" />
+                        <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-0 transition-colors bg-slate-50 focus:bg-white" placeholder="jan@example.com" required />
                       </div>
                     </div>
                     {/* Uwagi - dla usług elastycznych */}
@@ -2453,7 +2453,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                     {/* Przycisk Dalej do kroku płatności */}
                     <div className="flex gap-3">
                       <button onClick={() => setBookingStep(3)} className="flex-1 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 flex items-center justify-center gap-2"><ChevronLeft className="w-5 h-5" />Wstecz</button>
-                      <button onClick={() => setBookingStep(5)} disabled={!customerName || !customerPhone} className="flex-1 py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white font-medium rounded-xl flex items-center justify-center gap-2">Dalej<ChevronRight className="w-5 h-5" /></button>
+                      <button onClick={() => setBookingStep(5)} disabled={!customerName || !customerPhone || !customerEmail} className="flex-1 py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white font-medium rounded-xl flex items-center justify-center gap-2">Dalej<ChevronRight className="w-5 h-5" /></button>
                     </div>
                   </div>
                 )}
@@ -2508,12 +2508,15 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               <Wallet className="w-5 h-5 text-amber-600" />
                             </div>
                             <div className="flex-1">
-                              <h4 className="font-medium text-amber-800">Wymagana zaliczka</h4>
+                              <h4 className="font-medium text-amber-800">Wymagana opłata rezerwacyjna</h4>
                               <p className="text-sm text-amber-700 mt-1">
-                                Aby potwierdzić rezerwację, wymagana jest zaliczka w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
+                                Aby potwierdzić rezerwację, wymagana jest opłata rezerwacyjna w wysokości <strong>{depositInfo.amount.toFixed(0)} zł</strong>.
                               </p>
                               <p className="text-xs text-amber-600 mt-2">
                                 Pozostała kwota do zapłaty na miejscu.
+                              </p>
+                              <p className="text-xs text-amber-700 mt-2 font-medium">
+                                ⚠️ Opłata rezerwacyjna jest bezzwrotna i nie podlega zwrotowi w przypadku anulowania lub niestawienia się na wizytę (zgodnie z art. 38 pkt 12 ustawy o prawach konsumenta).
                               </p>
                             </div>
                           </div>
@@ -2564,7 +2567,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         )}
                       </div>
                     )}
-                    <button onClick={handleBookingSubmit} disabled={!customerName || !customerPhone || bookingLoading || (consentSettings !== null && !rodoConsent) || ((paymentMethod !== 'cash' || (depositInfo?.required && depositInfo?.amount > 0)) && !customerEmail)} className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 flex items-center justify-center gap-3">
+                    <button onClick={handleBookingSubmit} disabled={!customerName || !customerPhone || !customerEmail || bookingLoading || (consentSettings !== null && !rodoConsent)} className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 flex items-center justify-center gap-3">
                       {bookingLoading ? (
                         <><Loader2 className="w-6 h-6 animate-spin" />Rezerwuję...</>
                       ) : paymentMethod === 'cash' && depositInfo?.required && depositInfo?.amount > 0 ? (
