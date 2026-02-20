@@ -1620,14 +1620,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                               return dateStr < getMinDate() || isDateBeyondLimit(dateStr)
                             }
                             
-                            const isDayFullyBooked = (dateStr: string) => {
-                              // ...
-                            }
-                            
-                            const isDayPartiallyBooked = (dateStr: string) => {
-                              // ...
-                            }
-                            
                             return (
                               <div className="bg-white rounded-xl p-4 border border-slate-200">
                                 <div className="flex items-center justify-between mb-4">
