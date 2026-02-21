@@ -128,8 +128,16 @@ export class AuthService {
     }
 
     // Logowanie jako pracownik
-    if (profileType === 'employee' || (!user && employeeAccount)) {
-      return this.loginAsEmployee(employeeAccount!, password);
+    if (profileType === 'employee') {
+      if (!employeeAccount) {
+        throw new UnauthorizedException('Nie znaleziono konta pracownika dla tego adresu email');
+      }
+      return this.loginAsEmployee(employeeAccount, password);
+    }
+    
+    // Jeśli tylko konto pracownika istnieje (bez profileType)
+    if (!user && employeeAccount) {
+      return this.loginAsEmployee(employeeAccount, password);
     }
 
     // Logowanie jako właściciel (domyślne)
