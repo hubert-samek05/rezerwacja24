@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet, Trash2, Calendar } from 'lucide-react'
+import { Check, AlertCircle, Loader2, ChevronRight, Building2, Globe, Palette, Clock, CreditCard, Bell, Shield, Key, Code, Link2, FileText, Receipt, AlertTriangle, Upload, Users, Wallet, Trash2, Calendar, Store } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
   getCompanyData, 
@@ -36,6 +36,7 @@ import DepositsTab from '@/components/settings/DepositsTab'
 import PageBuilderTab from '@/components/settings/PageBuilderTab'
 import DeleteAccountTab from '@/components/settings/DeleteAccountTab'
 import BookingSettingsTab from '@/components/settings/BookingSettingsTab'
+import MarketplaceTab from '@/components/settings/MarketplaceTab'
 import { useDashboardTranslation } from '@/hooks/useDashboardTranslation'
 import { usePlatform } from '@/hooks/usePlatform'
 
@@ -481,6 +482,7 @@ export default function SettingsPage() {
       items: [
         { id: 'company', icon: Building2, label: 'Dane firmy', desc: 'Nazwa, adres, kontakt' },
         { id: 'subdomain', icon: Globe, label: 'Subdomena', desc: 'Adres strony rezerwacji' },
+        { id: 'marketplace', icon: Store, label: 'Profil w katalogu', desc: 'Widoczność w katalogu firm' },
         { id: 'page-builder', icon: Palette, label: 'Wygląd strony WWW', desc: 'Szablony, sekcje i personalizacja' },
         { id: 'gallery', icon: Upload, label: 'Galeria zdjęć', desc: 'Zdjęcia firmy i usług' },
         { id: 'hours', icon: Clock, label: 'Godziny otwarcia', desc: 'Dni i godziny pracy' },
@@ -684,6 +686,8 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'deposits' && <DepositsTab />}
+
+          {activeTab === 'marketplace' && <MarketplaceTab />}
 
           {activeTab === 'subscription' && <SubscriptionTab />}
           {activeTab === 'billing-data' && <BillingDataTab />}

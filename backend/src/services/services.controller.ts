@@ -87,8 +87,9 @@ export class ServicesController {
   @ApiResponse({ status: 200, description: 'Usługa została usunięta' })
   @ApiResponse({ status: 404, description: 'Usługa nie znaleziona' })
   @ApiResponse({ status: 400, description: 'Nie można usunąć usługi z rezerwacjami' })
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Query('force') force: string, @Req() req: any) {
     const tenantId = req.headers['x-tenant-id'] || 'default';
-    return this.servicesService.remove(tenantId, id);
+    const forceDelete = force === 'true';
+    return this.servicesService.remove(tenantId, id, forceDelete);
   }
 }

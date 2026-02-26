@@ -1,6 +1,6 @@
 // Page Builder - typy i konfiguracja dla edytora stron
 
-export type TemplateId = 'elegant' | 'fresh' | 'minimal'
+export type TemplateId = 'elegant' | 'fresh' | 'minimal' | 'professional'
 
 export interface Template {
   id: TemplateId
@@ -136,6 +136,21 @@ export const templates: Template[] = [
     defaultHeroStyle: 'centered',
     defaultCardStyle: 'border',
     defaultButtonStyle: 'square'
+  },
+  {
+    id: 'professional',
+    name: 'Profesjonalny',
+    description: 'Nowoczesny design z galerią zdjęć, sticky sidebar i sekcją zespołu. Inspirowany najlepszymi platformami.',
+    preview: '/templates/professional-preview.jpg',
+    defaultColors: {
+      primary: '#1a1a1a',
+      accent: '#f97316',
+      background: '#ffffff',
+      text: '#1f2937'
+    },
+    defaultHeroStyle: 'banner',
+    defaultCardStyle: 'border',
+    defaultButtonStyle: 'rounded'
   }
 ]
 

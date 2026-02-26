@@ -43,6 +43,12 @@ const config: CapacitorConfig = {
     },
     CapacitorHttp: {
       enabled: true
+    },
+    // Sign in with Apple - wymagane dla iOS
+    SignInWithApple: {
+      // clientId to Bundle ID aplikacji dla natywnego iOS
+      // Services ID (pl.rezerwacja24.auth.web) jest używany tylko dla web OAuth
+      clientId: 'pl.rezerwacja24.app'
     }
   }
 };

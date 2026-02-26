@@ -1,29 +1,36 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Calendar, ArrowLeft, FileText } from 'lucide-react'
+import { ArrowLeft, FileText } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function TermsPage() {
-  const lastUpdated = '21 grudnia 2024'
+  const lastUpdated = '22 lutego 2025'
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[var(--bg-card)] border-b border-[var(--border-color)]">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Navigation - spójne z główną stroną */}
+      <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500" />
-              <span className="text-lg sm:text-2xl font-bold text-gradient">Rezerwacja24</span>
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/logo.png"
+                alt="Rezerwacja24" 
+                width={200} 
+                height={60} 
+                className="h-10 sm:h-12 w-auto"
+                priority
+              />
             </Link>
             
             <Link 
               href="/" 
-              className="flex items-center space-x-2 text-[var(--text-secondary)] hover:text-emerald-500 transition-colors"
+              className="flex items-center space-x-2 text-gray-600 hover:text-teal-700 transition-colors font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Powrót</span>
+              <span>Powrót do strony głównej</span>
             </Link>
           </div>
         </div>
@@ -39,13 +46,13 @@ export default function TermsPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FileText className="w-8 h-8 text-emerald-500" />
+            <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <FileText className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl sm:text-5xl font-bold mb-4 text-[var(--text-primary)]">
-              Regulamin <span className="text-emerald-500">Serwisu</span>
+            <h1 className="text-3xl sm:text-5xl font-bold mb-4 text-gray-900">
+              Regulamin <span className="text-teal-700">Serwisu</span>
             </h1>
-            <p className="text-[var(--text-muted)]">
+            <p className="text-gray-500 text-lg">
               Ostatnia aktualizacja: {lastUpdated}
             </p>
           </motion.div>
@@ -56,30 +63,37 @@ export default function TermsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 sm:p-10 shadow-lg">
-              <div className="prose max-w-none space-y-8 text-[var(--text-secondary)]">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-10 shadow-xl">
+              <div className="prose max-w-none space-y-8 text-gray-700">
                 
                 {/* §1 Definicje */}
                 <section>
-                  <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§1. Definicje</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                    <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§1</span>
+                    Definicje
+                  </h2>
                   <p>Użyte w niniejszym Regulaminie pojęcia oznaczają:</p>
                   <ol className="list-decimal pl-6 space-y-3">
                     <li><strong>Usługodawca / Administrator</strong> – Akademia Rozwoju EDUCRAFT Hubert Samek (marka Rezerwacja24.pl) z siedzibą w Krakowie, ul. Lipowa 3d, 30-702 Kraków, NIP: 5130303581, REGON: 542003444;</li>
                     <li><strong>Serwis</strong> – serwis internetowy dostępny pod adresem rezerwacja24.pl oraz app.rezerwacja24.pl, umożliwiający korzystanie z Usług;</li>
-                    <li><strong>Usługi</strong> – usługi świadczone drogą elektroniczną przez Usługodawcę na rzecz Użytkowników, obejmujące w szczególności system zarządzania rezerwacjami online;</li>
+                    <li><strong>Usługi</strong> – usługi świadczone drogą elektroniczną przez Usługodawcę na rzecz Użytkowników, polegające wyłącznie na udostępnianiu oprogramowania w modelu SaaS (Software as a Service) do zarządzania rezerwacjami online;</li>
                     <li><strong>Użytkownik</strong> – osoba fizyczna prowadząca działalność gospodarczą, osoba prawna lub jednostka organizacyjna nieposiadająca osobowości prawnej, która korzysta z Usług;</li>
                     <li><strong>Klient Końcowy</strong> – osoba fizyczna dokonująca rezerwacji u Użytkownika za pośrednictwem systemu Rezerwacja24;</li>
                     <li><strong>Konto</strong> – indywidualne konto Użytkownika w Serwisie, chronione loginem i hasłem;</li>
                     <li><strong>Umowa</strong> – umowa o świadczenie Usług zawarta pomiędzy Usługodawcą a Użytkownikiem;</li>
                     <li><strong>Okres Próbny</strong> – bezpłatny okres korzystania z Usług wynoszący 7 dni od daty rejestracji;</li>
                     <li><strong>Abonament</strong> – opłata za korzystanie z Usług w określonym okresie rozliczeniowym;</li>
+                    <li><strong>Oprogramowanie SaaS</strong> – oprogramowanie udostępniane przez Usługodawcę w modelu Software as a Service, dostępne przez przeglądarkę internetową bez konieczności instalacji;</li>
                     <li><strong>Regulamin</strong> – niniejszy dokument określający zasady korzystania z Serwisu.</li>
                   </ol>
                 </section>
 
               {/* §2 Postanowienia ogólne */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§2. Postanowienia ogólne</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§2</span>
+                  Postanowienia ogólne
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Niniejszy Regulamin określa zasady świadczenia Usług drogą elektroniczną przez Usługodawcę.</li>
                   <li>Korzystanie z Serwisu oznacza akceptację niniejszego Regulaminu oraz Polityki Prywatności.</li>
@@ -96,9 +110,70 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §3 Rejestracja i Konto */}
+              {/* §3 Charakter Platformy i Wyłączenie Odpowiedzialności */}
+              <section className="border-2 border-gray-300 rounded-xl p-6 -mx-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§3</span>
+                  Charakter Platformy i Wyłączenie Odpowiedzialności
+                </h2>
+                <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+                  <p className="font-semibold text-gray-800 mb-2">WAŻNE OŚWIADCZENIE:</p>
+                  <p className="text-gray-700">Usługodawca świadczy wyłącznie usługę udostępniania oprogramowania (SaaS) i nie jest stroną jakichkolwiek transakcji zawieranych między Użytkownikami a ich Klientami Końcowymi.</p>
+                </div>
+                <ol className="list-decimal pl-6 space-y-3">
+                  <li><strong>Usługodawca świadczy wyłącznie usługę udostępniania oprogramowania</strong> w modelu SaaS (Software as a Service), umożliwiającego Użytkownikom samodzielne zarządzanie rezerwacjami w ramach prowadzonej przez nich działalności gospodarczej.</li>
+                  <li><strong>Usługodawca nie jest stroną transakcji</strong> zawieranych między Użytkownikami a Klientami Końcowymi. Wszelkie umowy o świadczenie usług, sprzedaż towarów lub inne zobowiązania powstające w wyniku rezerwacji dokonanych za pośrednictwem Serwisu są zawierane wyłącznie między Użytkownikiem a Klientem Końcowym.</li>
+                  <li><strong>Usługodawca nie pośredniczy w transakcjach</strong> między Użytkownikami a Klientami Końcowymi i nie uczestniczy w żadnym etapie realizacji usług świadczonych przez Użytkowników.</li>
+                  <li><strong>Usługodawca nie pobiera prowizji</strong> od transakcji zawieranych między Użytkownikami a Klientami Końcowymi. Jedynym wynagrodzeniem Usługodawcy jest Abonament za korzystanie z Oprogramowania SaaS.</li>
+                  <li><strong>Usługodawca nie kontroluje i nie weryfikuje</strong> jakości, legalności, bezpieczeństwa ani zgodności z opisem usług świadczonych przez Użytkowników na rzecz Klientów Końcowych.</li>
+                  <li><strong>Użytkownik ponosi wyłączną odpowiedzialność</strong> za:
+                    <ul className="list-disc pl-6 mt-2 space-y-1">
+                      <li>treść i prawidłowość informacji publikowanych w systemie rezerwacyjnym;</li>
+                      <li>realizację rezerwacji i świadczenie usług na rzecz Klientów Końcowych;</li>
+                      <li>rozliczenia finansowe z Klientami Końcowymi;</li>
+                      <li>rozpatrywanie reklamacji Klientów Końcowych;</li>
+                      <li>zgodność prowadzonej działalności z obowiązującymi przepisami prawa;</li>
+                      <li>posiadanie wymaganych zezwoleń, licencji i ubezpieczeń.</li>
+                    </ul>
+                  </li>
+                  <li><strong>Serwis stanowi wyłącznie narzędzie techniczne</strong> ułatwiające Użytkownikom organizację pracy i zarządzanie rezerwacjami, nie zaś platformę pośrednictwa w świadczeniu usług.</li>
+                </ol>
+              </section>
+
+              {/* §4 Wyłączenie z zakresu Dyrektywy DAC7 */}
+              <section className="border-2 border-gray-300 rounded-xl p-6 -mx-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§4</span>
+                  Wyłączenie z zakresu Dyrektywy DAC7
+                </h2>
+                <ol className="list-decimal pl-6 space-y-3">
+                  <li>Usługodawca oświadcza, że Serwis <strong>nie stanowi platformy</strong> w rozumieniu Dyrektywy Rady (UE) 2021/514 z dnia 22 marca 2021 r. (DAC7) oraz implementujących ją przepisów krajowych.</li>
+                  <li>Usługodawca <strong>nie jest operatorem platformy</strong> w rozumieniu przepisów DAC7, ponieważ:
+                    <ul className="list-disc pl-6 mt-2 space-y-1">
+                      <li>nie umożliwia sprzedawcom nawiązywania kontaktu z innymi użytkownikami w celu wykonywania czynności istotnych;</li>
+                      <li>nie pobiera prowizji ani wynagrodzenia od transakcji zawieranych między Użytkownikami a Klientami Końcowymi;</li>
+                      <li>nie pośredniczy w płatnościach między Użytkownikami a Klientami Końcowymi;</li>
+                      <li>świadczy wyłącznie usługę licencji na oprogramowanie SaaS.</li>
+                    </ul>
+                  </li>
+                  <li>Serwis służy wyłącznie jako <strong>narzędzie do zarządzania własną działalnością</strong> Użytkownika (kalendarz, CRM, powiadomienia), a nie jako platforma łącząca sprzedawców z kupującymi.</li>
+                  <li>W związku z powyższym, Usługodawca <strong>nie jest zobowiązany</strong> do:
+                    <ul className="list-disc pl-6 mt-2 space-y-1">
+                      <li>gromadzenia i raportowania informacji o Użytkownikach do organów podatkowych w ramach DAC7;</li>
+                      <li>weryfikacji tożsamości Użytkowników w zakresie wymaganym przez DAC7;</li>
+                      <li>przekazywania danych o transakcjach do Szefa Krajowej Administracji Skarbowej.</li>
+                    </ul>
+                  </li>
+                  <li>Użytkownik przyjmuje do wiadomości, że <strong>samodzielnie odpowiada</strong> za wypełnianie swoich obowiązków podatkowych i sprawozdawczych wynikających z prowadzonej działalności gospodarczej.</li>
+                </ol>
+              </section>
+
+              {/* §5 Rejestracja i Konto */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§3. Rejestracja i Konto</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§5</span>
+                  Rejestracja i Konto
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Korzystanie z pełnej funkcjonalności Serwisu wymaga utworzenia Konta.</li>
                   <li>Rejestracja wymaga podania prawdziwych i aktualnych danych, w tym:
@@ -123,9 +198,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §4 Zakres Usług */}
+              {/* §6 Zakres Usług */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§4. Zakres Usług</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§6</span>
+                  Zakres Usług
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Usługodawca udostępnia Użytkownikom system do zarządzania rezerwacjami online, obejmujący w szczególności:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
@@ -146,9 +224,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §5 Okres Próbny */}
+              {/* §7 Okres Próbny */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§5. Okres Próbny</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§7</span>
+                  Okres Próbny
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Każdy nowy Użytkownik ma prawo do bezpłatnego Okresu Próbnego wynoszącego 7 dni od daty rejestracji.</li>
                   <li>W Okresie Próbnym Użytkownik ma dostęp do pełnej funkcjonalności Serwisu.</li>
@@ -158,9 +239,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §6 Płatności */}
+              {/* §8 Płatności */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§6. Płatności i Abonament</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§8</span>
+                  Płatności i Abonament
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Korzystanie z Usług po zakończeniu Okresu Próbnego wymaga opłacenia Abonamentu.</li>
                   <li>Aktualne ceny Abonamentów dostępne są na stronie Serwisu w zakładce Cennik.</li>
@@ -174,9 +258,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §7 Zwroty */}
+              {/* §9 Zwroty */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§7. Zwroty i reklamacje</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§9</span>
+                  Zwroty i reklamacje
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Z uwagi na charakter Usług świadczonych drogą elektroniczną oraz fakt, że Użytkownikami są przedsiębiorcy, prawo odstąpienia od umowy przysługujące konsumentom nie ma zastosowania.</li>
                   <li>Użytkownik może złożyć reklamację dotyczącą Usług drogą elektroniczną na adres: kontakt@rezerwacja24.pl lub pisemnie na adres siedziby Usługodawcy.</li>
@@ -192,9 +279,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §8 Obowiązki Użytkownika */}
+              {/* §10 Obowiązki Użytkownika */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§8. Obowiązki i odpowiedzialność Użytkownika</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§10</span>
+                  Obowiązki i odpowiedzialność Użytkownika
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Użytkownik zobowiązuje się do korzystania z Serwisu zgodnie z jego przeznaczeniem, Regulaminem oraz obowiązującymi przepisami prawa.</li>
                   <li>Użytkownik zobowiązuje się nie:
@@ -220,9 +310,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §9 Odpowiedzialność Usługodawcy */}
+              {/* §11 Odpowiedzialność Usługodawcy */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§9. Odpowiedzialność Usługodawcy</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§11</span>
+                  Odpowiedzialność Usługodawcy
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Usługodawca dokłada wszelkich starań, aby Serwis działał prawidłowo i był dostępny nieprzerwanie.</li>
                   <li>Usługodawca nie ponosi odpowiedzialności za:
@@ -242,9 +335,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §10 Własność intelektualna */}
+              {/* §12 Własność intelektualna */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§10. Własność intelektualna</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§12</span>
+                  Własność intelektualna
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Serwis, jego struktura, kod źródłowy, grafika, logo, teksty i inne elementy są własnością Usługodawcy i są chronione prawem autorskim oraz innymi przepisami dotyczącymi własności intelektualnej.</li>
                   <li>Użytkownik nie nabywa żadnych praw własności intelektualnej do Serwisu. Uzyskuje jedynie ograniczoną, niewyłączną, niezbywalną licencję na korzystanie z Serwisu zgodnie z jego przeznaczeniem.</li>
@@ -260,9 +356,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §11 Powierzenie przetwarzania danych */}
+              {/* §13 Powierzenie przetwarzania danych */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§11. Powierzenie przetwarzania danych osobowych</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§13</span>
+                  Powierzenie przetwarzania danych osobowych
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>W zakresie, w jakim Użytkownik wprowadza do Serwisu dane osobowe swoich Klientów Końcowych, Usługodawca pełni rolę podmiotu przetwarzającego (procesora) w rozumieniu art. 28 RODO.</li>
                   <li>Użytkownik, jako administrator danych Klientów Końcowych, powierza Usługodawcy przetwarzanie tych danych w celu realizacji Usług.</li>
@@ -281,9 +380,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §12 Rozwiązanie umowy */}
+              {/* §14 Rozwiązanie umowy */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§12. Rozwiązanie Umowy</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§14</span>
+                  Rozwiązanie Umowy
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Użytkownik może rozwiązać Umowę w dowolnym momencie poprzez:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
@@ -305,9 +407,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §13 Zmiany Regulaminu */}
+              {/* §15 Zmiany Regulaminu */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§13. Zmiany Regulaminu</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§15</span>
+                  Zmiany Regulaminu
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Usługodawca zastrzega sobie prawo do zmiany Regulaminu z ważnych przyczyn, w szczególności:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
@@ -323,9 +428,12 @@ export default function TermsPage() {
                 </ol>
               </section>
 
-              {/* §14 Postanowienia końcowe */}
+              {/* §16 Postanowienia końcowe */}
               <section>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">§14. Postanowienia końcowe</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center text-sm font-bold">§16</span>
+                  Postanowienia końcowe
+                </h2>
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>Regulamin wchodzi w życie z dniem publikacji w Serwisie.</li>
                   <li>W sprawach nieuregulowanych Regulaminem zastosowanie mają przepisy prawa polskiego, w szczególności Kodeksu cywilnego oraz ustawy o świadczeniu usług drogą elektroniczną.</li>
@@ -335,12 +443,20 @@ export default function TermsPage() {
                   <li>Regulamin jest dostępny w Serwisie w formie umożliwiającej jego pobranie, utrwalenie i wydrukowanie.</li>
                   <li>Kontakt z Usługodawcą:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
-                      <li>E-mail: <a href="mailto:kontakt@rezerwacja24.pl" className="text-emerald-500 hover:underline">kontakt@rezerwacja24.pl</a></li>
+                      <li>E-mail: <a href="mailto:kontakt@rezerwacja24.pl" className="text-teal-600 hover:underline font-medium">kontakt@rezerwacja24.pl</a></li>
                       <li>Adres: Akademia Rozwoju EDUCRAFT Hubert Samek, ul. Lipowa 3d, 30-702 Kraków</li>
                     </ul>
                   </li>
                 </ol>
               </section>
+
+                {/* Link do regulaminu dla klientów */}
+                <section className="bg-gray-50 rounded-xl p-6 text-center">
+                  <p className="text-gray-600 mb-3">Jesteś klientem i chcesz poznać zasady rezerwacji?</p>
+                  <Link href="/terms/customer" className="text-teal-600 hover:text-teal-700 font-semibold hover:underline">
+                    Zobacz Regulamin dla Klientów →
+                  </Link>
+                </section>
 
               </div>
             </div>
@@ -348,13 +464,22 @@ export default function TermsPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-[var(--border-color)] py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center text-sm text-[var(--text-muted)]">
-          <p>&copy; 2024 Rezerwacja24. Wszystkie prawa zastrzeżone.</p>
-          <div className="mt-4 space-x-4">
-            <Link href="/contact" className="hover:text-emerald-500 transition-colors">Kontakt</Link>
-            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">Polityka prywatności</Link>
+      {/* Footer - spójny z główną stroną */}
+      <footer className="bg-white border-t border-gray-200 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <Image 
+            src="/logo.png"
+            alt="Rezerwacja24" 
+            width={150} 
+            height={45} 
+            className="h-8 w-auto mx-auto mb-4"
+          />
+          <p className="text-sm text-gray-500 mb-4">&copy; 2025 Rezerwacja24. Wszystkie prawa zastrzeżone.</p>
+          <div className="flex justify-center gap-6 text-sm">
+            <Link href="/contact" className="text-gray-600 hover:text-teal-700 transition-colors font-medium">Kontakt</Link>
+            <Link href="/privacy" className="text-gray-600 hover:text-teal-700 transition-colors font-medium">Polityka prywatności</Link>
+            <Link href="/terms/customer" className="text-gray-600 hover:text-teal-700 transition-colors font-medium">Regulamin dla klientów</Link>
+            <Link href="/" className="text-gray-600 hover:text-teal-700 transition-colors font-medium">Strona główna</Link>
           </div>
         </div>
       </footer>

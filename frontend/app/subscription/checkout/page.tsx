@@ -112,12 +112,13 @@ export default function CheckoutPage() {
             const data = await response.json();
             console.log('📊 Status subskrypcji:', data);
             
-            // Sprawdź czy subskrypcja jest PAST_DUE lub CANCELLED (nieudana płatność)
-            if (data.isPastDue || data.isCancelled || data.status === 'PAST_DUE' || data.status === 'CANCELLED') {
-              console.log('⚠️ Subskrypcja wymaga odnowienia:', data.status);
+            // Sprawdź czy konto jest zawieszone lub subskrypcja wygasła
+            if (data.isSuspended || data.isSubscriptionExpired || data.isPastDue || data.isCancelled || data.status === 'PAST_DUE' || data.status === 'CANCELLED') {
+              console.log('⚠️ Konto zawieszone lub subskrypcja wymaga odnowienia:', data.status, 'isSuspended:', data.isSuspended);
               setIsPastDue(true); // Używamy tego samego stanu dla obu przypadków
-              setPaymentError(data.lastPaymentError || 'Subskrypcja wygasła lub płatność nieudana');
+              setPaymentError(data.suspendedReason || data.lastPaymentError || 'Subskrypcja wygasła - odnów aby kontynuować');
               setLoading(false);
+              setStatusChecked(true); // Pozwól na wyświetlenie formularza płatności
               return;
             }
             
@@ -280,11 +281,18 @@ export default function CheckoutPage() {
               </button>
 
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => {
+                  // Wyloguj użytkownika
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('rezerwacja24_session');
+                  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                  router.push('/login');
+                }}
                 className="w-full text-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors flex items-center justify-center gap-2 py-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                {isEnglish ? 'Back to dashboard' : 'Wróć do panelu'}
+                {isEnglish ? 'Log out' : 'Wyloguj się'}
               </button>
             </div>
 

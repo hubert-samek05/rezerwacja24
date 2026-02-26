@@ -307,6 +307,13 @@ export default function HomePage() {
                       {t.nav.pricing}
                     </a>
                     <Link 
+                      href="/firmy" 
+                      onClick={() => setMobileMenuOpen(false)} 
+                      className="block py-3 px-4 text-base text-gray-700 hover:bg-gray-50 font-medium rounded-xl transition-colors"
+                    >
+                      {locale === 'pl' ? 'Katalog firm' : 'Directory'}
+                    </Link>
+                    <Link 
                       href="/contact" 
                       onClick={() => setMobileMenuOpen(false)} 
                       className="block py-3 px-4 text-base text-gray-700 hover:bg-gray-50 font-medium rounded-xl transition-colors"
@@ -1921,6 +1928,10 @@ export default function HomePage() {
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-teal-400 flex-shrink-0" />
                   <span className="text-white font-medium">{locale === 'pl' ? '0% prowizji' : '0% commission'}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Star className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <span className="text-amber-400 font-medium">{locale === 'pl' ? 'Wyróżnienie w katalogu firm' : 'Featured in business catalog'}</span>
                 </div>
               </div>
               

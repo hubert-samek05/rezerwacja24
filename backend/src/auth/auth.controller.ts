@@ -339,20 +339,68 @@ export class AuthController {
 
   @Public()
   @Post('apple/native')
-  async appleNativeAuth(@Body() body: any) {
-    // Endpoint dla natywnego Sign in with Apple z iOS
+  async appleNativeAuth(@Body() body: any, @Res() res: Response) {
+    // Endpoint dla natywnego Sign in with Apple z iOS (iPhone i iPad)
     this.logger.log(`🍎 Native Apple Sign In received`);
+    this.logger.debug(`Device type: ${body.deviceType || 'unknown'}`);
     
     try {
-      const { identityToken, authorizationCode, user, email, givenName, familyName } = body;
+      const { identityToken, authorizationCode, user, email, givenName, familyName, deviceType } = body;
       
+      // Walidacja wymaganych pól
       if (!identityToken) {
-        throw new Error('Missing identity token');
+        this.logger.error('🍎 Missing identity token in request');
+        return res.status(400).json({ 
+          message: 'Brak tokenu autoryzacji Apple',
+          error: 'missing_identity_token' 
+        });
       }
       
       // Dekoduj identity token (JWT) żeby wyciągnąć dane użytkownika
-      const tokenParts = identityToken.split('.');
-      const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+      let payload: any;
+      try {
+        const tokenParts = identityToken.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid JWT format');
+        }
+        // Dekoduj base64url (Apple używa base64url, nie standardowego base64)
+        const base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+        payload = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+      } catch (decodeError) {
+        this.logger.error(`🍎 Failed to decode identity token: ${decodeError.message}`);
+        return res.status(400).json({ 
+          message: 'Nieprawidłowy token Apple',
+          error: 'invalid_token_format' 
+        });
+      }
+      
+      // Walidacja payload
+      if (!payload.sub) {
+        this.logger.error('🍎 Token payload missing sub (Apple ID)');
+        return res.status(400).json({ 
+          message: 'Token nie zawiera identyfikatora Apple',
+          error: 'missing_apple_id' 
+        });
+      }
+      
+      // Sprawdź czy token nie wygasł
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        this.logger.error('🍎 Token expired');
+        return res.status(401).json({ 
+          message: 'Token Apple wygasł. Spróbuj ponownie.',
+          error: 'token_expired' 
+        });
+      }
+      
+      // Sprawdź issuer (powinien być Apple)
+      if (payload.iss !== 'https://appleid.apple.com') {
+        this.logger.error(`🍎 Invalid token issuer: ${payload.iss}`);
+        return res.status(401).json({ 
+          message: 'Nieprawidłowy wystawca tokenu',
+          error: 'invalid_issuer' 
+        });
+      }
       
       const appleUser = {
         appleId: payload.sub,
@@ -361,14 +409,23 @@ export class AuthController {
         lastName: familyName || 'User',
       };
       
-      this.logger.log(`🍎 Native Apple user: ${appleUser.email || appleUser.appleId}`);
+      this.logger.log(`🍎 Native Apple user: ${appleUser.email || appleUser.appleId} (${deviceType || 'unknown device'})`);
       
       const result = await this.authService.appleLogin(appleUser);
       
-      return result;
+      this.logger.log(`🍎 Native Apple Sign In successful for: ${appleUser.email || appleUser.appleId}`);
+      
+      return res.status(200).json(result);
     } catch (error) {
-      this.logger.error(`Native Apple Sign In error: ${error.message}`);
-      throw error;
+      this.logger.error(`🍎 Native Apple Sign In error: ${error.message}`);
+      this.logger.error(error.stack);
+      
+      // Zwróć czytelny błąd
+      return res.status(500).json({ 
+        message: 'Błąd logowania przez Apple. Spróbuj ponownie.',
+        error: 'internal_error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   }
 

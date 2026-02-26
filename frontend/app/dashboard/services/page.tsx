@@ -18,7 +18,7 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [loading, setLoading] = useState(true)
-  const [deleteModal, setDeleteModal] = useState<{ show: boolean; service: Service | null }>({ show: false, service: null })
+  const [deleteModal, setDeleteModal] = useState<{ show: boolean; service: Service | null; confirmStep: number }>({ show: false, service: null, confirmStep: 1 })
   const [serviceModal, setServiceModal] = useState<{ show: boolean; service: Service | null }>({ show: false, service: null })
 
   useEffect(() => {
@@ -51,15 +51,24 @@ export default function ServicesPage() {
   }
 
   const handleDelete = async (service: Service) => {
-    setDeleteModal({ show: true, service })
+    setDeleteModal({ show: true, service, confirmStep: 1 })
   }
 
   const confirmDelete = async () => {
     if (!deleteModal.service) return
+    
+    // Jeśli usługa ma rezerwacje i jesteśmy na kroku 1, przejdź do kroku 2 (podwójne potwierdzenie)
+    const hasBookings = deleteModal.service._count && deleteModal.service._count.bookings > 0
+    if (hasBookings && deleteModal.confirmStep === 1) {
+      setDeleteModal({ ...deleteModal, confirmStep: 2 })
+      return
+    }
+    
     try {
-      await servicesApi.delete(deleteModal.service.id)
+      // Dla usług z rezerwacjami użyj force=true
+      await servicesApi.delete(deleteModal.service.id, hasBookings)
       toast.success(t.services?.deleted || 'Service deleted')
-      setDeleteModal({ show: false, service: null })
+      setDeleteModal({ show: false, service: null, confirmStep: 1 })
       loadData()
     } catch (error: any) {
       toast.error(error.response?.data?.message || t.services?.deleteError || 'Failed to delete service')
@@ -221,34 +230,81 @@ export default function ServicesPage() {
 
       {/* Delete Modal */}
       {deleteModal.show && deleteModal.service && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setDeleteModal({ show: false, service: null })}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setDeleteModal({ show: false, service: null, confirmStep: 1 })}>
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md w-full max-h-[calc(100vh-120px)] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">{t.services?.deleteService || 'Delete service'}</h3>
-              <button onClick={() => setDeleteModal({ show: false, service: null })} className="p-2 hover:bg-[var(--bg-card-hover)] rounded-lg transition-colors">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                {deleteModal.confirmStep === 2 ? (t.services?.confirmDeleteTitle || 'Potwierdź usunięcie') : (t.services?.deleteService || 'Delete service')}
+              </h3>
+              <button onClick={() => setDeleteModal({ show: false, service: null, confirmStep: 1 })} className="p-2 hover:bg-[var(--bg-card-hover)] rounded-lg transition-colors">
                 <X className="w-5 h-5 text-[var(--text-muted)]" />
               </button>
             </div>
-            <p className="text-sm text-[var(--text-muted)] mb-6">
-              {t.services?.deleteConfirm || 'Are you sure you want to delete service'} <strong className="text-[var(--text-primary)]">{deleteModal.service.name}</strong>?
-              {deleteModal.service._count && deleteModal.service._count.bookings > 0 && (
-                <span className="block mt-2 text-red-500">
-                  {t.services?.hasBookings?.replace('{count}', deleteModal.service._count.bookings.toString()) || `This service has ${deleteModal.service._count.bookings} bookings.`}
-                </span>
-              )}
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteModal({ show: false, service: null })} className="flex-1 px-4 py-2.5 border border-[var(--border-color)] text-[var(--text-muted)] rounded-lg text-sm">
-                {t.common?.cancel || 'Cancel'}
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={deleteModal.service._count && deleteModal.service._count.bookings > 0}
-                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg disabled:opacity-50 text-sm"
-              >
-                {t.common?.delete || 'Delete'}
-              </button>
-            </div>
+            
+            {/* Krok 1: Pierwsze potwierdzenie */}
+            {deleteModal.confirmStep === 1 && (
+              <>
+                <p className="text-sm text-[var(--text-muted)] mb-6">
+                  {t.services?.deleteConfirm || 'Are you sure you want to delete service'} <strong className="text-[var(--text-primary)]">{deleteModal.service.name}</strong>?
+                  {deleteModal.service._count && deleteModal.service._count.bookings > 0 && (
+                    <span className="block mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-700 dark:text-amber-400">
+                      <strong>Uwaga:</strong> Ta usługa ma {deleteModal.service._count.bookings} rezerwacji. 
+                      Możesz ją usunąć, ale będzie to wymagało dodatkowego potwierdzenia.
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-3">
+                  <button onClick={() => setDeleteModal({ show: false, service: null, confirmStep: 1 })} className="flex-1 px-4 py-2.5 border border-[var(--border-color)] text-[var(--text-muted)] rounded-lg text-sm">
+                    {t.common?.cancel || 'Cancel'}
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                  >
+                    {deleteModal.service._count && deleteModal.service._count.bookings > 0 
+                      ? (t.services?.continueDelete || 'Kontynuuj usuwanie')
+                      : (t.common?.delete || 'Delete')}
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {/* Krok 2: Drugie potwierdzenie dla usług z rezerwacjami */}
+            {deleteModal.confirmStep === 2 && (
+              <>
+                <div className="mb-6">
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-4">
+                    <p className="text-red-700 dark:text-red-400 font-semibold mb-2">⚠️ Ostateczne ostrzeżenie</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      Usuwasz usługę <strong>{deleteModal.service.name}</strong> która ma <strong>{deleteModal.service._count?.bookings || 0} rezerwacji</strong>.
+                    </p>
+                  </div>
+                  <div className="text-sm text-[var(--text-muted)] space-y-2">
+                    <p><strong>Co się stanie po usunięciu:</strong></p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Usługa zostanie trwale usunięta z systemu</li>
+                      <li>Powiązane rezerwacje pozostaną w historii, ale bez przypisanej usługi</li>
+                      <li>Klienci nie będą mogli już rezerwować tej usługi</li>
+                      <li><strong className="text-red-500">Ta operacja jest nieodwracalna!</strong></li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setDeleteModal({ ...deleteModal, confirmStep: 1 })} 
+                    className="flex-1 px-4 py-2.5 border border-[var(--border-color)] text-[var(--text-muted)] rounded-lg text-sm"
+                  >
+                    {t.common?.back || 'Wróć'}
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors font-semibold"
+                  >
+                    {t.services?.confirmDelete || 'Tak, usuń bezpowrotnie'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

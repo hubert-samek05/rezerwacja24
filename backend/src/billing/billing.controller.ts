@@ -115,19 +115,46 @@ export class BillingController {
     let daysUntilBlock = 0;
     const GRACE_PERIOD_DAYS = 3;
     let shouldSuspend = false;
+    const now = new Date();
+    
+    // Oblicz dni do końca okresu rozliczeniowego (dla aktywnych subskrypcji)
+    let daysUntilPeriodEnd = 0;
+    let isSubscriptionEnding = false;
+    let isSubscriptionExpired = false;
     
     if (subscription) {
       const isPastDue = subscription.status === 'PAST_DUE';
+      const isActive = subscription.status === 'ACTIVE';
+      const isCancelled = subscription.status === 'CANCELLED';
       
       // Trial wygasł TYLKO jeśli data trialEnd jest w przeszłości
-      const now = new Date();
       const trialEndDate = subscription.trialEnd ? new Date(subscription.trialEnd) : null;
       const isTrialExpired = subscription.status === 'TRIALING' && trialEndDate && trialEndDate < now;
       
+      // Oblicz dni do końca okresu rozliczeniowego (dla ACTIVE subskrypcji)
+      if (subscription.currentPeriodEnd) {
+        const periodEnd = new Date(subscription.currentPeriodEnd);
+        daysUntilPeriodEnd = Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Subskrypcja kończy się wkrótce (3 dni lub mniej) - dla płacących klientów z anulowaniem
+        if (isActive && subscription.cancelAtPeriodEnd && daysUntilPeriodEnd <= 3 && daysUntilPeriodEnd > 0) {
+          isSubscriptionEnding = true;
+        }
+        
+        // Subskrypcja wygasła - różne scenariusze:
+        // 1. Status CANCELLED
+        // 2. cancelAtPeriodEnd=true i okres się skończył
+        // 3. Okres rozliczeniowy minął (currentPeriodEnd < now) - niezależnie od statusu
+        //    To może się zdarzyć gdy Stripe nie zdążył zaktualizować statusu
+        const periodExpired = periodEnd < now;
+        if (isCancelled || (subscription.cancelAtPeriodEnd && daysUntilPeriodEnd <= 0) || periodExpired) {
+          isSubscriptionExpired = true;
+        }
+      }
       
-      if (isPastDue || isTrialExpired) {
+      if (isPastDue || isTrialExpired || isSubscriptionExpired) {
         // Oblicz dni od wygaśnięcia
-        const expiredDate = subscription.trialEnd || subscription.currentPeriodEnd;
+        const expiredDate = isTrialExpired ? subscription.trialEnd : subscription.currentPeriodEnd;
         if (expiredDate) {
           const expired = new Date(expiredDate);
           const daysSinceExpired = Math.floor((now.getTime() - expired.getTime()) / (1000 * 60 * 60 * 24));
@@ -141,10 +168,18 @@ export class BillingController {
       }
     }
     
-    // Automatyczna blokada konta po grace period - TYLKO jeśli trial naprawdę wygasł
-    if (shouldSuspend && tenantId) {
+    // Sprawdź czy konto jest już zawieszone
+    const tenant = subscription?.tenants;
+    const isSuspended = tenant?.isSuspended || false;
+    const suspendedReason = tenant?.suspendedReason || null;
+    
+    // Automatyczna blokada konta po grace period
+    if (shouldSuspend && tenantId && !isSuspended) {
+      const reason = isInTrial 
+        ? 'Okres próbny wygasł - brak aktywnej subskrypcji'
+        : 'Subskrypcja wygasła - brak płatności';
       this.logger.warn(`🚫 Blokowanie konta ${tenantId} - grace period minął`);
-      await this.billingService.suspendTenantIfNeeded(tenantId, 'Okres próbny wygasł - brak aktywnej subskrypcji');
+      await this.billingService.suspendTenantIfNeeded(tenantId, reason);
     }
 
     return {
@@ -165,6 +200,14 @@ export class BillingController {
       // Dni do zablokowania konta
       daysUntilBlock,
       gracePeriodDays: GRACE_PERIOD_DAYS,
+      // Nowe pola dla płacących klientów (nie trial)
+      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
+      daysUntilPeriodEnd: Math.max(0, daysUntilPeriodEnd),
+      isSubscriptionEnding, // Subskrypcja kończy się za <=3 dni
+      isSubscriptionExpired, // Subskrypcja wygasła
+      // Status zawieszenia konta
+      isSuspended,
+      suspendedReason,
     };
   }
 
@@ -374,5 +417,180 @@ export class BillingController {
     @Req() req: RawBodyRequest<Request>,
   ) {
     return this.stripeService.handleWebhook(signature, req.rawBody);
+  }
+
+  // ==================== APPLE IN-APP PURCHASE ====================
+  // Wymagane przez Apple Guideline 3.1.1 - płatności muszą być dostępne przez IAP
+
+  /**
+   * Weryfikuje zakup Apple In-App Purchase
+   * Wywoływane po udanym zakupie w aplikacji iOS
+   */
+  @RequiresSubscription(false)
+  @Post('apple/verify-purchase')
+  async verifyApplePurchase(
+    @Req() req: any,
+    @Body() body: { productId: string; transactionId: string; receipt?: string },
+  ) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    
+    if (!tenantId) {
+      throw new BadRequestException('Brak tenant ID');
+    }
+
+    this.logger.log(`🍎 Apple IAP verification - tenant: ${tenantId}, product: ${body.productId}`);
+
+    try {
+      // Mapowanie Apple product ID na plan
+      const planMapping: Record<string, string> = {
+        'pl.rezerwacja24.starter.monthly': 'starter',
+        'pl.rezerwacja24.standard.monthly': 'standard',
+        'pl.rezerwacja24.pro.monthly': 'pro',
+        'pl.rezerwacja24.starter.yearly': 'starter',
+        'pl.rezerwacja24.standard.yearly': 'standard',
+        'pl.rezerwacja24.pro.yearly': 'pro',
+      };
+
+      const planSlug = planMapping[body.productId];
+      if (!planSlug) {
+        throw new BadRequestException(`Nieznany produkt: ${body.productId}`);
+      }
+
+      // Znajdź plan w bazie
+      const plan = await this.billingService.getPlanBySlug(planSlug);
+      if (!plan) {
+        throw new BadRequestException(`Plan nie znaleziony: ${planSlug}`);
+      }
+
+      // TODO: W produkcji - weryfikuj receipt z Apple Server
+      // https://developer.apple.com/documentation/appstoreserverapi
+      // Na razie ufamy aplikacji (dla MVP)
+
+      // Aktywuj subskrypcję
+      const isYearly = body.productId.includes('.yearly');
+      const periodDays = isYearly ? 365 : 30;
+      const now = new Date();
+      const periodEnd = new Date(now.getTime() + periodDays * 24 * 60 * 60 * 1000);
+
+      const subscription = await this.billingService.activateAppleSubscription(tenantId, {
+        planId: plan.id,
+        appleTransactionId: body.transactionId,
+        appleProductId: body.productId,
+        periodStart: now,
+        periodEnd: periodEnd,
+        isYearly,
+      });
+
+      this.logger.log(`🍎 Apple IAP activated - tenant: ${tenantId}, plan: ${planSlug}`);
+
+      return {
+        success: true,
+        message: 'Subskrypcja aktywowana',
+        subscription: {
+          id: subscription.id,
+          planName: plan.name,
+          status: 'ACTIVE',
+          currentPeriodEnd: periodEnd,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`🍎 Apple IAP verification error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Przywraca zakupy Apple (dla użytkowników którzy reinstalowali aplikację)
+   */
+  @RequiresSubscription(false)
+  @Post('apple/restore')
+  async restoreApplePurchases(
+    @Req() req: any,
+    @Body() body: { subscriptions: string[] },
+  ) {
+    const tenantId = req.headers['x-tenant-id'] || req.user?.tenantId;
+    
+    if (!tenantId) {
+      throw new BadRequestException('Brak tenant ID');
+    }
+
+    this.logger.log(`🍎 Apple restore purchases - tenant: ${tenantId}, subscriptions: ${body.subscriptions?.length || 0}`);
+
+    try {
+      // Sprawdź czy tenant ma aktywną subskrypcję Apple
+      const subscription = await this.billingService.getSubscription(tenantId);
+      
+      if (subscription?.appleTransactionId) {
+        // Subskrypcja Apple istnieje - sprawdź czy jest aktywna
+        const isActive = subscription.status === 'ACTIVE' && 
+                        new Date(subscription.currentPeriodEnd) > new Date();
+        
+        return {
+          success: true,
+          restored: isActive,
+          subscription: isActive ? {
+            planName: subscription.subscription_plans?.name,
+            status: subscription.status,
+            currentPeriodEnd: subscription.currentPeriodEnd,
+          } : null,
+        };
+      }
+
+      return {
+        success: true,
+        restored: false,
+        message: 'Brak zakupów do przywrócenia',
+      };
+    } catch (error) {
+      this.logger.error(`🍎 Apple restore error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Webhook od Apple (Server-to-Server Notifications)
+   * https://developer.apple.com/documentation/appstoreservernotifications
+   */
+  @Public()
+  @Post('apple/webhook')
+  @HttpCode(HttpStatus.OK)
+  async handleAppleWebhook(@Body() body: any) {
+    this.logger.log(`🍎 Apple webhook received: ${body.notificationType || 'unknown'}`);
+    
+    try {
+      // TODO: Implementacja obsługi webhooków Apple
+      // Typy notyfikacji:
+      // - SUBSCRIBED - nowa subskrypcja
+      // - DID_RENEW - odnowienie
+      // - DID_FAIL_TO_RENEW - nieudane odnowienie
+      // - EXPIRED - wygaśnięcie
+      // - REFUND - zwrot
+      
+      const notificationType = body.notificationType;
+      
+      switch (notificationType) {
+        case 'SUBSCRIBED':
+        case 'DID_RENEW':
+          // Subskrypcja aktywna - nic nie robimy, bo już aktywowaliśmy przy zakupie
+          break;
+          
+        case 'DID_FAIL_TO_RENEW':
+        case 'EXPIRED':
+          // Subskrypcja wygasła - oznacz jako nieaktywną
+          // TODO: Znajdź tenant po appleTransactionId i zaktualizuj status
+          this.logger.warn(`🍎 Subscription expired/failed: ${body.originalTransactionId}`);
+          break;
+          
+        case 'REFUND':
+          // Zwrot - anuluj subskrypcję
+          this.logger.warn(`🍎 Refund received: ${body.originalTransactionId}`);
+          break;
+      }
+      
+      return { received: true };
+    } catch (error) {
+      this.logger.error(`🍎 Apple webhook error: ${error.message}`);
+      return { received: true, error: error.message };
+    }
   }
 }

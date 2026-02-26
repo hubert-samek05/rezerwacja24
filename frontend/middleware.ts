@@ -176,13 +176,8 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url))
       }
 
-      // Sprawdź subskrypcję
-      const hasAccess = await checkSubscriptionAccess(token, hostname)
-      
-      if (!hasAccess) {
-        // Brak subskrypcji - przekieruj do ustawień (nie checkout)
-        return NextResponse.redirect(new URL('/dashboard/settings', request.url))
-      }
+      // Nie blokujemy dostępu do dashboardu - baner o zawieszeniu wyświetla się w komponencie
+      // Funkcje są blokowane przez backend (SubscriptionGuard) i frontend (useRequireSubscription)
     }
     
     // Redirect root to dashboard
@@ -261,6 +256,11 @@ async function checkSubscriptionAccess(token: string, hostname: string): Promise
     }
 
     const data = await response.json()
+    
+    // Blokuj jeśli konto jest zawieszone
+    if (data?.isSuspended) {
+      return false
+    }
     
     // Pozwól jeśli ma aktywną subskrypcję LUB jest w trial
     return Boolean(data?.hasActiveSubscription) || Boolean(data?.isInTrial)

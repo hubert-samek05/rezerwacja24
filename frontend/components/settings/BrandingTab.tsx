@@ -23,6 +23,7 @@ const defaultPageSettings: PageSettings = {
   showAddress: true,
   showPhone: true,
   showEmail: true,
+  showTeam: false, // Domyślnie ukryte
   primaryColor: '#0F6048',
   accentColor: '#41FFBC',
   heroStyle: 'banner',
@@ -283,6 +284,7 @@ export default function BrandingTab({ companyData, setCompanyData, onSave, isLoa
               { key: 'showServicePrices', label: 'Ceny usług', desc: 'Pokazuj ceny na liście usług' },
               { key: 'showServiceDuration', label: 'Czas trwania', desc: 'Pokazuj czas trwania usług' },
               { key: 'showEmployeeSelection', label: 'Wybór specjalisty', desc: 'Pozwól klientom wybrać specjalistę' },
+              { key: 'showTeam', label: 'Sekcja Zespół', desc: 'Pokazuj sekcję z pracownikami na stronie' },
               { key: 'showDescription', label: 'Opis firmy', desc: 'Pokazuj opis firmy w nagłówku' },
               { key: 'showSocialMedia', label: 'Media społecznościowe', desc: 'Pokazuj linki do social media' },
               { key: 'showAddress', label: 'Adres', desc: 'Pokazuj adres firmy' },

@@ -175,6 +175,12 @@ export class BookingsService {
       },
     });
 
+    // 📊 Aktualizuj bookingCount w marketplace (w tle, nie blokuj)
+    this.prisma.marketplace_listings.updateMany({
+      where: { tenantId },
+      data: { bookingCount: { increment: 1 } },
+    }).catch((err) => this.logger.error('Błąd aktualizacji bookingCount:', err));
+
     // 📦 Jeśli to rezerwacja pakietu, utwórz powiązanie w package_bookings
     if (createBookingDto.packageId) {
       try {
@@ -504,6 +510,16 @@ export class BookingsService {
     if (updateBookingDto.status) updateData.status = updateBookingDto.status;
     if (updateBookingDto.customerNotes !== undefined) updateData.customerNotes = updateBookingDto.customerNotes;
     if (updateBookingDto.totalPrice !== undefined) updateData.totalPrice = updateBookingDto.totalPrice;
+
+    // Jeśli status zmienia się na CANCELLED - zapisz kto anulował
+    if (updateBookingDto.status === 'CANCELLED' && oldBooking.status !== 'CANCELLED') {
+      updateData.cancelledAt = new Date();
+      // Określ kto anulował na podstawie updatedByType lub domyślnie 'employee'
+      const cancelledByType = updateBookingDto.updatedByType || 'employee';
+      updateData.cancelledBy = cancelledByType;
+      updateData.cancellationReason = updateBookingDto.cancellationReason || 
+        (cancelledByType === 'owner' ? 'Anulowano przez właściciela' : 'Anulowano przez pracownika');
+    }
 
     // Pola płatności
     if (updateBookingDto.isPaid !== undefined) updateData.isPaid = updateBookingDto.isPaid;

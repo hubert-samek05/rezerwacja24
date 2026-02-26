@@ -124,7 +124,12 @@ export class PublicBookingController {
 
     await this.prisma.bookings.update({
       where: { id },
-      data: { status: 'CANCELLED' },
+      data: { 
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+        cancelledBy: 'customer',
+        cancellationReason: 'Anulowano przez klienta',
+      },
     });
 
     const message = hasDeposit 

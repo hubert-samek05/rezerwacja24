@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar, CalendarDays, Clock, MapPin, Phone, Mail, Star,
   Facebook, Instagram, Globe as GlobeIcon, ArrowRight, Loader2,
-  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet, Info
+  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet, Info, Building2, Heart, Share2
 } from 'lucide-react'
 
 interface Service {
@@ -43,6 +44,7 @@ interface PageSettings {
   showAddress?: boolean
   showPhone?: boolean
   showEmail?: boolean
+  showTeam?: boolean // Pokaż sekcję Zespół na stronie
   primaryColor?: string
   accentColor?: string
   heroStyle?: 'banner' | 'minimal' | 'none'
@@ -134,6 +136,8 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const [serviceDetailData, setServiceDetailData] = useState<Service | null>(null)
   // Info o płatności po powrocie ze Stripe
   const [paymentSuccessInfo, setPaymentSuccessInfo] = useState<{ bookingId: string; status: 'paid' | 'processing' | 'cancelled' } | null>(null)
+  // Modal wyboru usługi (gdy ktoś kliknie "Zarezerwuj wizytę")
+  const [servicePickerModal, setServicePickerModal] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -307,6 +311,25 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     }
     loadCompanyData()
   }, [params.subdomain])
+
+  // Śledź wyświetlenie strony (tylko raz na sesję)
+  useEffect(() => {
+    if (company?.userId) {
+      const viewKey = `tracked_view_${company.userId}`
+      const lastView = sessionStorage.getItem(viewKey)
+      const now = Date.now()
+      // Śledź tylko raz na 30 minut
+      if (!lastView || now - parseInt(lastView) > 30 * 60 * 1000) {
+        sessionStorage.setItem(viewKey, now.toString())
+        const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') ? 'https://api.rezerwacja24.pl' : 'http://localhost:3001'
+        fetch(`${apiUrl}/api/marketplace/track-view`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId: company.userId })
+        }).catch(() => {}) // Ignoruj błędy - to nie jest krytyczne
+      }
+    }
+  }, [company?.userId])
 
   // Pobierz pakiety po załadowaniu danych firmy
   useEffect(() => {
@@ -807,7 +830,20 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-white">
+      {/* ========== FLOATING MOBILE BOOKING BUTTON ========== */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-white via-white to-transparent pb-safe">
+        <motion.button
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          onClick={() => setServicePickerModal(true)}
+          className="w-full py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-gray-900/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
+        >
+          <Calendar className="w-5 h-5" />
+          Zarezerwuj wizytę
+        </motion.button>
+      </div>
+
       {/* ========== ALERT O NIEOPŁACONEJ REZERWACJI ========== */}
       {pendingPaymentAlert?.show && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-white px-4 py-3 shadow-lg">
@@ -821,7 +857,6 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  // Przekieruj do strony błędu płatności (użyj /payment/error bez subdomeny w path)
                   window.location.href = `/payment/error?bookingId=${pendingPaymentAlert.bookingId}&error=Płatność%20została%20anulowana`
                 }}
                 className="px-3 py-1.5 bg-white text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors"
@@ -843,109 +878,198 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         </div>
       )}
       
-      {/* ========== BANER HERO ========== */}
+      {/* ========== HERO SECTION - IMMERSIVE ========== */}
       {pageSettings.heroStyle !== 'none' && (
-        <section className={`relative ${pageSettings.heroStyle === 'minimal' ? 'min-h-[280px] sm:min-h-[320px]' : 'min-h-[420px] sm:min-h-[480px] md:min-h-[520px]'}`}>
-          {/* Tło - baner lub gradient */}
-          <div className="absolute inset-0">
-            {pageSettings.heroStyle === 'banner' && company.banner ? (
-              <img src={company.banner} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-900 to-teal-900" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
-          </div>
-
-          {/* Górna nawigacja - tylko social media */}
-          <div className="absolute top-0 left-0 right-0 z-10">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex justify-end items-center">
-              {pageSettings.showSocialMedia && (
-                <div className="flex items-center gap-2">
-                  {company.socialMedia?.facebook && (
-                    <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-105">
-                      <Facebook className="w-4 h-4 sm:w-5 sm:h-5 text-[#1877F2]" />
-                    </a>
-                  )}
-                  {company.socialMedia?.instagram && (
-                    <a href={company.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-105">
-                      <Instagram className="w-4 h-4 sm:w-5 sm:h-5 text-[#E4405F]" />
-                    </a>
-                  )}
-                  {company.socialMedia?.website && (
-                    <a href={company.socialMedia.website} target="_blank" rel="noopener noreferrer" className="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-105">
-                      <GlobeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
-                    </a>
-                  )}
-                </div>
+        <section className="relative">
+          {/* Mobile Hero - Full Screen */}
+          <div className="lg:hidden relative min-h-[70vh] flex flex-col">
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <Image 
+                src={company.banner || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80'} 
+                alt={company.businessName || 'Banner'} 
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+                quality={85}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 flex-1 flex flex-col justify-end p-6 pb-8">
+              {/* Logo */}
+              {company.logo && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4"
+                >
+                  <div className="inline-block bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20">
+                    <img src={company.logo} alt={company.businessName} className="h-10 w-auto" />
+                  </div>
+                </motion.div>
               )}
+              
+              {/* Title */}
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight"
+              >
+                {company.businessName}
+              </motion.h1>
+              
+              {/* Rating & Info */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="flex flex-wrap items-center gap-3 text-white/90 text-sm mb-4"
+              >
+                <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span className="font-semibold">5.0</span>
+                </div>
+                {company.address && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4" />
+                    <span className="truncate max-w-[200px]">{company.city || company.address}</span>
+                  </div>
+                )}
+              </motion.div>
+              
+              {/* Quick Stats */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex gap-6 text-white/80 text-sm"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{company.services?.length || 0}</div>
+                  <div className="text-xs">usług</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{company.employees?.length || 1}</div>
+                  <div className="text-xs">specjalistów</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">100%</div>
+                  <div className="text-xs">zadowolonych</div>
+                </div>
+              </motion.div>
             </div>
           </div>
 
-          {/* Treść banera - Logo, nazwa, opis */}
-          <div className="relative z-[1] flex items-center min-h-[inherit] py-16 sm:py-20">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full">
-              <div className="max-w-2xl">
-                {/* Logo */}
-                {company.logo && (
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-6">
-                    <div className="inline-block bg-white p-2 sm:p-3 rounded-xl sm:rounded-2xl shadow-2xl">
-                      <img src={company.logo} alt={company.businessName} className="h-12 sm:h-14 md:h-16 w-auto max-w-[120px] sm:max-w-[150px] object-contain" />
-                    </div>
-                  </motion.div>
-                )}
+          {/* Desktop Hero */}
+          <div className="hidden lg:block bg-white">
+            {/* Breadcrumbs */}
+            <div className="border-b border-gray-100">
+              <div className="max-w-7xl mx-auto px-6 py-3">
+                <nav className="flex items-center gap-2 text-sm text-gray-500">
+                  <a href="https://rezerwacja24.pl" className="hover:text-gray-700 transition-colors">Strona główna</a>
+                  <ChevronRight className="w-4 h-4" />
+                <span className="text-gray-900 font-medium truncate">{company.businessName}</span>
+              </nav>
+            </div>
+          </div>
 
-                {/* Nazwa firmy */}
-                <motion.h1 
-                  initial={{ opacity: 0, y: 20 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: 0.1 }}
-                  className={`font-bold text-white mb-3 sm:mb-4 leading-tight ${pageSettings.heroStyle === 'minimal' ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl'}`}
-                >
+          {/* Nagłówek z info */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
                   {company.businessName}
-                </motion.h1>
-
-                {/* Opis - skrócony w hero, max 180 znaków */}
-                {pageSettings.showDescription && company.description && pageSettings.heroStyle === 'banner' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.2 }}
-                    className="mb-6 sm:mb-8 max-w-xl"
-                  >
-                    <p className="text-sm sm:text-base md:text-lg text-white/90 leading-relaxed">
-                      {company.description.length > 180 
-                        ? `${company.description.slice(0, 180).trim()}...` 
-                        : company.description}
-                    </p>
-                    {company.description.length > 180 && (
-                      <button
-                        onClick={() => document.getElementById('o-nas')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="mt-2 text-sm text-white/70 hover:text-white flex items-center gap-1 transition-colors"
-                      >
-                        <span>Czytaj więcej</span>
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Przyciski */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                  <button
-                    onClick={() => document.getElementById('uslugi')?.scrollIntoView({ behavior: 'smooth' })}
-                    className={`px-5 sm:px-7 py-3 sm:py-3.5 text-white font-semibold ${getButtonRoundedClass()} transition-all shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base`}
-                    style={{ backgroundColor: pageSettings.primaryColor }}
-                  >
-                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Zarezerwuj wizytę
-                  </button>
-                  {pageSettings.showAddress !== false && company.address && (
-                    <div className={`px-4 sm:px-5 py-3 sm:py-3.5 bg-slate-900/90 backdrop-blur text-white ${getButtonRoundedClass()} flex items-center justify-center gap-2 border border-slate-700`}>
-                      <MapPin className="w-4 h-4 text-teal-400 flex-shrink-0" style={{ color: pageSettings.accentColor }} />
-                      <span className="text-xs sm:text-sm truncate">{company.address}, {company.city}</span>
-                    </div>
+                </h1>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                  {/* Ocena - placeholder */}
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span className="font-semibold text-gray-900">5.0</span>
+                    <span className="text-gray-400">(0)</span>
+                  </div>
+                  <span className="text-gray-300">•</span>
+                  {/* Status otwarcia */}
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" />
+                    <span>Otwarte</span>
+                  </div>
+                  {company.address && (
+                    <>
+                      <span className="text-gray-300">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4" />
+                        <span className="truncate max-w-[200px]">{company.address}, {company.city}</span>
+                      </div>
+                    </>
                   )}
-                </motion.div>
+                </div>
+              </div>
+              {/* Przyciski akcji */}
+              <div className="flex items-center gap-2">
+                {pageSettings.showSocialMedia && company.socialMedia?.facebook && (
+                  <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" 
+                     className="w-10 h-10 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+                    <Facebook className="w-5 h-5 text-gray-600" />
+                  </a>
+                )}
+                {pageSettings.showSocialMedia && company.socialMedia?.instagram && (
+                  <a href={company.socialMedia.instagram} target="_blank" rel="noopener noreferrer"
+                     className="w-10 h-10 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+                    <Instagram className="w-5 h-5 text-gray-600" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Galeria zdjęć - styl Booksy - zawsze pokazuj (z domyślnym zdjęciem jeśli brak) */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
+            <div className="grid grid-cols-4 gap-2 rounded-2xl overflow-hidden h-[280px] sm:h-[360px] lg:h-[420px]">
+              {/* Główne zdjęcie */}
+              <div className="col-span-4 sm:col-span-2 row-span-2 relative bg-gray-100">
+                <Image 
+                  src={company.banner || (company as any).gallery?.[0] || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80'} 
+                  alt={company.businessName || 'Banner'} 
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 100vw, 50vw"
+                  className="object-cover"
+                  quality={85}
+                />
+              </div>
+                {/* Mniejsze zdjęcia - tylko na większych ekranach */}
+                {((company as any).gallery || []).slice(company.banner ? 0 : 1, 4).map((img: string, idx: number) => (
+                  <div key={idx} className="hidden sm:block relative bg-gray-100">
+                    <Image 
+                      src={img} 
+                      alt={`Zdjęcie ${idx + 2}`} 
+                      fill
+                      sizes="25vw"
+                      className="object-cover"
+                      quality={75}
+                    />
+                    {idx === 3 && (company as any).gallery?.length > 4 && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span className="text-white font-semibold text-lg">+{(company as any).gallery.length - 4}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {/* Placeholder jeśli brak galerii */}
+                {!((company as any).gallery?.length > 0) && (
+                  <>
+                    <div className="hidden sm:block relative bg-gray-100">
+                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />
+                    </div>
+                    <div className="hidden sm:block relative bg-gray-100">
+                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -954,34 +1078,59 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
 
       {/* ========== NAGŁÓWEK DLA TRYBU NONE ========== */}
       {pageSettings.heroStyle === 'none' && (
-        <div className="bg-white border-b border-slate-200 py-6">
-          <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
+            {/* Górny rząd - logo, social media */}
+            <div className="flex items-start justify-between gap-4 mb-3">
+              {/* Logo */}
               {company.logo && (
-                <img src={company.logo} alt={company.businessName} className="h-12 w-auto" />
-              )}
-              <h1 className="text-2xl font-bold text-slate-800">{company.businessName}</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              {company.phone && (
-                <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-slate-600 hover:text-slate-800 text-sm">
-                  <Phone className="w-4 h-4" />
-                  <span className="hidden sm:inline">{company.phone}</span>
-                </a>
-              )}
-              {pageSettings.showSocialMedia && (
-                <div className="flex items-center gap-2">
-                  {company.socialMedia?.facebook && (
-                    <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white border border-slate-200 hover:border-[#1877F2] rounded-full flex items-center justify-center transition-all hover:shadow-md">
-                      <Facebook className="w-4 h-4 text-[#1877F2]" />
-                    </a>
-                  )}
-                  {company.socialMedia?.instagram && (
-                    <a href={company.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white border border-slate-200 hover:border-[#E4405F] rounded-full flex items-center justify-center transition-all hover:shadow-md">
-                      <Instagram className="w-4 h-4 text-[#E4405F]" />
-                    </a>
-                  )}
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                  <img src={company.logo} alt={company.businessName} className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
                 </div>
+              )}
+              
+              {/* Social media i telefon */}
+              <div className="flex items-center gap-2">
+                {company.phone && (
+                  <a href={`tel:${company.phone}`} className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                    <Phone className="w-5 h-5 text-gray-600" />
+                  </a>
+                )}
+                {pageSettings.showSocialMedia && company.socialMedia?.facebook && (
+                  <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                    <Facebook className="w-5 h-5 text-gray-600" />
+                  </a>
+                )}
+                {pageSettings.showSocialMedia && company.socialMedia?.instagram && (
+                  <a href={company.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                    <Instagram className="w-5 h-5 text-gray-600" />
+                  </a>
+                )}
+              </div>
+            </div>
+            
+            {/* Nazwa firmy - pełna, bez obcinania */}
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight mb-2">
+              {company.businessName}
+            </h1>
+            
+            {/* Info - ocena i miasto */}
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <span className="font-semibold text-gray-900">5.0</span>
+              </div>
+              {company.city && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span>{company.city}</span>
+                </>
+              )}
+              {company.address && (
+                <>
+                  <span className="text-gray-300 hidden sm:inline">•</span>
+                  <span className="hidden sm:inline">{company.address}</span>
+                </>
               )}
             </div>
           </div>
@@ -1007,59 +1156,81 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         </section>
       )}
 
-      {/* ========== SEKCJA USŁUG ========== */}
-      <section id="uslugi" className="py-16 sm:py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          {/* Nagłówek */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">Nasze usługi</h2>
-            <p className="text-slate-500">Wybierz usługę i umów się na wizytę</p>
-          </div>
+      {/* ========== SEKCJA GŁÓWNA - LAYOUT Z SIDEBAR ========== */}
+      <section id="uslugi" className="py-8 sm:py-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* ===== LEWA KOLUMNA - USŁUGI ===== */}
+            <div className="flex-1 min-w-0">
+              {/* Nagłówek sekcji */}
+              <div className="mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Usługi</h2>
+              </div>
 
-          {/* Zakładki Usługi / Pakiety / Zajęcia grupowe */}
-          {(packages.length > 0 || groupBookings.length > 0) && (
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <button
-                onClick={() => setViewMode('services')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
-                  viewMode === 'services'
-                    ? 'bg-slate-800 text-white shadow-lg'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                Usługi
-              </button>
-              {packages.length > 0 && (
-              <button
-                onClick={() => setViewMode('packages')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
-                  viewMode === 'packages'
-                    ? 'bg-slate-800 text-white shadow-lg'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Package className="w-4 h-4" />
-                Pakiety
-                <span className="px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full">Oszczędź!</span>
-              </button>
+              {/* Zakładki kategorii - styl pills */}
+              {categories.length > 1 && viewMode === 'services' && (
+                <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-gray-200">
+                  {categories.map((cat) => {
+                    const catName = typeof cat === 'string' ? cat : String(cat)
+                    return (
+                      <button
+                        key={catName}
+                        onClick={() => setSelectedCategory(catName)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          selectedCategory === catName
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                      >
+                        {catName === 'all' ? 'Wszystkie' : catName}
+                      </button>
+                    )
+                  })}
+                </div>
               )}
-              {groupBookings.length > 0 && (
-              <button
-                onClick={() => setViewMode('group')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
-                  viewMode === 'group'
-                    ? 'bg-slate-800 text-white shadow-lg'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Zajęcia grupowe
-                <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">{groupBookings.length}</span>
-              </button>
+
+              {/* Zakładki Usługi / Pakiety / Zajęcia grupowe */}
+              {(packages.length > 0 || groupBookings.length > 0) && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <button
+                    onClick={() => setViewMode('services')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                      viewMode === 'services'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Usługi
+                  </button>
+                  {packages.length > 0 && (
+                  <button
+                    onClick={() => setViewMode('packages')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                      viewMode === 'packages'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <Package className="w-4 h-4" />
+                    Pakiety
+                  </button>
+                  )}
+                  {groupBookings.length > 0 && (
+                  <button
+                    onClick={() => setViewMode('group')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                      viewMode === 'group'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    Zajęcia grupowe
+                  </button>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
           {/* Grid pakietów */}
           {viewMode === 'packages' && packages.length > 0 && (
@@ -1188,161 +1359,255 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
             </div>
           )}
 
-          {/* Filtry kategorii - tylko dla usług */}
-          {viewMode === 'services' && categories.length > 1 && (
-            <div className="flex flex-wrap justify-center gap-2 mb-10">
-              {categories.map((cat) => {
-                const catName = typeof cat === 'string' ? cat : String(cat)
-                return (
-                  <button
-                    key={catName}
-                    onClick={() => setSelectedCategory(catName)}
-                    className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      selectedCategory === catName
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                  >
-                    {catName === 'all' ? 'Wszystkie' : catName}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Grid/Lista usług */}
-          {viewMode === 'services' && (
-          <div className={pageSettings.servicesLayout === 'list' 
-            ? "flex flex-col gap-4" 
-            : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
-          }>
-            {filteredServices.map((service, i) => (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className={`bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all group ${getCardClass()} ${
-                  pageSettings.servicesLayout === 'list'
-                    ? "flex flex-row items-center"
-                    : "h-full flex flex-col"
-                }`}
-              >
-                {/* Zdjęcie usługi - tylko jeśli włączone i istnieje */}
-                {pageSettings.showServiceImages !== false && (service as any).image && (
-                  <div className={pageSettings.servicesLayout === 'list' ? "w-24 h-24 flex-shrink-0" : "w-full h-40"}>
-                    <img 
-                      src={(service as any).image} 
-                      alt={service.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                
-                {/* Treść karty */}
-                <div className={pageSettings.servicesLayout === 'list' ? "p-4 flex-1" : "p-6 flex-1"}>
-                  {pageSettings.servicesLayout === 'list' ? (
-                    <>
-                      {/* Lista - układ responsywny */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        {/* Nazwa i kategoria */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 truncate">{service.name}</h3>
-                            <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs font-medium rounded-full whitespace-nowrap">
-                              {service.service_categories?.name || (typeof service.category === 'string' ? service.category : (service.category as any)?.name) || 'Usługa'}
-                            </span>
-                          </div>
-                          <p className="text-slate-500 text-sm line-clamp-1 hidden sm:block">{service.description || ''}</p>
+              {/* Lista usług - premium design */}
+              {viewMode === 'services' && (
+                <div className="space-y-3">
+                  {filteredServices.map((service, i) => (
+                    <motion.div
+                      key={service.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.05, duration: 0.3 }}
+                      whileHover={{ scale: 1.01 }}
+                      className="bg-white rounded-2xl border border-gray-100 p-5 hover:border-gray-200 hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300 cursor-pointer group"
+                      onClick={() => { setSelectedService(service); setBookingModal(true) }}
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Ikona kategorii */}
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center flex-shrink-0 group-hover:from-gray-900 group-hover:to-gray-800 transition-all duration-300">
+                          <Sparkles className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                         </div>
-                        {/* Czas, cena i przycisk */}
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {pageSettings.showServiceDuration !== false && (
-                            <div className="flex items-center gap-1 text-slate-400 text-sm whitespace-nowrap">
-                              <Clock className="w-4 h-4" />
-                              <span>{service.duration} min</span>
+                        
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-gray-900 mb-0.5 group-hover:text-gray-700 transition-colors">{service.name}</h3>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                            {pageSettings.showServiceDuration !== false && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                {service.duration} min
+                              </span>
+                            )}
+                            {service.description && (
+                              <>
+                                <span className="text-gray-300 hidden sm:inline">•</span>
+                                <span className="hidden sm:inline truncate max-w-[200px]">{service.description}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Cena i przycisk */}
+                        <div className="flex items-center gap-4 flex-shrink-0">
+                          {pageSettings.showServicePrices !== false && (
+                            <div className="text-right hidden sm:block">
+                              <div className="text-lg font-bold text-gray-900">{service.price || service.basePrice} zł</div>
                             </div>
                           )}
-                          {pageSettings.showServicePrices !== false && (
-                            <div className="text-lg sm:text-xl font-bold text-slate-800 whitespace-nowrap">{service.price || service.basePrice} zł</div>
-                          )}
-                          <button
-                            onClick={() => { setSelectedService(service); setBookingModal(true) }}
-                            className={`px-4 py-2 text-white font-medium text-sm ${getButtonRoundedClass()} transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0`}
-                            style={{ backgroundColor: pageSettings.primaryColor }}
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span className="hidden sm:inline">{pageSettings.bookingButtonText || 'Zarezerwuj'}</span>
-                            <span className="sm:hidden">Rezerwuj</span>
-                          </button>
+                          <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-gray-800 group-hover:to-gray-700 transition-all shadow-lg shadow-gray-900/20">
+                            <ArrowRight className="w-4 h-4 text-white" />
+                          </div>
                         </div>
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Siatka - układ pionowy */}
-                      <div className="flex items-start justify-between mb-4">
-                        <span className="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-medium rounded-full">
-                          {service.service_categories?.name || (typeof service.category === 'string' ? service.category : (service.category as any)?.name) || 'Usługa'}
-                        </span>
-                        {pageSettings.showServicePrices !== false && (
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-slate-800">{service.price || service.basePrice} zł</div>
-                          </div>
-                        )}
-                      </div>
                       
-                      <h3 className="text-xl font-semibold text-slate-800 mb-2">{service.name}</h3>
-                      
-                      <p className="text-slate-500 text-sm mb-4 line-clamp-2 min-h-[40px]">{service.description || ''}</p>
-                      
-                      {pageSettings.showServiceDuration !== false && (
-                        <div className="flex items-center gap-1 text-slate-400 text-sm">
-                          <Clock className="w-4 h-4" />
-                          <span>{service.duration} min</span>
+                      {/* Mobile price */}
+                      {pageSettings.showServicePrices !== false && (
+                        <div className="sm:hidden mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Cena</span>
+                          <span className="text-lg font-bold text-gray-900">{service.price || service.basePrice} zł</span>
                         </div>
                       )}
-                    </>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+          {viewMode === 'services' && filteredServices.length === 0 && (
+            <div className="text-center py-12 text-gray-500">Brak usług w tej kategorii</div>
+          )}
+            </div>
+
+            {/* ===== PRAWA KOLUMNA - STICKY SIDEBAR ===== */}
+            <div className="hidden lg:block w-[340px] flex-shrink-0">
+              <div className="sticky top-6">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  {/* Nagłówek karty */}
+                  <div className="p-6 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">{company.businessName}</h3>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold text-gray-900">5.0</span>
+                      </div>
+                      <span className="text-gray-400">(0 opinii)</span>
+                    </div>
+                  </div>
+
+                  {/* Przycisk rezerwacji */}
+                  <div className="p-6">
+                    <button
+                      onClick={() => setServicePickerModal(true)}
+                      className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      Zarezerwuj wizytę
+                    </button>
+                  </div>
+
+                  {/* Status otwarcia */}
+                  <div className="px-6 pb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-green-600 font-medium">Otwarte</span>
+                      <span className="text-gray-400">•</span>
+                      <span>zamyka o 20:00</span>
+                    </div>
+                  </div>
+
+                  {/* Adres */}
+                  {company.address && (
+                    <div className="px-6 pb-6">
+                      <div className="flex items-start gap-2 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p>{company.address}</p>
+                          {company.city && <p>{company.city}</p>}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Przyciski - tylko dla siatki */}
-                {pageSettings.servicesLayout !== 'list' && (
-                  <div className="px-6 pb-6 flex gap-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setServiceDetailData(service); setServiceDetailModal(true) }}
-                      className={`flex-1 py-3 text-slate-600 font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50`}
-                    >
-                      <Info className="w-4 h-4" />
-                      Szczegóły
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedService(service); setBookingModal(true) }}
-                      className={`flex-1 py-3 text-white font-medium ${getButtonRoundedClass()} transition-colors flex items-center justify-center gap-2`}
-                      style={{ backgroundColor: pageSettings.primaryColor }}
-                    >
-                      <Calendar className="w-4 h-4" />
-                      {pageSettings.bookingButtonText || 'Zarezerwuj'}
-                    </button>
+                {/* Sekcja Zespół w sidebarze - tylko gdy włączone */}
+                {pageSettings.showTeam === true && company.employees && company.employees.length > 0 && (
+                  <div className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4">Zespół</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {company.employees.slice(0, 6).map((emp) => (
+                        <div key={emp.id} className="text-center">
+                          <div className="w-14 h-14 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-2 overflow-hidden">
+                            {(emp as any).avatar ? (
+                              <img src={(emp as any).avatar} alt={emp.firstName} className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-6 h-6 text-gray-400" />
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-gray-700 truncate">{emp.firstName}</p>
+                          <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span className="text-xs text-gray-500">5.0</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </motion.div>
-            ))}
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* ========== SEKCJA ZESPÓŁ (MOBILE) - tylko gdy włączone ========== */}
+      {pageSettings.showTeam === true && company.employees && company.employees.length > 0 && (
+        <section className="lg:hidden py-12 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Zespół</h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+              {company.employees.map((emp) => (
+                <div key={emp.id} className="flex-shrink-0 text-center w-20">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-2 overflow-hidden border-2 border-white shadow-md">
+                    {(emp as any).avatar ? (
+                      <img src={(emp as any).avatar} alt={emp.firstName} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-7 h-7 text-gray-400" />
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 truncate">{emp.firstName}</p>
+                  <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span className="text-xs text-gray-500">5.0</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ========== SEKCJA INFORMACJE ========== */}
+      <section className="py-12 bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Informacje</h2>
+          
+          {/* Opis firmy */}
+          {pageSettings.showDescription && company.description && (
+            <div className="mb-8">
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                {company.description}
+              </p>
+            </div>
           )}
 
-          {viewMode === 'services' && filteredServices.length === 0 && (
-            <div className="text-center py-12 text-slate-500">Brak usług w tej kategorii</div>
-          )}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Godziny otwarcia */}
+            {pageSettings.showOpeningHours !== false && company.openingHours && (
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Godziny otwarcia</h3>
+                <div className="space-y-2">
+                  {(() => {
+                    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                    const dayNames: Record<string, string> = { monday: 'poniedziałek', tuesday: 'wtorek', wednesday: 'środa', thursday: 'czwartek', friday: 'piątek', saturday: 'sobota', sunday: 'niedziela' }
+                    const sortedDays = dayOrder.filter(day => company.openingHours[day])
+                    return sortedDays.map((day) => {
+                      const hours = company.openingHours[day]
+                      const isToday = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() === day
+                      return (
+                        <div key={day} className={`flex items-center gap-3 py-1.5 ${isToday ? 'font-medium' : ''}`}>
+                          <span className={`w-2 h-2 rounded-full ${hours.closed ? 'bg-gray-300' : 'bg-green-500'}`} />
+                          <span className="text-sm text-gray-700 w-24">{dayNames[day]}</span>
+                          <span className={`text-sm ${hours.closed ? 'text-gray-400' : 'text-gray-900'}`}>
+                            {hours.closed ? 'Zamknięte' : `${hours.open} - ${hours.close}`}
+                          </span>
+                        </div>
+                      )
+                    })
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Dodatkowe informacje */}
+            <div>
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Dodatkowe informacje</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span>Natychmiastowe potwierdzenie</span>
+                </div>
+                {company.paymentSettings?.acceptOnlinePayment && (
+                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Płatność online</span>
+                  </div>
+                )}
+                {company.paymentSettings?.acceptCashPayment && (
+                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Płatność na miejscu</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ========== GALERIA ========== */}
       {(company as any).gallery && (company as any).gallery.length > 0 && (
         <section className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">Galeria</h2>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Galeria</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {(company as any).gallery.slice(0, 8).map((image: string, index: number) => (
                 <motion.div
@@ -1373,102 +1638,185 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         </section>
       )}
 
-      {/* ========== GODZINY OTWARCIA ========== */}
-      {pageSettings.showOpeningHours !== false && company.openingHours && (
-        <section className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">Godziny otwarcia</h2>
-            <div className="max-w-md mx-auto bg-slate-50 rounded-2xl p-6">
-              {(() => {
-                const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-                const dayNames: Record<string, string> = { monday: 'Poniedziałek', tuesday: 'Wtorek', wednesday: 'Środa', thursday: 'Czwartek', friday: 'Piątek', saturday: 'Sobota', sunday: 'Niedziela' }
-                const sortedDays = dayOrder.filter(day => company.openingHours[day])
-                return sortedDays.map((day) => {
-                  const hours = company.openingHours[day]
-                  return (
-                    <div key={day} className="flex justify-between py-3 border-b border-slate-200 last:border-0">
-                      <span className="text-slate-600">{dayNames[day]}</span>
-                      <span className={`font-medium ${hours.closed ? 'text-slate-400' : 'text-slate-800'}`}>
-                        {hours.closed ? 'Zamknięte' : `${hours.open} - ${hours.close}`}
-                      </span>
-                    </div>
-                  )
-                })
-              })()}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ========== KONTAKT ========== */}
-      <section className="py-16 bg-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-4">Skontaktuj się z nami</h2>
-              <p className="text-slate-400 mb-8">Masz pytania? Chętnie na nie odpowiemy.</p>
-              <div className="space-y-4">
-                {company.phone && (
-                  <a href={`tel:${company.phone}`} className="flex items-center gap-4 text-white hover:text-teal-400 transition-colors">
-                    <div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><Phone className="w-5 h-5" /></div>
-                    <span className="text-lg">{company.phone}</span>
-                  </a>
-                )}
-                {company.email && (
-                  <a href={`mailto:${company.email}`} className="flex items-center gap-4 text-white hover:text-teal-400 transition-colors">
-                    <div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><Mail className="w-5 h-5" /></div>
-                    <span className="text-lg">{company.email}</span>
-                  </a>
-                )}
-                {company.address && (
-                  <div className="flex items-center gap-4 text-white">
-                    <div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center"><MapPin className="w-5 h-5" /></div>
-                    <span className="text-lg">{company.address}, {company.city}</span>
-                  </div>
-                )}
-                {/* Social Media */}
-                {(company.socialMedia?.facebook || company.socialMedia?.instagram) && (
-                  <div className="flex items-center gap-3 mt-6">
-                    {company.socialMedia?.facebook && (
-                      <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-white rounded-xl flex items-center justify-center transition-all hover:scale-105 shadow-md">
-                        <Facebook className="w-6 h-6 text-[#1877F2]" />
-                      </a>
-                    )}
-                    {company.socialMedia?.instagram && (
-                      <a href={company.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-white rounded-xl flex items-center justify-center transition-all hover:scale-105 shadow-md">
-                        <Instagram className="w-6 h-6 text-[#E4405F]" />
-                      </a>
-                    )}
-                    {company.socialMedia?.website && (
-                      <a href={company.socialMedia.website} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-white rounded-xl flex items-center justify-center transition-all hover:scale-105 shadow-md">
-                        <GlobeIcon className="w-6 h-6 text-teal-600" />
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="text-center">
+      {/* ========== CTA SECTION ========== */}
+      <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
+        </div>
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Gotowy na wizytę?
+            </h2>
+            <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
+              Zarezerwuj termin online w kilka sekund. Bez dzwonienia, bez czekania.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => document.getElementById('uslugi')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-xl transition-all shadow-lg text-lg"
+                className="px-8 py-4 bg-white text-gray-900 hover:bg-gray-100 font-bold text-lg rounded-2xl transition-all shadow-2xl shadow-white/10 flex items-center gap-3"
               >
-                Zarezerwuj wizytę
+                <Calendar className="w-5 h-5" />
+                Zarezerwuj teraz
               </button>
+              
+              {company.phone && (
+                <a 
+                  href={`tel:${company.phone}`}
+                  className="px-8 py-4 border-2 border-white/20 text-white hover:bg-white/10 font-semibold text-lg rounded-2xl transition-all flex items-center gap-3"
+                >
+                  <Phone className="w-5 h-5" />
+                  {company.phone}
+                </a>
+              )}
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ========== FOOTER ========== */}
-      <footer className="py-8 bg-slate-900">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <p className="text-slate-500 text-sm">© {new Date().getFullYear()} {company.businessName}</p>
-          <p className="text-slate-600 text-xs mt-2">
-            Powered by <a href="https://rezerwacja24.pl" className="text-teal-500 hover:text-teal-400">Rezerwacja24</a>
-          </p>
+      <footer className="py-8 bg-gray-950 lg:pb-8 pb-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {company.logo && (
+                <img src={company.logo} alt={company.businessName} className="h-8 w-auto opacity-50" />
+              )}
+              <span className="text-gray-500 text-sm">© {new Date().getFullYear()} {company.businessName}</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {company.socialMedia?.facebook && (
+                <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">
+                  <Facebook className="w-5 h-5" />
+                </a>
+              )}
+              {company.socialMedia?.instagram && (
+                <a href={company.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">
+                  <Instagram className="w-5 h-5" />
+                </a>
+              )}
+              <span className="text-gray-600 text-xs">
+                Powered by <a href="https://rezerwacja24.pl" className="text-gray-500 hover:text-white transition-colors">Rezerwacja24</a>
+              </span>
+            </div>
+          </div>
         </div>
       </footer>
+
+      {/* ========== MODAL WYBORU USŁUGI ========== */}
+      <AnimatePresence>
+        {servicePickerModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" 
+            onClick={() => setServicePickerModal(false)}
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: 100 }} 
+              onClick={(e) => e.stopPropagation()} 
+              className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Wybierz usługę</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{company.businessName}</p>
+                </div>
+                <button 
+                  onClick={() => setServicePickerModal(false)} 
+                  className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Kategorie */}
+              {categories.length > 1 && (
+                <div className="px-6 py-3 border-b border-gray-100 overflow-x-auto">
+                  <div className="flex gap-2">
+                    {categories.map((cat) => {
+                      const catName = typeof cat === 'string' ? cat : String(cat)
+                      return (
+                        <button
+                          key={catName}
+                          onClick={() => setSelectedCategory(catName)}
+                          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                            selectedCategory === catName
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {catName === 'all' ? 'Wszystkie' : catName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Lista usług */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-2">
+                  {filteredServices.map((service) => (
+                    <button
+                      key={service.id}
+                      onClick={() => {
+                        setSelectedService(service)
+                        setServicePickerModal(false)
+                        setBookingModal(true)
+                      }}
+                      className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-colors group"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 mb-1">{service.name}</h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {service.duration} min
+                            </span>
+                            <span className="text-gray-300">•</span>
+                            <span className="font-semibold text-gray-900">{service.price || service.basePrice} zł</span>
+                          </div>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-gray-900 group-hover:bg-gray-800 flex items-center justify-center flex-shrink-0 transition-colors">
+                          <ArrowRight className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {filteredServices.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    Brak usług w tej kategorii
+                  </div>
+                )}
+              </div>
+
+              {/* Footer info */}
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                <p className="text-xs text-gray-500 text-center">
+                  {filteredServices.length} {filteredServices.length === 1 ? 'usługa' : filteredServices.length < 5 ? 'usługi' : 'usług'} dostępnych
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ========== MODAL REZERWACJI ========== */}
       <AnimatePresence>
@@ -1727,7 +2075,8 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                                     const [closeH, closeM] = (dayHours.close || '18:00').split(':').map(Number)
                                     openHour = openH
                                     openMin = openM || 0
-                                    closeHour = closeH
+                                    // Obsługa 24h: jeśli close=00:00 i open=00:00, to znaczy całą dobę (do 24:00)
+                                    closeHour = (closeH === 0 && openH === 0 && (closeM || 0) === 0) ? 24 : closeH
                                     closeMin = closeM || 0
                                   }
                                   
@@ -1795,7 +2144,9 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                                     }
                                     
                                     const [closeH, closeM] = (dayHours?.close || '20:00').split(':').map(Number)
-                                    const closeHour = closeH
+                                    const [openH] = (dayHours?.open || '09:00').split(':').map(Number)
+                                    // Obsługa 24h: jeśli close=00:00 i open=00:00, to znaczy całą dobę (do 24:00)
+                                    const closeHour = (closeH === 0 && openH === 0 && (closeM || 0) === 0) ? 24 : closeH
                                     const closeMin = closeM || 0
                                     const closeMinutes = closeHour * 60 + closeMin
                                     

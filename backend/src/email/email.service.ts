@@ -7,6 +7,8 @@ import { getTrialStartedTemplate } from './templates/trial-started.template';
 import { getTrialEndingTemplate } from './templates/trial-ending.template';
 import { getTrialEndedTodayTemplate } from './templates/trial-ended.template';
 import { getSubscriptionActiveTemplate } from './templates/subscription-active.template';
+import { getSubscriptionEndingTemplate } from './templates/subscription-ending.template';
+import { getSubscriptionExpiredTemplate } from './templates/subscription-expired.template';
 import { getPasswordResetTemplate } from './templates/password-reset.template';
 import { getInvoiceTemplate } from './templates/invoice.template';
 import { getBookingConfirmationTemplate } from './templates/booking-confirmation.template';
@@ -147,6 +149,47 @@ export class EmailService {
     return this.sendEmail({
       to,
       subject: '✅ Twoja subskrypcja Rezerwacja24 jest aktywna!',
+      html,
+    });
+  }
+
+  /**
+   * Email o kończącym się abonamencie (dla płacących klientów - nie trial)
+   */
+  async sendSubscriptionEndingEmail(to: string, data: { 
+    name: string; 
+    daysLeft: number; 
+    subscriptionEndDate: string;
+    planName: string;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      `Twój abonament kończy się za ${data.daysLeft} dni`,
+      getSubscriptionEndingTemplate(data)
+    );
+
+    return this.sendEmail({
+      to,
+      subject: `⏰ Twój abonament kończy się za ${data.daysLeft} dni`,
+      html,
+    });
+  }
+
+  /**
+   * Email o wygasłym abonamencie (dla płacących klientów - nie trial)
+   */
+  async sendSubscriptionExpiredEmail(to: string, data: { 
+    name: string; 
+    planName: string;
+    daysUntilSuspension?: number;
+  }): Promise<boolean> {
+    const html = getBaseTemplate(
+      'Twój abonament wygasł',
+      getSubscriptionExpiredTemplate(data)
+    );
+
+    return this.sendEmail({
+      to,
+      subject: '⚠️ Twój abonament wygasł - odnów subskrypcję',
       html,
     });
   }

@@ -21,6 +21,7 @@ export class AuthService {
   async login(email: string, password: string, twoFactorCode?: string, profileType?: 'owner' | 'employee') {
     this.logger.log(`🔐 Login attempt for: ${email}, profileType: ${profileType || 'auto'}`);
     
+    this.logger.log(`Querying users table...`);
     // Znajdź użytkownika (właściciela firmy)
     const user = await this.prisma.users.findUnique({
       where: { email },
@@ -32,7 +33,9 @@ export class AuthService {
         },
       },
     });
+    this.logger.log(`Users query done, found: ${!!user}`);
 
+    this.logger.log(`Querying employee_accounts table...`);
     // Znajdź konto pracownika
     const employeeAccount = await this.prisma.employee_accounts.findFirst({
       where: { email: email.toLowerCase(), isActive: true },
@@ -42,6 +45,7 @@ export class AuthService {
         permissions: true,
       },
     });
+    this.logger.log(`Employee accounts query done, found: ${!!employeeAccount}`);
 
     // Jeśli nie znaleziono żadnego konta
     if (!user && !employeeAccount) {
@@ -49,6 +53,7 @@ export class AuthService {
     }
 
     this.logger.log(`Found user: ${!!user}, Found employee account: ${!!employeeAccount}`);
+    this.logger.log(`profileType before conditions: '${profileType}', truthy: ${!!profileType}`);
 
     // Jeśli oba konta istnieją i nie wybrano profilu - sprawdź hasła i pokaż wybór
     if (user && employeeAccount && !profileType) {
@@ -128,7 +133,9 @@ export class AuthService {
     }
 
     // Logowanie jako pracownik
+    this.logger.log(`Checking profileType: '${profileType}', type: ${typeof profileType}`);
     if (profileType === 'employee') {
+      this.logger.log(`Entering employee login branch`);
       if (!employeeAccount) {
         throw new UnauthorizedException('Nie znaleziono konta pracownika dla tego adresu email');
       }
@@ -233,27 +240,43 @@ export class AuthService {
    * Logowanie jako pracownik
    */
   private async loginAsEmployee(account: any, password: string) {
+    this.logger.log(`🔐 loginAsEmployee called for account: ${account?.id}, email: ${account?.email}`);
+    
     // Sprawdź hasło
     let isPasswordValid = false;
     if (account.passwordHash) {
       try {
+        this.logger.log(`Checking password for employee account...`);
         isPasswordValid = await bcrypt.compare(password, account.passwordHash);
+        this.logger.log(`Password check result: ${isPasswordValid}`);
       } catch (error) {
         this.logger.error(`Bcrypt error: ${error.message}`);
         isPasswordValid = account.passwordHash === password;
       }
+    } else {
+      this.logger.warn(`Employee account has no passwordHash!`);
     }
 
     if (!isPasswordValid) {
+      this.logger.log(`Employee login failed - invalid password`);
       throw new UnauthorizedException('Nieprawidłowy email lub hasło');
     }
 
+    this.logger.log(`Password valid, updating lastLoginAt...`);
+    
     // Aktualizuj lastLoginAt
-    await this.prisma.employee_accounts.update({
-      where: { id: account.id },
-      data: { lastLoginAt: new Date() },
-    });
+    try {
+      await this.prisma.employee_accounts.update({
+        where: { id: account.id },
+        data: { lastLoginAt: new Date() },
+      });
+      this.logger.log(`lastLoginAt updated successfully`);
+    } catch (error) {
+      this.logger.error(`Error updating lastLoginAt: ${error.message}`);
+      // Continue anyway - this is not critical
+    }
 
+    this.logger.log(`Generating JWT token...`);
     // Generuj token JWT dla pracownika
     const payload = {
       sub: account.id,
@@ -265,6 +288,7 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload);
+    this.logger.log(`JWT token generated, returning response`);
 
     return {
       access_token,

@@ -105,8 +105,7 @@ export default function BookingsPage() {
         const startTime = new Date(booking.startTime)
         const endTime = new Date(booking.endTime)
         const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))
-        
-        return {
+                return {
           id: booking.id,
           customerId: booking.customerId,
           customerName: `${booking.customers?.firstName || ''} ${booking.customers?.lastName || ''}`,
@@ -136,7 +135,11 @@ export default function BookingsPage() {
           depositAmount: booking.deposit_amount ? parseFloat(booking.deposit_amount) : 0,
           depositStatus: booking.deposit_status || 'not_required',
           depositPaidAt: booking.deposit_paid_at,
-          depositPaymentMethod: booking.deposit_payment_method
+          depositPaymentMethod: booking.deposit_payment_method,
+          // Informacje o anulowaniu
+          cancelledAt: booking.cancelledAt || null,
+          cancelledBy: booking.cancelledBy || null,
+          cancellationReason: booking.cancellationReason || null
         }
       })
 
@@ -871,6 +874,16 @@ export default function BookingsPage() {
                          booking.status === 'pending' ? 'Oczekująca' :
                          booking.status === 'completed' ? 'Zakończona' : 'Anulowana'}
                       </span>
+                      {/* Info kto anulował - mobile */}
+                      {booking.status === 'cancelled' && (
+                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs">
+                          {booking.cancelledBy === 'customer' ? '👤 Klient' : 
+                           booking.cancelledBy === 'owner' ? '👔 Właściciel' : 
+                           booking.cancelledBy === 'system' ? '🤖 System' :
+                           booking.cancelledBy === 'employee' ? '👷 Pracownik' :
+                           '❓ Nieznany'}
+                        </span>
+                      )}
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                         booking.paymentStatus === 'paid' ? 'bg-emerald-600 text-white' :
                         booking.paymentStatus === 'partial' ? 'bg-amber-500 text-white' :
@@ -1035,16 +1048,28 @@ export default function BookingsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            booking.status === 'confirmed' ? 'bg-emerald-600 text-white' :
-                            booking.status === 'pending' ? 'bg-amber-500 text-white' :
-                            booking.status === 'completed' ? 'bg-blue-600 text-white' :
-                            'bg-red-600 text-white'
-                          }`}>
-                            {booking.status === 'confirmed' ? 'Potwierdzona' :
-                             booking.status === 'pending' ? 'Oczekująca' :
-                             booking.status === 'completed' ? 'Zakończona' : 'Anulowana'}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                              booking.status === 'confirmed' ? 'bg-emerald-600 text-white' :
+                              booking.status === 'pending' ? 'bg-amber-500 text-white' :
+                              booking.status === 'completed' ? 'bg-blue-600 text-white' :
+                              'bg-red-600 text-white'
+                            }`}>
+                              {booking.status === 'confirmed' ? 'Potwierdzona' :
+                               booking.status === 'pending' ? 'Oczekująca' :
+                               booking.status === 'completed' ? 'Zakończona' : 'Anulowana'}
+                            </span>
+                            {/* Info kto anulował */}
+                            {booking.status === 'cancelled' && (
+                              <span className="text-xs text-red-500" title={booking.cancellationReason || ''}>
+                                {booking.cancelledBy === 'customer' ? '👤 Klient' : 
+                                 booking.cancelledBy === 'owner' ? '👔 Właściciel' : 
+                                 booking.cancelledBy === 'system' ? '🤖 System' :
+                                 booking.cancelledBy === 'employee' ? '👷 Pracownik' :
+                                 '❓ Nieznany'}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">
@@ -1310,6 +1335,42 @@ export default function BookingsPage() {
                   <div className="bg-[var(--bg-primary)] rounded-lg p-3">
                     <p className="text-xs text-[var(--text-muted)] mb-1">Notatki</p>
                     <p className="text-sm text-[var(--text-primary)]">{selectedBooking.notes}</p>
+                  </div>
+                )}
+
+                {/* Informacja o anulowaniu */}
+                {selectedBooking.status === 'cancelled' && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <XCircle className="w-5 h-5 text-red-500" />
+                      <span className="font-medium text-red-600 dark:text-red-400">Rezerwacja anulowana</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-[var(--text-muted)]">
+                        <span className="text-[var(--text-muted)]/70">Anulował: </span>
+                        <span className="text-[var(--text-primary)] font-medium">
+                          {selectedBooking.cancelledBy === 'customer' ? '👤 Klient' : 
+                           selectedBooking.cancelledBy === 'owner' ? '👔 Właściciel' : 
+                           selectedBooking.cancelledBy === 'system' ? '🤖 System (automatycznie)' :
+                           selectedBooking.cancelledBy === 'employee' ? '👷 Pracownik' :
+                           '❓ Nieznany'}
+                        </span>
+                      </p>
+                      {selectedBooking.cancelledAt && (
+                        <p className="text-[var(--text-muted)]">
+                          <span className="text-[var(--text-muted)]/70">Data: </span>
+                          <span className="text-[var(--text-primary)]">
+                            {new Date(selectedBooking.cancelledAt).toLocaleString('pl-PL')}
+                          </span>
+                        </p>
+                      )}
+                      {selectedBooking.cancellationReason && (
+                        <p className="text-[var(--text-muted)]">
+                          <span className="text-[var(--text-muted)]/70">Powód: </span>
+                          <span className="text-[var(--text-primary)]">{selectedBooking.cancellationReason}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

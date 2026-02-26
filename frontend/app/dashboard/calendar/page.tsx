@@ -200,7 +200,11 @@ export default function CalendarPage() {
           paymentMethod: booking.paymentMethod || null,
           notes: booking.customerNotes || '',
           isMultiDay: isMultiDay,
-          isFullDay: isFullDay // Flaga dla rezerwacji całodniowych (na dni)
+          isFullDay: isFullDay, // Flaga dla rezerwacji całodniowych (na dni)
+          // Informacje o anulowaniu
+          cancelledAt: booking.cancelledAt || null,
+          cancelledBy: booking.cancelledBy || null,
+          cancellationReason: booking.cancellationReason || null
         }
       })
       
@@ -1127,12 +1131,16 @@ export default function CalendarPage() {
                       key={booking.id}
                       onClick={() => handleBookingClick(booking)}
                       className={`p-4 rounded-lg cursor-pointer hover:shadow-lg transition-all ${
-                        booking.status === 'confirmed' 
+                        booking.eventType === 'block'
+                          ? 'bg-gray-600 border border-gray-700'
+                          : booking.status === 'confirmed' 
                           ? 'bg-[var(--text-primary)]/20 border border-[var(--text-primary)]/30' 
                           : booking.status === 'pending'
                           ? 'bg-yellow-500/20 border border-yellow-500/30'
                           : booking.status === 'completed'
                           ? 'bg-blue-500/20 border border-blue-500/30'
+                          : booking.status === 'no_show'
+                          ? 'bg-orange-500/20 border border-orange-500/30'
                           : 'bg-red-500/20 border border-red-500/30'
                       }`}
                     >
@@ -1149,12 +1157,15 @@ export default function CalendarPage() {
                               </span>
                             )}
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              booking.eventType === 'block' ? 'bg-gray-600 text-white' :
                               booking.status === 'confirmed' ? 'bg-[var(--text-primary)]/20 text-[var(--text-primary)]' :
                               booking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
                               booking.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
+                              booking.status === 'no_show' ? 'bg-orange-500/20 text-orange-400' :
                               'bg-red-500/20 text-red-400'
                             }`}>
-                              {booking.status === 'confirmed' ? 'Potwierdzona' :
+                              {booking.eventType === 'block' ? '🔒 Zablokowane' :
+                               booking.status === 'confirmed' ? 'Potwierdzona' :
                                booking.status === 'pending' ? 'Oczekująca' :
                                booking.status === 'completed' ? 'Zakończona' :
                                booking.status === 'no_show' ? 'Nie przyszedł' : 'Anulowana'}
@@ -1235,9 +1246,11 @@ export default function CalendarPage() {
                               ? 'bg-purple-600 border border-purple-700'
                               : dayBookings[0].status === 'confirmed' 
                                 ? 'bg-emerald-600 border border-emerald-700' 
-                                : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
+                                : dayBookings[0].status === 'no_show'
+                                ? 'bg-orange-500 border border-orange-600'
+                                : dayBookings[0].status === 'cancelled'
                                 ? 'bg-red-600 border border-red-700'
-                                : 'bg-amber-500 border border-amber-600'
+                                : 'bg-yellow-500 border border-yellow-600'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -1293,13 +1306,17 @@ export default function CalendarPage() {
                                 handleBookingClick(booking)
                               }}
                               className={`p-2 rounded-lg cursor-pointer hover:shadow-lg transition-all ${
-                                booking.eventType === 'group'
+                                booking.eventType === 'block'
+                                  ? 'bg-gray-600 border border-gray-700'
+                                  : booking.eventType === 'group'
                                   ? 'bg-purple-600 border border-purple-700'
                                   : booking.status === 'confirmed' 
                                     ? 'bg-emerald-600 border border-emerald-700' 
-                                    : booking.status === 'no_show' || booking.status === 'cancelled'
+                                    : booking.status === 'no_show'
+                                    ? 'bg-orange-500 border border-orange-600'
+                                    : booking.status === 'cancelled'
                                     ? 'bg-red-600 border border-red-700'
-                                    : 'bg-amber-500 border border-amber-600'
+                                    : 'bg-yellow-500 border border-yellow-600'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
@@ -1414,26 +1431,30 @@ export default function CalendarPage() {
                               }}
                               className={`p-2 rounded-lg cursor-pointer flex items-center gap-2 ${
                                 booking.eventType === 'block'
-                                  ? 'bg-gray-600/20 border border-gray-600/30'
+                                  ? 'bg-gray-600 border border-gray-700'
                                   : booking.eventType === 'group'
                                   ? 'bg-purple-600/20 border border-purple-600/30'
                                   : booking.status === 'confirmed'
                                   ? 'bg-emerald-600/20 border border-emerald-600/30'
-                                  : booking.status === 'no_show' || booking.status === 'cancelled'
+                                  : booking.status === 'no_show'
+                                  ? 'bg-orange-500/20 border border-orange-500/30'
+                                  : booking.status === 'cancelled'
                                   ? 'bg-red-600/20 border border-red-600/30'
-                                  : 'bg-amber-500/20 border border-amber-500/30'
+                                  : 'bg-yellow-500/20 border border-yellow-500/30'
                               }`}
                             >
                               <div className={`w-1 h-8 rounded-full ${
                                 booking.eventType === 'block'
-                                  ? 'bg-gray-500'
+                                  ? 'bg-gray-600'
                                   : booking.eventType === 'group'
                                   ? 'bg-purple-500'
                                   : booking.status === 'confirmed'
                                   ? 'bg-emerald-500'
-                                  : booking.status === 'no_show' || booking.status === 'cancelled'
+                                  : booking.status === 'no_show'
+                                  ? 'bg-orange-500'
+                                  : booking.status === 'cancelled'
                                   ? 'bg-red-500'
-                                  : 'bg-amber-500'
+                                  : 'bg-yellow-500'
                               }`} />
                               <div className="flex-1 min-w-0">
                                 <div className="text-xs font-bold text-[var(--text-primary)]">
@@ -1516,13 +1537,17 @@ export default function CalendarPage() {
                                 handleBookingClick(dayBookings[0])
                               }}
                               className={`p-2 rounded-lg h-full cursor-pointer hover:shadow-lg transition-all ${
-                                dayBookings[0].isFullDay
+                                dayBookings[0].eventType === 'block'
+                                  ? 'bg-gray-600 border border-gray-700'
+                                  : dayBookings[0].isFullDay
                                   ? 'bg-blue-600 border border-blue-700'
                                   : dayBookings[0].status === 'confirmed' 
                                   ? 'bg-emerald-600 border border-emerald-700' 
-                                  : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
+                                  : dayBookings[0].status === 'no_show'
+                                  ? 'bg-orange-500 border border-orange-600'
+                                  : dayBookings[0].status === 'cancelled'
                                   ? 'bg-red-600 border border-red-700'
-                                  : 'bg-amber-500 border border-amber-600'
+                                  : 'bg-yellow-500 border border-yellow-600'
                               }`}
                             >
                               <div className="text-xs font-bold text-white mb-1">
@@ -1544,11 +1569,15 @@ export default function CalendarPage() {
                                   handleBookingClick(dayBookings[0])
                                 }}
                                 className={`p-1.5 rounded cursor-pointer hover:shadow-lg transition-all ${
-                                  dayBookings[0].status === 'confirmed' 
+                                  dayBookings[0].eventType === 'block'
+                                    ? 'bg-gray-600 border border-gray-700'
+                                    : dayBookings[0].status === 'confirmed' 
                                     ? 'bg-emerald-600 border border-emerald-700' 
-                                    : dayBookings[0].status === 'no_show' || dayBookings[0].status === 'cancelled'
+                                    : dayBookings[0].status === 'no_show'
+                                    ? 'bg-orange-500 border border-orange-600'
+                                    : dayBookings[0].status === 'cancelled'
                                     ? 'bg-red-600 border border-red-700'
-                                    : 'bg-amber-500 border border-amber-600'
+                                    : 'bg-yellow-500 border border-yellow-600'
                                 }`}
                               >
                                 <div className="text-xs text-white font-semibold truncate">
@@ -1636,7 +1665,7 @@ export default function CalendarPage() {
                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             )}
                             {pendingCount > 0 && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
                             )}
                             {blockedCount > 0 && (
                               <div className="w-1.5 h-1.5 rounded-full bg-gray-500" />
@@ -1705,9 +1734,11 @@ export default function CalendarPage() {
                               ? 'bg-blue-600 text-white'
                               : booking.status === 'confirmed'
                               ? 'bg-emerald-600 text-white'
-                              : booking.status === 'no_show' || booking.status === 'cancelled'
+                              : booking.status === 'no_show'
+                              ? 'bg-orange-500 text-white'
+                              : booking.status === 'cancelled'
                               ? 'bg-red-600 text-white'
-                              : 'bg-amber-500 text-white'
+                              : 'bg-yellow-500 text-white'
                           }`}
                           onClick={(e) => {
                             e.stopPropagation()
@@ -1744,12 +1775,20 @@ export default function CalendarPage() {
             <span className="text-sm text-[var(--text-muted)]">Potwierdzona</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-amber-500 rounded"></div>
+            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
             <span className="text-sm text-[var(--text-muted)]">Oczekująca</span>
           </div>
           <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-blue-600 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Zakończona</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-orange-500 rounded"></div>
+            <span className="text-sm text-[var(--text-muted)]">Nie przyszedł</span>
+          </div>
+          <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-red-600 rounded"></div>
-            <span className="text-sm text-[var(--text-muted)]">Nie przyszedł / Anulowana</span>
+            <span className="text-sm text-[var(--text-muted)]">Anulowana</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-gray-600 rounded"></div>
@@ -1959,14 +1998,14 @@ export default function CalendarPage() {
                               }}
                               className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                                 selectedPackage?.id === pkg.id
-                                  ? 'border-purple-500 bg-purple-500/10'
+                                  ? 'border-purple-500 bg-yellow-500/10'
                                   : 'border-white/10 bg-white/5 hover:border-purple-500/50'
                               }`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <h4 className="text-[var(--text-primary)] font-semibold">{pkg.name}</h4>
                                 {savings > 0 && (
-                                  <span className="px-2 py-0.5 bg-purple-500 text-white text-xs font-bold rounded-full">
+                                  <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs font-bold rounded-full">
                                     -{savings}%
                                   </span>
                                 )}
@@ -2055,7 +2094,7 @@ export default function CalendarPage() {
 
                   {/* Karnety klienta */}
                   {customerPasses.length > 0 && (
-                    <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                    <div className="bg-yellow-500/10 border border-purple-500/30 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <Ticket className="w-5 h-5 text-purple-400" />
                         <span className="font-medium text-purple-400">Klient ma aktywny karnet!</span>
@@ -2068,7 +2107,7 @@ export default function CalendarPage() {
                               key={pass.id}
                               className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
                                 selectedPassId === pass.id && usePass
-                                  ? 'bg-purple-500/20 border border-purple-500'
+                                  ? 'bg-yellow-500/20 border border-purple-500'
                                   : 'bg-white/5 border border-white/10 hover:border-purple-500/50'
                               }`}
                             >
@@ -2207,8 +2246,8 @@ export default function CalendarPage() {
                         className={`w-full px-3 py-2 rounded-lg text-sm font-semibold border ${
                           selectedBooking.status === 'confirmed' ? 'bg-[var(--text-primary)]/20 text-[var(--text-primary)] border-[var(--text-primary)]/30' :
                           selectedBooking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          selectedBooking.status === 'no_show' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
                           selectedBooking.status === 'cancelled' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                          selectedBooking.status === 'no_show' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
                           'bg-blue-500/20 text-blue-400 border-blue-500/30'
                         } focus:outline-none focus:ring-2 focus:ring-accent-neon`}
                       >
@@ -2314,6 +2353,42 @@ export default function CalendarPage() {
                     <div>
                       <label className="text-sm text-[var(--text-muted)]/70">Notatki</label>
                       <p className="text-[var(--text-primary)]">{selectedBooking.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Informacja o anulowaniu */}
+                  {selectedBooking.status === 'cancelled' && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Ban className="w-5 h-5 text-red-400" />
+                        <span className="font-medium text-red-400">Rezerwacja anulowana</span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-[var(--text-muted)]">
+                          <span className="text-[var(--text-muted)]/70">Anulował: </span>
+                          <span className="text-[var(--text-primary)] font-medium">
+                            {selectedBooking.cancelledBy === 'customer' ? '👤 Klient' : 
+                             selectedBooking.cancelledBy === 'owner' ? '👔 Właściciel' : 
+                             selectedBooking.cancelledBy === 'system' ? '🤖 System (automatycznie)' :
+                             selectedBooking.cancelledBy === 'employee' ? '👷 Pracownik' :
+                             '❓ Nieznany'}
+                          </span>
+                        </p>
+                        {selectedBooking.cancelledAt && (
+                          <p className="text-[var(--text-muted)]">
+                            <span className="text-[var(--text-muted)]/70">Data: </span>
+                            <span className="text-[var(--text-primary)]">
+                              {new Date(selectedBooking.cancelledAt).toLocaleString('pl-PL')}
+                            </span>
+                          </p>
+                        )}
+                        {selectedBooking.cancellationReason && (
+                          <p className="text-[var(--text-muted)]">
+                            <span className="text-[var(--text-muted)]/70">Powód: </span>
+                            <span className="text-[var(--text-primary)]">{selectedBooking.cancellationReason}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

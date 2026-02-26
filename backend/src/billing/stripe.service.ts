@@ -20,6 +20,44 @@ export class StripeService {
   }
 
   /**
+   * Aktualizuje status Featured w marketplace na podstawie planu subskrypcji
+   * Plan Premium (plan_premium) = isFeatured: true
+   * Inne plany lub brak subskrypcji = isFeatured: false
+   */
+  private async updateMarketplaceFeaturedStatus(tenantId: string, planId: string | null, isActive: boolean) {
+    try {
+      // Sprawdź czy tenant ma listing w marketplace
+      const listing = await this.prisma.marketplace_listings.findUnique({
+        where: { tenantId },
+      });
+
+      if (!listing) {
+        // Brak listingu - nic nie rób
+        return;
+      }
+
+      // Plan Premium = featured, inne plany = nie featured
+      const isPremiumPlan = planId === 'plan_premium';
+      const shouldBeFeatured = isPremiumPlan && isActive;
+
+      // Aktualizuj tylko jeśli status się zmienił
+      if (listing.isFeatured !== shouldBeFeatured) {
+        await this.prisma.marketplace_listings.update({
+          where: { tenantId },
+          data: { 
+            isFeatured: shouldBeFeatured,
+            updatedAt: new Date(),
+          },
+        });
+        this.logger.log(`📊 Marketplace Featured status dla ${tenantId}: ${shouldBeFeatured ? 'WŁĄCZONY' : 'WYŁĄCZONY'} (plan: ${planId})`);
+      }
+    } catch (error) {
+      // Nie przerywaj procesu jeśli aktualizacja marketplace się nie powiedzie
+      this.logger.error(`Błąd aktualizacji marketplace featured status: ${error.message}`);
+    }
+  }
+
+  /**
    * Tworzy checkout session dla nowej subskrypcji z 7-dniowym okresem próbnym
    */
   async createCheckoutSession({
@@ -310,20 +348,17 @@ export class StripeService {
   }
 
   /**
-   * Ponowna próba pobrania zaległej płatności
+   * Ponowna próba pobrania zaległej płatności lub synchronizacja ze Stripe
    */
   async retryFailedPayment(tenantId: string) {
     try {
       const subscription = await this.prisma.subscriptions.findUnique({
         where: { tenantId },
+        include: { tenants: true },
       });
 
       if (!subscription) {
         throw new BadRequestException('Nie znaleziono subskrypcji');
-      }
-
-      if (subscription.status !== 'PAST_DUE') {
-        return { success: true, message: 'Subskrypcja jest aktywna, brak zaległych płatności' };
       }
 
       if (!subscription.stripeSubscriptionId) {
@@ -335,6 +370,8 @@ export class StripeService {
         subscription.stripeSubscriptionId
       );
 
+      this.logger.log(`Stripe subscription status: ${stripeSubscription.status}, period_end: ${new Date(stripeSubscription.current_period_end * 1000).toISOString()}`);
+
       // Znajdź ostatnią nieopłaconą fakturę
       const invoices = await this.stripe.invoices.list({
         subscription: subscription.stripeSubscriptionId,
@@ -342,24 +379,37 @@ export class StripeService {
         limit: 1,
       });
 
-      if (invoices.data.length === 0) {
-        // Brak otwartych faktur - sprawdź czy subskrypcja jest aktywna w Stripe
-        if (stripeSubscription.status === 'active') {
-          // Synchronizuj status z bazą
-          await this.prisma.subscriptions.update({
-            where: { tenantId },
-            data: {
-              status: 'ACTIVE',
-              lastPaymentStatus: 'paid',
-              lastPaymentError: null,
-              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-              updatedAt: new Date(),
-            },
+      // Jeśli subskrypcja jest aktywna w Stripe - synchronizuj i odblokuj konto
+      if (stripeSubscription.status === 'active') {
+        const newPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+        
+        // Synchronizuj status z bazą
+        await this.prisma.subscriptions.update({
+          where: { tenantId },
+          data: {
+            status: 'ACTIVE',
+            lastPaymentStatus: 'paid',
+            lastPaymentError: null,
+            currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+            currentPeriodEnd: newPeriodEnd,
+            updatedAt: new Date(),
+          },
+        });
+        
+        // Odblokuj konto jeśli było zawieszone
+        if (subscription.tenants?.isSuspended) {
+          await this.prisma.tenants.update({
+            where: { id: tenantId },
+            data: { isSuspended: false, suspendedReason: null },
           });
-          return { success: true, message: 'Subskrypcja jest już aktywna' };
+          this.logger.log(`✅ Odblokowano konto ${tenantId} - subskrypcja aktywna w Stripe`);
         }
-        return { success: false, message: 'Brak otwartych faktur do opłacenia' };
+        
+        return { success: true, message: 'Subskrypcja została zsynchronizowana i konto odblokowane!' };
+      }
+
+      if (invoices.data.length === 0) {
+        return { success: false, message: 'Brak otwartych faktur do opłacenia. Skontaktuj się z obsługą.' };
       }
 
       const invoice = invoices.data[0];
@@ -382,8 +432,14 @@ export class StripeService {
             },
           });
 
+          // Odblokuj konto
+          await this.prisma.tenants.update({
+            where: { id: tenantId },
+            data: { isSuspended: false, suspendedReason: null },
+          });
+
           this.logger.log(`✅ Płatność pobrana pomyślnie dla tenant ${tenantId}`);
-          return { success: true, message: 'Płatność pobrana pomyślnie' };
+          return { success: true, message: 'Płatność pobrana pomyślnie! Konto zostało odblokowane.' };
         } else {
           return { success: false, message: 'Płatność nie została zrealizowana' };
         }
@@ -406,6 +462,8 @@ export class StripeService {
           return { success: false, message: 'Niewystarczające środki na karcie.' };
         } else if (paymentError.code === 'expired_card') {
           return { success: false, message: 'Karta wygasła. Dodaj nową kartę.' };
+        } else if (paymentError.message?.includes('payment failed') || paymentError.message?.includes('Payment failed')) {
+          return { success: false, message: 'Płatność nieudana. Sprawdź kartę lub zmień metodę płatności.' };
         } else {
           return { success: false, message: paymentError.message || 'Płatność nieudana. Spróbuj ponownie.' };
         }
@@ -537,6 +595,10 @@ export class StripeService {
 
         this.logger.log(`✅ Utworzono/zaktualizowano subskrypcję dla tenant ${tenantId} z checkout session`);
 
+        // Aktualizuj status Featured w marketplace (dla planu Premium)
+        const isActive = stripeSubscription.status === 'active' || stripeSubscription.status === 'trialing';
+        await this.updateMarketplaceFeaturedStatus(tenantId, planId, isActive);
+
         // Wyślij email o rozpoczęciu trialu
         if (stripeSubscription.status === 'trialing' && trialEnd) {
           const tenant = await this.prisma.tenants.findUnique({
@@ -609,6 +671,10 @@ export class StripeService {
     });
 
     this.logger.log(`Utworzono subskrypcję dla tenant ${tenantId}`);
+
+    // Aktualizuj status Featured w marketplace (dla planu Premium)
+    const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+    await this.updateMarketplaceFeaturedStatus(tenantId, planId, isActive);
 
     // 📧 Wyślij email o rozpoczęciu trialu
     if (subscription.status === 'trialing' && trialEnd) {
@@ -716,6 +782,11 @@ export class StripeService {
 
     this.logger.log(`Zaktualizowano subskrypcję ${subscription.id} do statusu ${status}, okres: ${new Date(subscription.current_period_start * 1000).toISOString()} - ${new Date(subscription.current_period_end * 1000).toISOString()}${newPlanId ? `, nowy plan: ${newPlanId}` : ''}`);
 
+    // Aktualizuj status Featured w marketplace (dla planu Premium)
+    const currentPlanId = newPlanId || existingSubscription.planId;
+    const isActive = status === 'ACTIVE' || status === 'TRIALING';
+    await this.updateMarketplaceFeaturedStatus(existingSubscription.tenantId, currentPlanId, isActive);
+
     // 📧 Wyślij email o aktywnej subskrypcji (gdy trial się skończył i subskrypcja jest aktywna)
     if (status === 'ACTIVE' && existingSubscription.status === 'TRIALING') {
       const tenant = await this.prisma.tenants.findUnique({
@@ -761,6 +832,9 @@ export class StripeService {
         suspendedReason: 'Subskrypcja została anulowana',
       },
     });
+
+    // Usuń status Featured z marketplace
+    await this.updateMarketplaceFeaturedStatus(existingSubscription.tenantId, null, false);
 
     this.logger.log(`Usunięto subskrypcję ${subscription.id}`);
   }

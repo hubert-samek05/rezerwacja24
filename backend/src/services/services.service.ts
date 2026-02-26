@@ -287,7 +287,7 @@ export class ServicesService {
     return service;
   }
 
-  async remove(tenantId: string, id: string) {
+  async remove(tenantId: string, id: string, force: boolean = false) {
     // Pobierz employeeIds dla tego tenanta (używamy tenantId bezpośrednio)
     const tenantEmployees = await this.prisma.employees.findMany({
       where: { tenantId },
@@ -323,12 +323,25 @@ export class ServicesService {
       throw new NotFoundException('Usługa nie została znaleziona');
     }
 
-    // Check if service has bookings
-    if (service._count.bookings > 0) {
+    // Check if service has bookings - block unless force=true
+    if (service._count.bookings > 0 && !force) {
       throw new BadRequestException(
         'Nie można usunąć usługi, która ma przypisane rezerwacje. Dezaktywuj ją zamiast tego.',
       );
     }
+
+    // Jeśli force=true i są rezerwacje, najpierw odłącz rezerwacje od usługi (ustaw serviceId na null)
+    if (service._count.bookings > 0 && force) {
+      await this.prisma.bookings.updateMany({
+        where: { serviceId: id },
+        data: { serviceId: null },
+      });
+    }
+
+    // Usuń powiązania z pracownikami
+    await this.prisma.service_employees.deleteMany({
+      where: { serviceId: id },
+    });
 
     await this.prisma.services.delete({
       where: { id },

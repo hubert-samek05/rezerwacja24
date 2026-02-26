@@ -307,9 +307,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Carousel - Feature Highlights */}
-        <div className="mb-8">
-          <DashboardCarousel language={language} />
-        </div>
+        <DashboardCarousel language={language} />
 
         {/* Period Tabs - Pill Style */}
         <div className="flex items-center gap-2 mb-6 p-1 bg-[var(--bg-card)] rounded-full w-fit border border-[var(--border-color)]">

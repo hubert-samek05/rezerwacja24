@@ -15,6 +15,7 @@ export interface PageSettings {
   showAddress?: boolean
   showPhone?: boolean
   showEmail?: boolean
+  showTeam?: boolean // Pokaż sekcję Zespół na stronie
   primaryColor?: string
   accentColor?: string
   heroStyle?: 'banner' | 'minimal' | 'none'

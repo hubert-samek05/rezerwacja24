@@ -1,0 +1,1339 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Search, 
+  MapPin, 
+  Star, 
+  ArrowRight,
+  Building2,
+  X,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Flower2,
+  Heart,
+  Dumbbell,
+  Pen,
+  GraduationCap,
+  PawPrint,
+  Car,
+  Home,
+  Camera,
+  PartyPopper,
+  Scale,
+  Check,
+  Calendar,
+  Clock,
+  Filter,
+  ChevronDown as ChevronDownIcon
+} from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import MainNavigation from '@/components/MainNavigation'
+import { getApiUrl } from '@/lib/api-url'
+import { MARKETPLACE_CATEGORIES } from '@/lib/marketplace-categories'
+
+// Mapowanie ikon
+const iconMap: Record<string, any> = {
+  Sparkles, Flower2, Heart, Dumbbell, Pen, GraduationCap, 
+  PawPrint, Car, Home, Camera, PartyPopper, Scale
+}
+
+interface Tenant {
+  id: string
+  name: string
+  subdomain: string
+  logo: string | null
+  banner: string | null
+  city: string | null
+  address: string | null
+}
+
+interface Listing {
+  id: string
+  title: string
+  slug: string
+  shortDesc: string | null
+  coverImage: string | null
+  category: string
+  subcategory: string | null
+  tags: string[]
+  averageRating: number
+  reviewCount: number
+  bookingCount: number
+  tenants: Tenant
+}
+
+interface Pagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export default function FirmyPage() {
+  const [listings, setListings] = useState<Listing[]>([])
+  const [featuredListings, setFeaturedListings] = useState<Listing[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 12, total: 0, totalPages: 0 })
+  
+  // Filtry
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+  const [selectedCity, setSelectedCity] = useState('')
+  const [sortBy, setSortBy] = useState<'ranking' | 'rating' | 'newest' | 'popular'>('ranking')
+  
+  // Wyszukiwanie dostępności (tryb zaawansowany)
+  const [searchMode, setSearchMode] = useState<'standard' | 'availability'>('standard')
+  const [selectedDate, setSelectedDate] = useState('')
+  const [selectedTimeFrom, setSelectedTimeFrom] = useState('')
+  const [selectedTimeTo, setSelectedTimeTo] = useState('')
+  const [availabilityResults, setAvailabilityResults] = useState<any[]>([])
+  const [isSearchingAvailability, setIsSearchingAvailability] = useState(false)
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
+  
+  // Custom dropdowns state
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [showTimeFromDropdown, setShowTimeFromDropdown] = useState(false)
+  const [showTimeToDropdown, setShowTimeToDropdown] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
+  
+  // Carousel
+  const carouselRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(true)
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true)
+  const [isDragging, setIsDragging] = useState(false)
+  const autoScrollRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const [baseUrl, setBaseUrl] = useState('rezerwacja24.pl')
+  const [appUrl, setAppUrl] = useState('https://app.rezerwacja24.pl')
+
+  useEffect(() => {
+    const hostname = window.location.hostname
+    const isEu = hostname.includes('bookings24.eu')
+    setBaseUrl(isEu ? 'bookings24.eu' : 'rezerwacja24.pl')
+    setAppUrl(isEu ? 'https://app.bookings24.eu' : 'https://app.rezerwacja24.pl')
+  }, [])
+
+  // Zamykanie dropdownów po kliknięciu poza nimi
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-dropdown]')) {
+        setShowCategoryDropdown(false)
+        setShowDatePicker(false)
+        setShowTimeFromDropdown(false)
+        setShowTimeToDropdown(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
+
+  const fetchListings = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const API_URL = getApiUrl()
+      const params = new URLSearchParams()
+      
+      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedSubcategory) params.append('subcategory', selectedSubcategory)
+      if (searchQuery) params.append('search', searchQuery)
+      if (selectedCity) params.append('city', selectedCity)
+      params.append('sortBy', sortBy)
+      params.append('page', pagination.page.toString())
+      params.append('limit', '12')
+      
+      const response = await fetch(`${API_URL}/api/marketplace/listings?${params}`)
+      const data = await response.json()
+      
+      setListings(data.listings || [])
+      setPagination(data.pagination || { page: 1, limit: 12, total: 0, totalPages: 0 })
+    } catch (error) {
+      console.error('Error fetching listings:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [selectedCategory, selectedSubcategory, searchQuery, selectedCity, sortBy, pagination.page])
+
+  const fetchFeatured = useCallback(async () => {
+    try {
+      const API_URL = getApiUrl()
+      const response = await fetch(`${API_URL}/api/marketplace/featured?limit=6`)
+      const data = await response.json()
+      setFeaturedListings(data || [])
+    } catch (error) {
+      console.error('Error fetching featured:', error)
+    }
+  }, [])
+
+  // Wyszukiwanie dostępnych terminów
+  const searchAvailability = useCallback(async () => {
+    if (!selectedDate) return
+    
+    setIsSearchingAvailability(true)
+    setSearchMode('availability')
+    
+    try {
+      const API_URL = getApiUrl()
+      const params = new URLSearchParams()
+      
+      params.append('date', selectedDate)
+      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedSubcategory) params.append('subcategory', selectedSubcategory)
+      if (selectedCity) params.append('city', selectedCity)
+      if (selectedTimeFrom) params.append('timeFrom', selectedTimeFrom)
+      if (selectedTimeTo) params.append('timeTo', selectedTimeTo)
+      
+      const response = await fetch(`${API_URL}/api/marketplace/search-availability?${params}`)
+      const data = await response.json()
+      
+      setAvailabilityResults(data.results || [])
+      setPagination(data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 })
+    } catch (error) {
+      console.error('Error searching availability:', error)
+      setAvailabilityResults([])
+    } finally {
+      setIsSearchingAvailability(false)
+    }
+  }, [selectedDate, selectedCategory, selectedSubcategory, selectedCity, selectedTimeFrom, selectedTimeTo])
+
+  useEffect(() => {
+    if (searchMode === 'standard') {
+      fetchListings()
+    }
+  }, [fetchListings, searchMode])
+
+  useEffect(() => {
+    fetchFeatured()
+  }, [fetchFeatured])
+
+  // Carousel scroll handlers
+  const checkScrollButtons = () => {
+    if (carouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
+    }
+  }
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = 200
+      carouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      })
+      setTimeout(checkScrollButtons, 300)
+    }
+  }
+
+  useEffect(() => {
+    checkScrollButtons()
+    const carousel = carouselRef.current
+    if (carousel) {
+      carousel.addEventListener('scroll', checkScrollButtons)
+      return () => carousel.removeEventListener('scroll', checkScrollButtons)
+    }
+  }, [])
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (!isAutoScrolling || isDragging) return
+    
+    const startAutoScroll = () => {
+      autoScrollRef.current = setInterval(() => {
+        if (carouselRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current
+          if (scrollLeft >= scrollWidth - clientWidth - 10) {
+            // Reset to start
+            carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' })
+          } else {
+            carouselRef.current.scrollBy({ left: 120, behavior: 'smooth' })
+          }
+        }
+      }, 3000)
+    }
+    
+    startAutoScroll()
+    
+    return () => {
+      if (autoScrollRef.current) {
+        clearInterval(autoScrollRef.current)
+      }
+    }
+  }, [isAutoScrolling, isDragging])
+
+  // Touch/drag handlers
+  const handleTouchStart = () => {
+    setIsDragging(true)
+    setIsAutoScrolling(false)
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+    // Resume auto-scroll after 5 seconds of inactivity
+    setTimeout(() => setIsAutoScrolling(true), 5000)
+  }
+
+  const handleMouseEnter = () => {
+    setIsAutoScrolling(false)
+  }
+
+  const handleMouseLeave = () => {
+    setIsAutoScrolling(true)
+  }
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (selectedCategory === categoryId) {
+      setSelectedCategory(null)
+      setSelectedSubcategory(null)
+    } else {
+      setSelectedCategory(categoryId)
+      setSelectedSubcategory(null)
+    }
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleSubcategoryClick = (subcategoryId: string) => {
+    if (selectedSubcategory === subcategoryId) {
+      setSelectedSubcategory(null)
+    } else {
+      setSelectedSubcategory(subcategoryId)
+    }
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const clearFilters = () => {
+    setSelectedCategory(null)
+    setSelectedSubcategory(null)
+    setSearchQuery('')
+    setSelectedCity('')
+    setSortBy('ranking')
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPagination(prev => ({ ...prev, page: 1 }))
+    fetchListings()
+  }
+
+  const selectedCategoryData = MARKETPLACE_CATEGORIES.find(c => c.id === selectedCategory)
+
+  const getCategoryLabel = (categoryId: string) => {
+    const cat = MARKETPLACE_CATEGORIES.find(c => c.id === categoryId)
+    return cat?.name || categoryId
+  }
+
+  const getSubcategoryLabel = (categoryId: string, subcategoryId: string) => {
+    const cat = MARKETPLACE_CATEGORIES.find(c => c.id === categoryId)
+    const sub = cat?.subcategories.find(s => s.id === subcategoryId)
+    return sub?.name || subcategoryId
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <MainNavigation />
+      
+      {/* Hero Section with Background & Categories */}
+      <section className="relative pt-16 overflow-hidden">
+        {/* Background Image - same as main page */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ 
+            backgroundImage: "url('https://images.pexels.com/photos/29485953/pexels-photo-29485953.jpeg?auto=compress&cs=tinysrgb&w=1920&q=90')"
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-teal-900/80 via-teal-900/70 to-teal-950/90" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
+          {/* Title */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6 md:mb-8 px-2"
+          >
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-3 leading-tight">
+              Znajdź idealnego specjalistę
+            </h1>
+            <p className="text-base md:text-lg text-white/90 max-w-xl mx-auto">
+              Przeglądaj sprawdzone firmy i zarezerwuj wizytę online
+            </p>
+          </motion.div>
+
+          {/* Search Form - Prosty z rozwijanym zaawansowanym */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-3xl mx-auto mb-8 md:mb-10"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              {/* Główny formularz wyszukiwania */}
+              <div className="p-4 md:p-5">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Pole wyszukiwania */}
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Szukaj usługi lub firmy..."
+                      className="w-full pl-12 pr-4 py-3.5 text-gray-900 placeholder-gray-500 bg-gray-100 rounded-xl border-2 border-transparent focus:border-teal-500 focus:bg-white focus:outline-none transition-all text-base"
+                    />
+                  </div>
+                  
+                  {/* Miasto */}
+                  <div className="sm:w-44 relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={selectedCity}
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                      placeholder="Miasto"
+                      className="w-full pl-12 pr-4 py-3.5 text-gray-900 placeholder-gray-500 bg-gray-100 rounded-xl border-2 border-transparent focus:border-teal-500 focus:bg-white focus:outline-none transition-all text-base"
+                    />
+                  </div>
+                  
+                  {/* Przycisk szukaj */}
+                  <button
+                    onClick={(e) => { e.preventDefault(); setSearchMode('standard'); fetchListings(); }}
+                    className="px-8 py-3.5 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-lg shadow-teal-600/25 text-base whitespace-nowrap"
+                  >
+                    Szukaj
+                  </button>
+                </div>
+              </div>
+
+              {/* Przycisk rozwijania zaawansowanego wyszukiwania */}
+              <button
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className="w-full px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors text-sm font-medium"
+              >
+                <Calendar className="w-4 h-4" />
+                Szukaj wolnego terminu
+                <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${showAdvancedSearch ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Zaawansowane wyszukiwanie - rozwijane */}
+              <AnimatePresence>
+                {showAdvancedSearch && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 md:p-5 bg-teal-50 border-t border-teal-100">
+                      <p className="text-sm text-teal-800 font-medium mb-4">
+                        Wybierz kryteria, aby znaleźć firmy z wolnymi terminami
+                      </p>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {/* Kategoria - Custom Dropdown */}
+                        <div className="relative" data-dropdown>
+                          <label className="block text-xs font-medium text-teal-700 mb-1.5">Kategoria</label>
+                          <button
+                            type="button"
+                            onClick={() => { setShowCategoryDropdown(!showCategoryDropdown); setShowDatePicker(false); setShowTimeFromDropdown(false); setShowTimeToDropdown(false); }}
+                            className="w-full px-4 py-3 text-left text-gray-900 bg-white rounded-xl border border-teal-200 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm flex items-center justify-between"
+                          >
+                            <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
+                              {selectedCategory ? getCategoryLabel(selectedCategory) : 'Wszystkie'}
+                            </span>
+                            <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showCategoryDropdown && createPortal(
+                            <div className="fixed inset-0 z-[99999]">
+                              <div className="fixed inset-0 bg-black/50" onClick={() => setShowCategoryDropdown(false)} />
+                              <div className="fixed inset-0 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[70vh] overflow-hidden">
+                                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="font-semibold text-gray-900">Wybierz kategorię</h3>
+                                    <button onClick={() => setShowCategoryDropdown(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  <div className="overflow-auto max-h-[60vh]">
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelectedCategory(null); setSelectedSubcategory(null); setShowCategoryDropdown(false); }}
+                                  className={`w-full px-4 py-2.5 text-left text-sm hover:bg-teal-50 flex items-center gap-2 ${!selectedCategory ? 'bg-teal-50 text-teal-700 font-medium' : 'text-gray-700'}`}
+                                >
+                                  <Filter className="w-4 h-4" />
+                                  Wszystkie kategorie
+                                </button>
+                                {MARKETPLACE_CATEGORIES.map(cat => {
+                                  const IconComponent = iconMap[cat.icon] || Sparkles
+                                  return (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory(null); setShowCategoryDropdown(false); }}
+                                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-teal-50 flex items-center gap-2 ${selectedCategory === cat.id ? 'bg-teal-50 text-teal-700 font-medium' : 'text-gray-700'}`}
+                                    >
+                                      <IconComponent className="w-4 h-4" />
+                                      {cat.name}
+                                    </button>
+                                  )
+                                })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>,
+                            document.body
+                          )}
+                        </div>
+
+                        {/* Lokalizacja */}
+                        <div>
+                          <label className="block text-xs font-medium text-teal-700 mb-1.5">Lokalizacja</label>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                              type="text"
+                              value={selectedCity}
+                              onChange={(e) => setSelectedCity(e.target.value)}
+                              placeholder="Miasto"
+                              className="w-full pl-10 pr-4 py-3 text-gray-900 placeholder-gray-500 bg-white rounded-xl border border-teal-200 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Data - Custom Calendar */}
+                        <div className="relative" data-dropdown>
+                          <label className="block text-xs font-medium text-teal-700 mb-1.5">Data</label>
+                          <button
+                            type="button"
+                            onClick={() => { setShowDatePicker(!showDatePicker); setShowCategoryDropdown(false); setShowTimeFromDropdown(false); setShowTimeToDropdown(false); }}
+                            className="w-full px-4 py-3 text-left text-gray-900 bg-white rounded-xl border border-teal-200 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-teal-600" />
+                              <span className={selectedDate ? 'text-gray-900' : 'text-gray-500'}>
+                                {selectedDate ? new Date(selectedDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : 'Wybierz'}
+                              </span>
+                            </span>
+                            <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showDatePicker && createPortal(
+                            <div className="fixed inset-0 z-[99999]">
+                              <div className="fixed inset-0 bg-black/50" onClick={() => setShowDatePicker(false)} />
+                              <div className="fixed inset-0 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl shadow-2xl p-5">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold text-gray-900">Wybierz datę</h3>
+                                    <button onClick={() => setShowDatePicker(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center justify-between mb-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
+                                    className="p-1 hover:bg-gray-100 rounded-lg"
+                                  >
+                                    <ChevronLeft className="w-5 h-5" />
+                                  </button>
+                                  <span className="font-medium text-gray-900">
+                                    {calendarMonth.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
+                                    className="p-1 hover:bg-gray-100 rounded-lg"
+                                  >
+                                    <ChevronRight className="w-5 h-5" />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                  {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+                                    <div key={d} className="text-xs font-medium text-gray-500 py-1">{d}</div>
+                                  ))}
+                                </div>
+                                <div className="grid grid-cols-7 gap-1">
+                                  {(() => {
+                                    const days = []
+                                    const firstDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+                                    const lastDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)
+                                    const startPadding = (firstDay.getDay() + 6) % 7
+                                    const today = new Date()
+                                    today.setHours(0, 0, 0, 0)
+                                    
+                                    for (let i = 0; i < startPadding; i++) {
+                                      days.push(<div key={`pad-${i}`} />)
+                                    }
+                                    
+                                    for (let d = 1; d <= lastDay.getDate(); d++) {
+                                      const date = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d)
+                                      const dateStr = date.toISOString().split('T')[0]
+                                      const isPast = date < today
+                                      const isSelected = selectedDate === dateStr
+                                      const isToday = date.getTime() === today.getTime()
+                                      
+                                      days.push(
+                                        <button
+                                          key={d}
+                                          type="button"
+                                          disabled={isPast}
+                                          onClick={() => { setSelectedDate(dateStr); setShowDatePicker(false); }}
+                                          className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors
+                                            ${isPast ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-teal-100'}
+                                            ${isSelected ? 'bg-teal-600 text-white hover:bg-teal-700' : ''}
+                                            ${isToday && !isSelected ? 'border-2 border-teal-500 text-teal-600' : ''}
+                                          `}
+                                        >
+                                          {d}
+                                        </button>
+                                      )
+                                    }
+                                    return days
+                                  })()}
+                                </div>
+                                </div>
+                              </div>
+                            </div>,
+                            document.body
+                          )}
+                        </div>
+
+                        {/* Godzina od - Custom Dropdown */}
+                        <div className="relative" data-dropdown>
+                          <label className="block text-xs font-medium text-teal-700 mb-1.5">Godzina od</label>
+                          <button
+                            type="button"
+                            onClick={() => setShowTimeFromDropdown(!showTimeFromDropdown)}
+                            className="w-full px-4 py-3 text-left text-gray-900 bg-white rounded-xl border border-teal-200 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-teal-600" />
+                              <span className={selectedTimeFrom ? 'text-gray-900' : 'text-gray-500'}>
+                                {selectedTimeFrom || 'Dowolna'}
+                              </span>
+                            </span>
+                            <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showTimeFromDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showTimeFromDropdown && createPortal(
+                            <div className="fixed inset-0 z-[99999]">
+                              <div className="fixed inset-0 bg-black/50" onClick={() => setShowTimeFromDropdown(false)} />
+                              <div className="fixed inset-0 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+                                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="font-semibold text-gray-900">Godzina od</h3>
+                                    <button onClick={() => setShowTimeFromDropdown(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  <div className="p-3 grid grid-cols-3 gap-2 max-h-[50vh] overflow-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() => { setSelectedTimeFrom(''); setShowTimeFromDropdown(false); }}
+                                      className={`px-3 py-2.5 rounded-xl text-sm font-medium ${!selectedTimeFrom ? 'bg-teal-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                                    >
+                                      Dowolna
+                                    </button>
+                                    {['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map(t => (
+                                      <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => { setSelectedTimeFrom(t); setShowTimeFromDropdown(false); }}
+                                        className={`px-3 py-2.5 rounded-xl text-sm font-medium ${selectedTimeFrom === t ? 'bg-teal-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                                      >
+                                        {t}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>,
+                            document.body
+                          )}
+                        </div>
+
+                        {/* Godzina do - Custom Dropdown */}
+                        <div className="relative" data-dropdown>
+                          <label className="block text-xs font-medium text-teal-700 mb-1.5">Godzina do</label>
+                          <button
+                            type="button"
+                            onClick={() => setShowTimeToDropdown(!showTimeToDropdown)}
+                            className="w-full px-4 py-3 text-left text-gray-900 bg-white rounded-xl border border-teal-200 hover:border-teal-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-teal-600" />
+                              <span className={selectedTimeTo ? 'text-gray-900' : 'text-gray-500'}>
+                                {selectedTimeTo || 'Dowolna'}
+                              </span>
+                            </span>
+                            <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showTimeToDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showTimeToDropdown && createPortal(
+                            <div className="fixed inset-0 z-[99999]">
+                              <div className="fixed inset-0 bg-black/50" onClick={() => setShowTimeToDropdown(false)} />
+                              <div className="fixed inset-0 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+                                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="font-semibold text-gray-900">Godzina do</h3>
+                                    <button onClick={() => setShowTimeToDropdown(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  <div className="p-3 grid grid-cols-3 gap-2 max-h-[50vh] overflow-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() => { setSelectedTimeTo(''); setShowTimeToDropdown(false); }}
+                                      className={`px-3 py-2.5 rounded-xl text-sm font-medium ${!selectedTimeTo ? 'bg-teal-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                                    >
+                                      Dowolna
+                                    </button>
+                                    {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'].map(t => (
+                                      <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => { setSelectedTimeTo(t); setShowTimeToDropdown(false); }}
+                                        className={`px-3 py-2.5 rounded-xl text-sm font-medium ${selectedTimeTo === t ? 'bg-teal-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                                      >
+                                        {t}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>,
+                            document.body
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Przycisk szukaj terminów */}
+                      <button
+                        onClick={(e) => { e.preventDefault(); searchAvailability(); }}
+                        disabled={!selectedDate || isSearchingAvailability}
+                        className="w-full mt-4 px-6 py-3.5 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
+                      >
+                        {isSearchingAvailability ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Calendar className="w-5 h-5" />
+                        )}
+                        {selectedDate ? 'Szukaj wolnych terminów' : 'Wybierz datę'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          {/* Categories Carousel - Inside Hero */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => scrollCarousel('left')}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center transition-all hover:bg-white ${
+                canScrollLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <button
+              onClick={() => scrollCarousel('right')}
+              className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center transition-all hover:bg-white ${
+                canScrollRight ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <ChevronRight className="w-5 h-5 text-gray-700" />
+            </button>
+
+            {/* Carousel */}
+            <div 
+              ref={carouselRef}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="flex gap-6 overflow-x-auto scrollbar-hide py-2 px-6 -mx-4 touch-pan-x"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+            >
+              {MARKETPLACE_CATEGORIES.map((category) => {
+                const IconComponent = iconMap[category.icon] || Building2
+                const isSelected = selectedCategory === category.id
+                
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryClick(category.id)}
+                    className="flex-shrink-0 flex flex-col items-center group"
+                  >
+                    {/* Circular Icon - Smaller */}
+                    <div className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 border-2 ${
+                      isSelected
+                        ? 'bg-white border-white shadow-lg'
+                        : 'bg-white/20 border-white/40 group-hover:bg-white/30 group-hover:border-white/60'
+                    }`}>
+                      <IconComponent className={`w-6 h-6 transition-colors ${
+                        isSelected ? 'text-teal-600' : 'text-white'
+                      }`} />
+                    </div>
+                    
+                    {/* Label */}
+                    <span className={`mt-2 text-xs font-medium text-center max-w-[80px] leading-tight transition-colors ${
+                      isSelected ? 'text-white' : 'text-white/80 group-hover:text-white'
+                    }`}>
+                      {category.name}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Subcategories - Below Hero */}
+      <AnimatePresence>
+        {selectedCategoryData && (
+          <motion.section
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-gray-50 border-b border-gray-200 overflow-hidden"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+                <span className="text-sm text-gray-500 flex-shrink-0">Podkategorie:</span>
+                {selectedCategoryData.subcategories.map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => handleSubcategoryClick(sub.id)}
+                    className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      selectedSubcategory === sub.id
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-teal-300 hover:text-teal-700'
+                    }`}
+                  >
+                    {sub.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* Active Filters */}
+      {searchMode === 'standard' && (selectedCategory || selectedCity || searchQuery) && (
+        <section className="py-4 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-500">Filtry:</span>
+              {selectedCategory && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-full text-sm font-medium">
+                  {getCategoryLabel(selectedCategory)}
+                  {selectedSubcategory && ` → ${getSubcategoryLabel(selectedCategory, selectedSubcategory)}`}
+                  <button 
+                    onClick={() => { setSelectedCategory(null); setSelectedSubcategory(null); }}
+                    className="ml-1 hover:bg-teal-100 rounded-full p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {selectedCity && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {selectedCity}
+                  <button 
+                    onClick={() => setSelectedCity('')}
+                    className="ml-1 hover:bg-blue-100 rounded-full p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm font-medium">
+                  "{searchQuery}"
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="ml-1 hover:bg-purple-100 rounded-full p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={clearFilters}
+                className="text-sm text-gray-500 hover:text-gray-700 underline ml-2"
+              >
+                Wyczyść wszystkie
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Featured Section */}
+      {searchMode === 'standard' && featuredListings.length > 0 && !selectedCategory && !searchQuery && (
+        <section className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5 text-amber-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Wyróżnione firmy</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredListings.map((listing, index) => (
+                <FirmCard 
+                  key={listing.id} 
+                  listing={listing} 
+                  baseUrl={baseUrl}
+                  featured
+                  index={index}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Availability Results - Wyniki wyszukiwania terminów */}
+      {searchMode === 'availability' && (
+        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-teal-50 to-white">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                  <Calendar className="w-7 h-7 text-teal-600" />
+                  Dostępne terminy
+                </h2>
+                <p className="text-gray-500 mt-1">
+                  {selectedDate && new Date(selectedDate).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {selectedTimeFrom && ` • ${selectedTimeFrom}`}
+                  {selectedTimeTo && ` - ${selectedTimeTo}`}
+                </p>
+              </div>
+              <button
+                onClick={() => { setSearchMode('standard'); setAvailabilityResults([]); }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Wróć do listy firm
+              </button>
+            </div>
+
+            {/* Loading */}
+            {isSearchingAvailability ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 text-teal-500 animate-spin" />
+              </div>
+            ) : availabilityResults.length === 0 ? (
+              /* Empty State */
+              <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Calendar className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Brak dostępnych terminów</h3>
+                <p className="text-gray-500 mb-6">
+                  Nie znaleziono wolnych terminów w wybranym dniu. Spróbuj wybrać inną datę.
+                </p>
+                <button
+                  onClick={() => { setSearchMode('standard'); setAvailabilityResults([]); }}
+                  className="px-6 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors"
+                >
+                  Przeglądaj wszystkie firmy
+                </button>
+              </div>
+            ) : (
+              /* Results with slots */
+              <div className="space-y-6">
+                {availabilityResults.map((result, index) => (
+                  <motion.div
+                    key={result.listing.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
+                  >
+                    <div className="flex flex-col md:flex-row">
+                      {/* Image */}
+                      <div className="md:w-64 h-48 md:h-auto relative flex-shrink-0">
+                        <Image
+                          src={result.listing.coverImage || result.tenant.banner || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400'}
+                          alt={result.listing.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 256px"
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 p-5">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          {/* Info */}
+                          <div className="flex-1">
+                            <Link 
+                              href={`https://${result.tenant.subdomain}.${baseUrl}`}
+                              className="text-xl font-bold text-gray-900 hover:text-teal-600 transition-colors"
+                            >
+                              {result.listing.title}
+                            </Link>
+                            <p className="text-gray-500 text-sm mt-1 flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {result.tenant.city || 'Polska'}
+                              {result.tenant.address && ` • ${result.tenant.address}`}
+                            </p>
+                            {result.listing.shortDesc && (
+                              <p className="text-gray-600 text-sm mt-2 line-clamp-2">{result.listing.shortDesc}</p>
+                            )}
+                            <div className="flex items-center gap-3 mt-3">
+                              {result.listing.averageRating > 0 && (
+                                <span className="flex items-center gap-1 text-sm">
+                                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                  <span className="font-medium">{result.listing.averageRating.toFixed(1)}</span>
+                                  <span className="text-gray-400">({result.listing.reviewCount})</span>
+                                </span>
+                              )}
+                              <span className="text-sm text-gray-500">{result.servicesCount} usług</span>
+                            </div>
+                          </div>
+
+                          {/* Available Slots */}
+                          <div className="md:w-80">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Dostępne godziny:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {result.availableSlots.map((slot: any, slotIndex: number) => (
+                                <Link
+                                  key={slotIndex}
+                                  href={`https://${result.tenant.subdomain}.${baseUrl}?date=${selectedDate}&time=${slot.time}&service=${slot.serviceId}`}
+                                  className="px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                                >
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {slot.time}
+                                </Link>
+                              ))}
+                              {result.availableSlots.length >= 6 && (
+                                <Link
+                                  href={`https://${result.tenant.subdomain}.${baseUrl}`}
+                                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                  Więcej...
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Listings Grid - Standard mode */}
+      {searchMode === 'standard' && (
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          {/* Header with sort */}
+          <div className="flex justify-end mb-8">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            >
+              <option value="ranking">Najlepsze dopasowanie</option>
+              <option value="rating">Najwyżej oceniane</option>
+              <option value="popular">Najpopularniejsze</option>
+              <option value="newest">Najnowsze</option>
+            </select>
+          </div>
+
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-10 h-10 text-teal-500 animate-spin" />
+            </div>
+          ) : listings.length === 0 ? (
+            /* Empty State */
+            <div className="text-center py-20 bg-white rounded-2xl">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Building2 className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Brak wyników</h3>
+              <p className="text-gray-500 mb-6">
+                Nie znaleziono firm spełniających kryteria wyszukiwania
+              </p>
+              <button
+                onClick={clearFilters}
+                className="px-6 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors"
+              >
+                Wyczyść filtry
+              </button>
+            </div>
+          ) : (
+            /* Listings Grid */
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {listings.map((listing, index) => (
+                  <FirmCard 
+                    key={listing.id} 
+                    listing={listing} 
+                    baseUrl={baseUrl}
+                    index={index}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-12">
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                    disabled={pagination.page === 1}
+                    className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum: number
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i
+                    } else {
+                      pageNum = pagination.page - 2 + i
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                        className={`w-10 h-10 rounded-full font-medium transition-colors ${
+                          pagination.page === pageNum
+                            ? 'bg-teal-600 text-white'
+                            : 'bg-white border border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                  
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                    disabled={pagination.page === pagination.totalPages}
+                    className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+      )}
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-teal-600 to-teal-700">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Prowadzisz firmę usługową?
+          </h2>
+          <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
+            Dołącz do katalogu i pozwól klientom Cię znaleźć. 
+            Rejestracja jest darmowa!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href={`${appUrl}/register`}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
+            >
+              Zarejestruj firmę
+              <ArrowRight className="w-5 h-5" />
+            </a>
+            <Link
+              href="/funkcje"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-teal-500/30 text-white font-semibold rounded-xl hover:bg-teal-500/40 transition-colors border border-white/20"
+            >
+              Poznaj możliwości
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-400">
+        <div className="max-w-7xl mx-auto text-center">
+          <p>© {new Date().getFullYear()} Rezerwacja24. Wszystkie prawa zastrzeżone.</p>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+// Domyślne zdjęcia dla kategorii
+const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
+  'beauty': 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80',
+  'health': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&q=80',
+  'fitness': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80',
+  'automotive': 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
+  'education': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80',
+  'pets': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80',
+  'home': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80',
+  'events': 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80',
+  'photo': 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=800&q=80',
+  'legal': 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&q=80',
+  'tattoo': 'https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?w=800&q=80',
+  'default': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80',
+}
+
+// Komponent karty firmy
+function FirmCard({ 
+  listing, 
+  baseUrl, 
+  featured = false,
+  index = 0
+}: { 
+  listing: Listing
+  baseUrl: string
+  featured?: boolean
+  index?: number
+}) {
+  const firmUrl = `https://${listing.tenants.subdomain}.${baseUrl}`
+  
+  const categoryData = MARKETPLACE_CATEGORIES.find(c => c.id === listing.category)
+  
+  // Pobierz zdjęcie: 1) coverImage z marketplace, 2) banner firmy, 3) domyślne dla kategorii
+  const defaultImage = DEFAULT_CATEGORY_IMAGES[listing.category] || DEFAULT_CATEGORY_IMAGES['default']
+  const coverImage = listing.coverImage || listing.tenants?.banner || defaultImage
+  
+  return (
+    <motion.a
+      href={firmUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      whileHover={{ y: -4 }}
+      className={`group block bg-white rounded-2xl overflow-hidden transition-all hover:shadow-xl ${
+        featured 
+          ? 'ring-2 ring-amber-200 shadow-lg' 
+          : 'shadow-sm hover:shadow-lg'
+      }`}
+    >
+      {/* Cover Image */}
+      <div className="relative h-44 bg-gray-100 overflow-hidden">
+        <Image
+          src={coverImage}
+          alt={listing.title}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          quality={70}
+          loading="lazy"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        
+        {/* Featured Badge */}
+        {featured && (
+          <div className="absolute top-3 right-3">
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-500 rounded-full shadow-lg">
+              <Star className="w-3.5 h-3.5 text-white fill-white" />
+              <span className="text-xs font-semibold text-white">Wyróżnione</span>
+            </div>
+          </div>
+        )}
+
+        {/* Category Badge */}
+        <div className="absolute bottom-3 left-3">
+          <div className="px-3 py-1 bg-white/95 backdrop-blur-sm rounded-full shadow-sm">
+            <span className="text-xs font-medium text-gray-700">
+              {categoryData?.name || listing.category}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-5">
+        {/* Logo & Title */}
+        <div className="flex items-start gap-3 mb-3">
+          {listing.tenants.logo ? (
+            <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 ring-1 ring-gray-200">
+              <Image
+                src={listing.tenants.logo}
+                alt={listing.tenants.name}
+                width={48}
+                height={48}
+                className="object-cover w-full h-full"
+              />
+            </div>
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-6 h-6 text-teal-600" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 text-lg group-hover:text-teal-600 transition-colors truncate">
+              {listing.title}
+            </h3>
+            {listing.tenants.city && (
+              <div className="flex items-center gap-1 text-gray-500 text-sm">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{listing.tenants.city}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {listing.shortDesc && (
+          <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+            {listing.shortDesc}
+          </p>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-1.5">
+            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <span className="font-semibold text-gray-900">
+              {Number(listing.averageRating).toFixed(1)}
+            </span>
+            <span className="text-gray-400 text-sm">
+              ({listing.reviewCount} opinii)
+            </span>
+          </div>
+          
+          <span className="text-teal-600 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+            Zarezerwuj
+            <ArrowRight className="w-4 h-4" />
+          </span>
+        </div>
+      </div>
+    </motion.a>
+  )
+}

@@ -1,8 +1,15 @@
 import { MetadataRoute } from 'next'
 import { getCurrentDomain, isEnglishDomain } from '@/lib/seo-config'
 
-// Pobierz listę aktywnych firm dla sitemap
-async function getActiveSubdomains(): Promise<string[]> {
+interface SubdomainData {
+  subdomain: string
+  businessName: string
+  city?: string
+  updatedAt?: string
+}
+
+// Pobierz listę aktywnych firm dla sitemap z dodatkowymi danymi
+async function getActiveSubdomains(): Promise<SubdomainData[]> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.rezerwacja24.pl'
     const res = await fetch(`${apiUrl}/api/tenants/public/subdomains`, {
@@ -10,7 +17,15 @@ async function getActiveSubdomains(): Promise<string[]> {
     })
     if (res.ok) {
       const data = await res.json()
-      return data.subdomains || []
+      // Obsłuż zarówno stary format (string[]) jak i nowy (SubdomainData[])
+      if (Array.isArray(data.subdomains)) {
+        return data.subdomains.map((item: string | SubdomainData) => 
+          typeof item === 'string' 
+            ? { subdomain: item, businessName: item } 
+            : item
+        )
+      }
+      return []
     }
   } catch (error) {
     console.error('Error fetching subdomains for sitemap:', error)
@@ -123,12 +138,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // Dynamiczne strony firm (subdomeny)
+  // Wszystkie subdomeny są w jednym sitemap - Google Search Console
+  // z właściwością domenową (rezerwacja24.pl) automatycznie je zaindeksuje
   const subdomains = await getActiveSubdomains()
-  const companyPages: MetadataRoute.Sitemap = subdomains.map(subdomain => ({
-    url: `https://${subdomain}.${domain}`,
-    lastModified: currentDate,
+  const companyPages: MetadataRoute.Sitemap = subdomains.map(company => ({
+    url: `https://${company.subdomain}.${domain}`,
+    lastModified: company.updatedAt 
+      ? new Date(company.updatedAt).toISOString().split('T')[0] 
+      : currentDate,
     changeFrequency: 'weekly' as const,
-    priority: 0.9,
+    priority: 0.8, // Nieco niższy priorytet niż strona główna
   }))
 
   return [...staticPages, ...companyPages]

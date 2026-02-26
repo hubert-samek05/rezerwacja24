@@ -57,6 +57,10 @@ export interface Booking {
   depositStatus?: 'not_required' | 'pending' | 'paid' | 'refunded'
   depositPaidAt?: string
   depositPaymentMethod?: string
+  // Informacje o anulowaniu
+  cancelledAt?: string | null
+  cancelledBy?: 'customer' | 'employee' | 'owner' | 'system' | null
+  cancellationReason?: string | null
 }
 
 export interface Customer {

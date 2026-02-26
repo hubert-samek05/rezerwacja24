@@ -13,6 +13,7 @@ import {
   MessageSquare,
   RefreshCw,
   BarChart3,
+  Star,
   AlertTriangle,
 } from 'lucide-react';
 import { useAccountStatus } from '@/hooks/useAccountStatus';
@@ -364,6 +365,64 @@ export default function SubscriptionTab() {
     }
   };
 
+  const handleOpenBillingPortal = async () => {
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch('/api/billing/portal-session', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        setError('Nie udało się otworzyć portalu płatności');
+      }
+    } catch (err) {
+      setError('Wystąpił błąd');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRetryPayment = async () => {
+    try {
+      setActionLoading(true);
+      setError(null);
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch('/api/billing/retry-payment', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setSuccessMessage(data.message || 'Płatność pobrana pomyślnie! Konto zostało odblokowane.');
+        // Wyczyść cache statusu konta
+        sessionStorage.removeItem('account_status_cache');
+        // Odśwież dane
+        fetchData();
+        // Odśwież stronę po 2 sekundach
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setError(data.message || 'Nie udało się pobrać płatności. Sprawdź metodę płatności.');
+      }
+    } catch (err) {
+      setError('Wystąpił błąd podczas przetwarzania płatności');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('pl-PL', {
       day: 'numeric',
@@ -428,16 +487,35 @@ export default function SubscriptionTab() {
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
               <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-1">
                 {suspendedReason?.includes('próbn') ? 'Okres próbny zakończony' : 'Konto zawieszone'}
               </h3>
-              <p className="text-sm text-amber-700 dark:text-amber-400/80">
+              <p className="text-sm text-amber-700 dark:text-amber-400/80 mb-3">
                 {suspendedReason?.includes('próbn') 
                   ? 'Wybierz plan poniżej, aby kontynuować korzystanie z aplikacji. Twoje dane są bezpieczne.'
                   : suspendedReason || 'Wybierz plan lub zaktualizuj metodę płatności, aby odblokować konto.'
                 }
               </p>
+              {/* Przyciski odnowienia - tylko gdy subskrypcja wygasła (nie trial) */}
+              {!suspendedReason?.includes('próbn') && subscription?.stripeCustomerId && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleRetryPayment}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {actionLoading ? 'Przetwarzanie...' : 'Ponów płatność'}
+                  </button>
+                  <button
+                    onClick={handleOpenBillingPortal}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Zmień kartę
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -813,6 +891,12 @@ export default function SubscriptionTab() {
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
                     {d.subscriptionData?.noCommission || (isB2B ? '0% commission' : '0% prowizji')}
                   </li>
+                  {plan.slug === 'premium' && (
+                    <li className="flex items-center gap-2 text-sm text-amber-600 font-medium">
+                      <Star className="w-4 h-4 text-amber-500" />
+                      {isB2B ? 'Featured in business catalog' : 'Wyróżnienie w katalogu firm'}
+                    </li>
+                  )}
                 </ul>
 
                 {!isCurrentPlan && isSelected && (

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronUp,
+  ChevronDown,
   Calendar, 
   TrendingUp, 
   Bell,
@@ -13,7 +15,8 @@ import {
   Zap,
   Star,
   MessageSquare,
-  Users
+  Users,
+  Lightbulb
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -35,6 +38,17 @@ interface DashboardCarouselProps {
 
 export default function DashboardCarousel({ language = 'pl' }: DashboardCarouselProps) {
   const [currentPage, setCurrentPage] = useState(0)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dashboardCarouselCollapsed') === 'true'
+    }
+    return false
+  })
+
+  // Zapisz stan zwinięcia w localStorage
+  useEffect(() => {
+    localStorage.setItem('dashboardCarouselCollapsed', String(isCollapsed))
+  }, [isCollapsed])
 
   const cards: BannerCard[] = [
     {
@@ -255,10 +269,31 @@ export default function DashboardCarousel({ language = 'pl' }: DashboardCarousel
   }, [mobileTotalPages, currentPage])
 
   return (
-    <div className="space-y-4">
-      {/* Cards Grid - responsive */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-        {mobileVisibleCards.map((card) => (
+    <div className="mb-8">
+      {/* Przycisk zwijania - mała strzałka po prawej */}
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] rounded-lg transition-all"
+        >
+          {isCollapsed 
+            ? (language === 'pl' ? 'Pokaż porady' : 'Show tips')
+            : (language === 'pl' ? 'Ukryj' : 'Hide')
+          }
+          {isCollapsed ? (
+            <ChevronDown className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronUp className="w-3.5 h-3.5" />
+          )}
+        </button>
+      </div>
+
+      {/* Zawartość karuzelu - animowana */}
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
+        <div className="space-y-4">
+          {/* Cards Grid - responsive */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {mobileVisibleCards.map((card) => (
           <Link
             key={card.id}
             href={card.buttonLink}
@@ -302,46 +337,48 @@ export default function DashboardCarousel({ language = 'pl' }: DashboardCarousel
             </div>
           </Link>
         ))}
-      </div>
+            </div>
 
-      {/* Navigation - larger touch targets on mobile */}
-      <div className="flex items-center justify-center gap-2 md:gap-3">
-        <button
-          onClick={prevPage}
-          className="p-2.5 md:p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] active:bg-[var(--bg-secondary)] transition-all touch-manipulation"
-          aria-label="Previous"
-        >
-          <ChevronLeft className="w-5 h-5 md:w-4 md:h-4" />
-        </button>
-        
-        <div className="flex items-center gap-1.5 md:gap-2">
-          {Array.from({ length: mobileTotalPages }).map((_, index) => (
+          {/* Navigation - larger touch targets on mobile */}
+          <div className="flex items-center justify-center gap-2 md:gap-3">
             <button
-              key={index}
-              onClick={() => setCurrentPage(index)}
-              className={`transition-all duration-300 rounded-full touch-manipulation ${
-                index === currentPage 
-                  ? 'w-6 md:w-8 h-2 bg-teal-500' 
-                  : 'w-2 h-2 bg-[var(--border-color)] hover:bg-[var(--text-muted)]'
-              }`}
-              aria-label={`Page ${index + 1}`}
-            />
-          ))}
-        </div>
+              onClick={prevPage}
+              className="p-2.5 md:p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] active:bg-[var(--bg-secondary)] transition-all touch-manipulation"
+              aria-label="Previous"
+            >
+              <ChevronLeft className="w-5 h-5 md:w-4 md:h-4" />
+            </button>
+            
+            <div className="flex items-center gap-1.5 md:gap-2">
+              {Array.from({ length: mobileTotalPages }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index)}
+                  className={`transition-all duration-300 rounded-full touch-manipulation ${
+                    index === currentPage 
+                      ? 'w-6 md:w-8 h-2 bg-teal-500' 
+                      : 'w-2 h-2 bg-[var(--border-color)] hover:bg-[var(--text-muted)]'
+                  }`}
+                  aria-label={`Page ${index + 1}`}
+                />
+              ))}
+            </div>
 
-        <button
-          onClick={nextPage}
-          className="p-2.5 md:p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] active:bg-[var(--bg-secondary)] transition-all touch-manipulation"
-          aria-label="Next"
-        >
-          <ChevronRight className="w-5 h-5 md:w-4 md:h-4" />
-        </button>
+            <button
+              onClick={nextPage}
+              className="p-2.5 md:p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] active:bg-[var(--bg-secondary)] transition-all touch-manipulation"
+              aria-label="Next"
+            >
+              <ChevronRight className="w-5 h-5 md:w-4 md:h-4" />
+            </button>
+          </div>
+          
+          {/* Swipe hint on mobile */}
+          <p className="text-center text-xs text-[var(--text-muted)] md:hidden">
+            {currentPage + 1} / {mobileTotalPages}
+          </p>
+        </div>
       </div>
-      
-      {/* Swipe hint on mobile */}
-      <p className="text-center text-xs text-[var(--text-muted)] md:hidden">
-        {currentPage + 1} / {mobileTotalPages}
-      </p>
     </div>
   )
 }

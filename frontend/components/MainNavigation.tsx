@@ -43,7 +43,7 @@ export default function MainNavigation() {
   const t = {
     nav: {
       login: locale === 'pl' ? 'Zaloguj się' : 'Log in',
-      tryFree: locale === 'pl' ? 'Wypróbuj za darmo' : 'Try for free',
+      tryFree: locale === 'pl' ? 'Dodaj swój biznes' : 'Add your business',
       features: locale === 'pl' ? 'Funkcje' : 'Features',
       forWhom: locale === 'pl' ? 'Dla kogo?' : 'For whom?',
       howItWorks: locale === 'pl' ? 'Jak to działa' : 'How it works',
@@ -245,6 +245,13 @@ export default function MainNavigation() {
                   <div className="my-3 border-t border-gray-100"></div>
                   
                   {/* Other links */}
+                  <Link 
+                    href="/firmy" 
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className="block py-3 px-4 text-base text-gray-700 hover:bg-gray-50 font-medium rounded-xl transition-colors"
+                  >
+                    {locale === 'pl' ? 'Katalog firm' : 'Directory'}
+                  </Link>
                   <Link 
                     href="/contact" 
                     onClick={() => setMobileMenuOpen(false)} 

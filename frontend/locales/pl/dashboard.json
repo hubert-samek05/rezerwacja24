@@ -234,7 +234,10 @@
     "deleteError": "Nie udało się usunąć usługi",
     "deleteService": "Usuń usługę",
     "deleteConfirm": "Czy na pewno chcesz usunąć usługę",
-    "hasBookings": "Ta usługa ma {count} rezerwacji."
+    "hasBookings": "Ta usługa ma {count} rezerwacji.",
+    "confirmDeleteTitle": "Potwierdź usunięcie",
+    "continueDelete": "Kontynuuj usuwanie",
+    "confirmDelete": "Tak, usuń bezpowrotnie"
   },
   "employees": {
     "title": "Pracownicy",

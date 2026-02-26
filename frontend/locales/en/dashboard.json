@@ -234,7 +234,10 @@
     "deleteError": "Failed to delete service",
     "deleteService": "Delete service",
     "deleteConfirm": "Are you sure you want to delete service",
-    "hasBookings": "This service has {count} bookings."
+    "hasBookings": "This service has {count} bookings.",
+    "confirmDeleteTitle": "Confirm deletion",
+    "continueDelete": "Continue deletion",
+    "confirmDelete": "Yes, delete permanently"
   },
   "employees": {
     "title": "Employees",

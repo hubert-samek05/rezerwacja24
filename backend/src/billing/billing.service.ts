@@ -102,6 +102,7 @@ export class BillingService {
   /**
    * Sprawdza czy tenant ma aktywną subskrypcję
    * WYMAGA podanej karty płatniczej (stripePaymentMethodId)
+   * WYMAGA nieprzeterminowanego okresu subskrypcji (currentPeriodEnd)
    */
   async hasActiveSubscription(tenantId: string): Promise<boolean> {
     const subscription = await this.prisma.subscriptions.findUnique({
@@ -115,10 +116,21 @@ export class BillingService {
     // Aktywna subskrypcja wymaga:
     // 1. Statusu ACTIVE lub TRIALING
     // 2. Podanej karty płatniczej (stripePaymentMethodId)
+    // 3. Nieprzeterminowanego okresu subskrypcji (currentPeriodEnd > now)
     const hasValidStatus = ['ACTIVE', 'TRIALING'].includes(subscription.status);
     const hasPaymentMethod = !!subscription.stripePaymentMethodId;
+    
+    // Sprawdź czy okres subskrypcji nie wygasł
+    const now = new Date();
+    const periodEnd = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
+    const isPeriodValid = periodEnd ? periodEnd > now : false;
 
-    return hasValidStatus && hasPaymentMethod;
+    // Loguj dla debugowania
+    if (hasValidStatus && hasPaymentMethod && !isPeriodValid) {
+      this.logger.warn(`Subscription for tenant ${tenantId} has expired. Period ended: ${periodEnd?.toISOString()}`);
+    }
+
+    return hasValidStatus && hasPaymentMethod && isPeriodValid;
   }
 
   /**
@@ -422,5 +434,128 @@ export class BillingService {
         limit: features.sms ?? 0,
       },
     };
+  }
+
+  // ==================== APPLE IN-APP PURCHASE ====================
+
+  /**
+   * Aktywuje subskrypcję zakupioną przez Apple In-App Purchase
+   */
+  async activateAppleSubscription(
+    tenantId: string,
+    data: {
+      planId: string;
+      appleTransactionId: string;
+      appleProductId: string;
+      periodStart: Date;
+      periodEnd: Date;
+      isYearly: boolean;
+    },
+  ) {
+    this.logger.log(`🍎 Activating Apple subscription for tenant: ${tenantId}`);
+
+    // Sprawdź czy tenant istnieje
+    const tenant = await this.prisma.tenants.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant nie istnieje');
+    }
+
+    // Sprawdź czy już istnieje subskrypcja
+    const existingSubscription = await this.prisma.subscriptions.findUnique({
+      where: { tenantId },
+    });
+
+    if (existingSubscription) {
+      // Aktualizuj istniejącą subskrypcję
+      const updated = await this.prisma.subscriptions.update({
+        where: { tenantId },
+        data: {
+          planId: data.planId,
+          status: 'ACTIVE',
+          appleTransactionId: data.appleTransactionId,
+          appleProductId: data.appleProductId,
+          currentPeriodStart: data.periodStart,
+          currentPeriodEnd: data.periodEnd,
+          cancelAtPeriodEnd: false,
+          trialEnd: null, // Zakończ trial
+          updatedAt: new Date(),
+        },
+      });
+
+      // Odblokuj konto jeśli było zawieszone
+      if (tenant.isSuspended) {
+        await this.prisma.tenants.update({
+          where: { id: tenantId },
+          data: {
+            isSuspended: false,
+            suspendedReason: null,
+            updatedAt: new Date(),
+          },
+        });
+        this.logger.log(`🍎 Tenant ${tenantId} unsuspended after Apple purchase`);
+      }
+
+      return updated;
+    } else {
+      // Utwórz nową subskrypcję
+      const subscription = await this.prisma.subscriptions.create({
+        data: {
+          id: `sub-apple-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          tenantId,
+          planId: data.planId,
+          status: 'ACTIVE',
+          appleTransactionId: data.appleTransactionId,
+          appleProductId: data.appleProductId,
+          stripeCustomerId: `apple-${tenantId}`, // Placeholder - nie używamy Stripe
+          currentPeriodStart: data.periodStart,
+          currentPeriodEnd: data.periodEnd,
+          cancelAtPeriodEnd: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      // Odblokuj konto jeśli było zawieszone
+      if (tenant.isSuspended) {
+        await this.prisma.tenants.update({
+          where: { id: tenantId },
+          data: {
+            isSuspended: false,
+            suspendedReason: null,
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      return subscription;
+    }
+  }
+
+  /**
+   * Anuluje subskrypcję Apple (np. po refundzie)
+   */
+  async cancelAppleSubscription(appleTransactionId: string) {
+    this.logger.log(`🍎 Cancelling Apple subscription: ${appleTransactionId}`);
+
+    const subscription = await this.prisma.subscriptions.findFirst({
+      where: { appleTransactionId },
+    });
+
+    if (!subscription) {
+      this.logger.warn(`🍎 Subscription not found for transaction: ${appleTransactionId}`);
+      return null;
+    }
+
+    return this.prisma.subscriptions.update({
+      where: { id: subscription.id },
+      data: {
+        status: 'CANCELLED',
+        cancelAtPeriodEnd: true,
+        updatedAt: new Date(),
+      },
+    });
   }
 }

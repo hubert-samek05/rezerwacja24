@@ -85,17 +85,26 @@ export class TenantsController {
     }
 
     const subscription = tenant.subscriptions;
+    const now = new Date();
     
     // Sprawdź czy subskrypcja jest aktywna
-    // ACTIVE = płatna subskrypcja aktywna
+    // ACTIVE = płatna subskrypcja aktywna TYLKO jeśli currentPeriodEnd > now
     // TRIALING = trial aktywny TYLKO jeśli trialEnd > now
-    let isActiveSubscription = subscription?.status === 'ACTIVE';
+    let isActiveSubscription = false;
+    
+    if (subscription?.status === 'ACTIVE' && subscription?.currentPeriodEnd) {
+      const periodEndDate = new Date(subscription.currentPeriodEnd);
+      isActiveSubscription = periodEndDate > now;
+    } else if (subscription?.status === 'ACTIVE' && !subscription?.currentPeriodEnd) {
+      // Brak daty końca - traktuj jako aktywną (legacy)
+      isActiveSubscription = true;
+    }
     
     if (subscription?.status === 'TRIALING' && subscription?.trialEnd) {
       const trialEndDate = new Date(subscription.trialEnd);
-      const now = new Date();
       isActiveSubscription = trialEndDate > now;
     }
+    
     let actualSuspended = tenant.isSuspended || false;
     let actualReason = tenant.suspendedReason || null;
     
@@ -110,6 +119,19 @@ export class TenantsController {
       });
       actualSuspended = true;
       actualReason = 'Okres próbny wygasł - wybierz plan aby kontynuować';
+    }
+    
+    // Jeśli subskrypcja ACTIVE wygasła (currentPeriodEnd minął) - zawieś konto
+    if (!isActiveSubscription && subscription?.status === 'ACTIVE' && !tenant.isSuspended) {
+      await this.prisma.tenants.update({
+        where: { id: tenantId },
+        data: { 
+          isSuspended: true, 
+          suspendedReason: 'Subskrypcja wygasła - odnów płatność aby kontynuować' 
+        }
+      });
+      actualSuspended = true;
+      actualReason = 'Subskrypcja wygasła - odnów płatność aby kontynuować';
     }
     
     if (isActiveSubscription && tenant.isSuspended) {

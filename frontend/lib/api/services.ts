@@ -134,8 +134,9 @@ export const servicesApi = {
     return response.data;
   },
 
-  async delete(id: string): Promise<{ message: string }> {
-    const response = await axios.delete(`${getApiUrl()}/api/services/${id}`, getTenantConfig());
+  async delete(id: string, force?: boolean): Promise<{ message: string }> {
+    const url = force ? `${getApiUrl()}/api/services/${id}?force=true` : `${getApiUrl()}/api/services/${id}`;
+    const response = await axios.delete(url, getTenantConfig());
     return response.data;
   },
 

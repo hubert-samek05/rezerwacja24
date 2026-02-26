@@ -17,6 +17,12 @@ interface SubscriptionStatus {
   gracePeriodDays?: number;
   currentPeriodEnd?: string;
   cancelAtPeriodEnd?: boolean;
+  // Nowe pola dla płacących klientów
+  daysUntilPeriodEnd?: number;
+  isSubscriptionEnding?: boolean;
+  isSubscriptionExpired?: boolean;
+  isSuspended?: boolean;
+  suspendedReason?: string;
 }
 
 export default function TrialBanner() {
@@ -67,26 +73,27 @@ export default function TrialBanner() {
   const isTrialing = status.status === 'TRIALING';
   const isPastDue = status.isPastDue || status.status === 'PAST_DUE';
   const isActive = status.status === 'ACTIVE';
+  const isCancelled = status.status === 'CANCELLED';
   const daysLeft = status.remainingTrialDays;
   const daysUntilBlock = status.daysUntilBlock ?? 0;
-
-  // Oblicz dni do końca subskrypcji (dla aktywnych)
-  let daysUntilPeriodEnd = 0;
-  if (status.currentPeriodEnd) {
-    const now = new Date();
-    const periodEnd = new Date(status.currentPeriodEnd);
-    daysUntilPeriodEnd = Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  }
+  const daysUntilPeriodEnd = status.daysUntilPeriodEnd ?? 0;
+  const isSubscriptionEnding = status.isSubscriptionEnding ?? false;
+  const isSubscriptionExpired = status.isSubscriptionExpired ?? false;
+  const isSuspended = status.isSuspended ?? false;
 
   // Scenariusze:
   // 1. TRIALING + daysLeft > 3 - trial aktywny, dużo czasu
   // 2. TRIALING + daysLeft <= 3 - trial kończy się wkrótce
   // 3. TRIALING + daysLeft <= 0 - trial wygasł, grace period
   // 4. PAST_DUE - nieudana płatność za subskrypcję
-  // 5. ACTIVE - wszystko OK, nie pokazuj banera
+  // 5. ACTIVE + cancelAtPeriodEnd + daysUntilPeriodEnd <= 3 - abonament kończy się wkrótce
+  // 6. CANCELLED lub isSubscriptionExpired - abonament wygasł
+  // 7. isSuspended - konto zawieszone
+  // 8. ACTIVE (bez anulowania) - wszystko OK, nie pokazuj banera
 
-  // Jeśli aktywna subskrypcja - nie pokazuj
-  if (isActive && !isPastDue) {
+  // Jeśli aktywna subskrypcja bez anulowania i bez problemów - nie pokazuj
+  // ALE pokaż jeśli subskrypcja wygasła (currentPeriodEnd minęło)
+  if (isActive && !isPastDue && !isSubscriptionEnding && !isSuspended && !isSubscriptionExpired) {
     return null;
   }
 
@@ -97,8 +104,16 @@ export default function TrialBanner() {
   let buttonText = 'Subskrypcja';
   let canDismiss = true;
 
-  if (isPastDue) {
-    // Nieudana płatność za subskrypcję
+  // SCENARIUSZ 1: Konto zawieszone (najwyższy priorytet)
+  if (isSuspended) {
+    severity = 'danger';
+    canDismiss = false;
+    title = 'Twoje konto zostało zawieszone';
+    buttonText = 'Odnów subskrypcję';
+    description = status.suspendedReason || 'Twoje konto zostało zawieszone z powodu braku aktywnej subskrypcji. Odnów subskrypcję aby odzyskać dostęp.';
+  }
+  // SCENARIUSZ 2: Nieudana płatność za subskrypcję
+  else if (isPastDue) {
     severity = 'danger';
     canDismiss = false;
     title = 'Płatność nieudana';
@@ -109,8 +124,39 @@ export default function TrialBanner() {
     } else {
       description = 'Zaktualizuj metodę płatności aby móc dalej korzystać z platformy.';
     }
-  } else if (isTrialing) {
-    // Trial
+  }
+  // SCENARIUSZ 3: Abonament wygasł (dla płacących klientów - nie trial)
+  else if (isSubscriptionExpired || isCancelled) {
+    severity = 'danger';
+    canDismiss = false;
+    title = 'Twój abonament wygasł';
+    buttonText = 'Odnów subskrypcję';
+    
+    if (daysUntilBlock > 0) {
+      description = `Za ${daysUntilBlock} ${daysUntilBlock === 1 ? 'dzień' : 'dni'} utracisz dostęp do swojego konta. Odnów subskrypcję aby kontynuować.`;
+    } else {
+      description = 'Odnów subskrypcję aby móc dalej korzystać z platformy.';
+    }
+  }
+  // SCENARIUSZ 4: Abonament kończy się wkrótce (dla płacących klientów - nie trial)
+  else if (isSubscriptionEnding) {
+    severity = 'warning';
+    canDismiss = true;
+    buttonText = 'Odnów subskrypcję';
+    
+    if (daysUntilPeriodEnd === 0) {
+      title = 'Twój abonament kończy się dzisiaj';
+    } else if (daysUntilPeriodEnd === 1) {
+      title = 'Twój abonament kończy się jutro';
+    } else {
+      title = `Twój abonament kończy się za ${daysUntilPeriodEnd} dni`;
+    }
+    description = status.currentPeriodEnd
+      ? `Twoja subskrypcja wygasa ${new Date(status.currentPeriodEnd).toLocaleDateString('pl-PL')}. Odnów ją, aby kontynuować korzystanie z systemu.`
+      : 'Odnów subskrypcję, aby kontynuować korzystanie z systemu.';
+  }
+  // SCENARIUSZ 5: Trial - obsługa okresu próbnego
+  else if (isTrialing) {
     if (daysLeft <= 0) {
       // Trial wygasł
       severity = 'danger';

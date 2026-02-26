@@ -336,6 +336,7 @@ model marketplace_listings {
   coverImage    String?
   gallery       String[]
   category      String
+  subcategory   String?
   tags          String[]
   viewCount     Int       @default(0)
   bookingCount  Int       @default(0)
@@ -550,12 +551,16 @@ model subscriptions {
   trialEnd              DateTime?
   trialStart            DateTime?
   previousPlanId        String?
+  // Apple In-App Purchase fields (Guideline 3.1.1)
+  appleTransactionId    String?            @unique
+  appleProductId        String?
   subscription_plans    subscription_plans @relation(fields: [planId], references: [id])
   tenants               tenants            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([stripeCustomerId])
   @@index([tenantId])
+  @@index([appleTransactionId])
 }
 
 model tenant_users {
