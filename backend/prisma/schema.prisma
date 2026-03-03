@@ -208,6 +208,32 @@ model crm_tags {
   crm_contacts crm_contacts[] @relation("CRMContactToCRMTag")
 }
 
+// Konta klientów końcowych (logowanie do panelu klienta)
+model customer_accounts {
+  id                 String      @id
+  email              String      @unique
+  passwordHash       String?     // nullable dla social login
+  phone              String?
+  phoneVerified      Boolean     @default(false)
+  emailVerified      Boolean     @default(false)
+  firstName          String
+  lastName           String
+  avatar             String?
+  preferredLanguage  String      @default("pl")
+  marketingConsent   Boolean     @default(false)
+  authProvider       String      @default("email") // email, google, facebook, apple
+  externalId         String?     // ID z providera OAuth
+  refreshToken       String?     // hashed refresh token
+  lastLoginAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  customers          customers[] // relacja do profili w firmach
+
+  @@index([email])
+  @@index([phone])
+  @@index([externalId])
+}
+
 model customers {
   id                     String               @id
   firstName              String
@@ -233,17 +259,20 @@ model customers {
   rodo_consent           Boolean?             @default(false)
   rodo_consent_date      DateTime?            @db.Timestamp(6)
   tenantId               String?              @db.VarChar(255)
+  customerAccountId      String?              @db.VarChar(255) // powiązanie z kontem klienta
   bookings               bookings[]
   crm_contacts           crm_contacts?
   customer_loyalty       customer_loyalty[]
   customer_passes        customer_passes[]
   tenants                tenants?             @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_customers_tenant")
+  customerAccount        customer_accounts?   @relation(fields: [customerAccountId], references: [id], onDelete: SetNull)
   group_participants     group_participants[]
   loyalty_points         loyalty_points[]
 
   @@index([email])
   @@index([phone])
   @@index([tenantId], map: "idx_customers_tenantid")
+  @@index([customerAccountId])
 }
 
 model employees {
@@ -449,9 +478,12 @@ model service_categories {
   icon        String?
   color       String     @default("#0F6048")
   order       Int        @default(0)
+  tenantId    String?    @db.VarChar(255)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime
   services    services[]
+  
+  @@index([tenantId])
 }
 
 model service_employees {

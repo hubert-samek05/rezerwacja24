@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Upload, X, Loader2, Image as ImageIcon, GripVertical } from 'lucide-react'
 import { CompanyData } from '@/lib/company'
 import toast from 'react-hot-toast'
@@ -14,6 +14,41 @@ interface GalleryTabProps {
 
 export default function GalleryTab({ companyData, setCompanyData, onSave, isLoading }: GalleryTabProps) {
   const [uploading, setUploading] = useState(false)
+  const [loadingGallery, setLoadingGallery] = useState(true)
+  
+  // Pobierz galerię z API przy montowaniu
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.rezerwacja24.pl'
+        const subdomain = companyData.subdomain
+        
+        if (!subdomain) {
+          setLoadingGallery(false)
+          return
+        }
+        
+        // Użyj publicznego endpointu subdomain
+        const response = await fetch(`${API_URL}/api/tenants/subdomain/${subdomain}`)
+        
+        if (response.ok) {
+          const tenant = await response.json()
+          if (tenant.gallery && tenant.gallery.length > 0) {
+            setCompanyData({
+              ...companyData,
+              gallery: tenant.gallery
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching gallery:', error)
+      } finally {
+        setLoadingGallery(false)
+      }
+    }
+    
+    fetchGallery()
+  }, [companyData.subdomain])
   
   const gallery: string[] = companyData.gallery || []
 
@@ -74,6 +109,15 @@ export default function GalleryTab({ companyData, setCompanyData, onSave, isLoad
       ...companyData,
       gallery: newGallery
     })
+  }
+
+  if (loadingGallery) {
+    return (
+      <div className="p-6 lg:p-8 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />
+        <span className="ml-2 text-[var(--text-muted)]">Ładowanie galerii...</span>
+      </div>
+    )
   }
 
   return (

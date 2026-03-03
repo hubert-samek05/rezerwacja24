@@ -203,6 +203,8 @@ export async function middleware(request: NextRequest) {
   }
   
   const rewriteUrl = new URL(`/${subdomain}${url.pathname}`, request.url)
+  // Zachowaj query string (np. ?reschedule=xxx)
+  rewriteUrl.search = url.search
   const rewriteResponse = NextResponse.rewrite(rewriteUrl)
   rewriteResponse.headers.set('x-tenant-subdomain', subdomain)
   // Ustaw locale tylko jeśli nie ma cookie

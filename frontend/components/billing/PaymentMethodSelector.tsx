@@ -63,13 +63,14 @@ export default function PaymentMethodSelector({
     }
   };
 
-  // Jeśli IAP nie jest dostępny (nie iOS lub brak pluginu), od razu użyj Stripe
+  // WAŻNE: Jeśli NIE jesteśmy na natywnym iOS, nie pokazuj tego komponentu
+  // Stripe będzie użyty automatycznie
   useEffect(() => {
     if (!isLoadingIAP && !isAppleIAPAvailable) {
-      // Automatycznie wybierz Stripe jeśli IAP niedostępny
-      onSelectStripe();
+      // Nie na iOS lub brak pluginu - użyj Stripe
+      // NIE wywołuj onSelectStripe tutaj - pozwól rodzicowi zdecydować
     }
-  }, [isLoadingIAP, isAppleIAPAvailable, onSelectStripe]);
+  }, [isLoadingIAP, isAppleIAPAvailable]);
 
   // Loading state
   if (isLoadingIAP) {
@@ -113,7 +114,7 @@ export default function PaymentMethodSelector({
               {isEnglish ? 'Apple Pay / In-App Purchase' : 'Apple Pay / Zakup w aplikacji'}
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              {appleProduct?.priceString || `${priceMonthly} ${currency}`}
+              {appleProduct?.price || `${priceMonthly} ${currency}`}
               {isEnglish ? '/month' : '/miesiąc'}
             </p>
           </div>

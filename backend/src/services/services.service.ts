@@ -330,11 +330,10 @@ export class ServicesService {
       );
     }
 
-    // Jeśli force=true i są rezerwacje, najpierw odłącz rezerwacje od usługi (ustaw serviceId na null)
+    // Jeśli force=true i są rezerwacje, usuń rezerwacje powiązane z usługą
     if (service._count.bookings > 0 && force) {
-      await this.prisma.bookings.updateMany({
+      await this.prisma.bookings.deleteMany({
         where: { serviceId: id },
-        data: { serviceId: null },
       });
     }
 

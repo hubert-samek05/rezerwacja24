@@ -21,11 +21,15 @@ interface CompanyData {
 async function getCompanyData(subdomain: string): Promise<CompanyData | null> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.rezerwacja24.pl'
-    const res = await fetch(`${apiUrl}/api/public/tenant/${subdomain}`, {
+    const res = await fetch(`${apiUrl}/api/tenants/public/seo/${subdomain}`, {
       next: { revalidate: 3600 } // Cache na 1 godzinę
     })
     if (res.ok) {
-      return await res.json()
+      const data = await res.json()
+      // API może zwrócić null jeśli firma nie istnieje
+      if (data && data.businessName) {
+        return data
+      }
     }
   } catch (error) {
     console.error('Error fetching company data for SEO:', error)

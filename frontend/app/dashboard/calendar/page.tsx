@@ -1296,9 +1296,9 @@ export default function CalendarPage() {
                           </div>
                         </div>
                       ) : (
-                        // Wiele wizyt - kompaktowy widok
+                        // Wiele wizyt - pokazujemy WSZYSTKIE wizyty (automatyczne poszerzanie kratki)
                         <div className="space-y-1">
-                          {dayBookings.slice(0, 2).map((booking, idx) => (
+                          {dayBookings.map((booking, idx) => (
                             <div
                               key={booking.id}
                               onClick={(e) => {
@@ -1341,21 +1341,6 @@ export default function CalendarPage() {
                               </div>
                             </div>
                           ))}
-                          {dayBookings.length > 2 && (
-                            <div 
-                              className="text-xs text-center py-2 px-3 bg-white/5 rounded-lg text-[var(--text-primary)] font-semibold cursor-pointer hover:bg-white/10 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                // Pokaż wszystkie wizyty w modalu
-                                setAllBookingsInSlot(dayBookings)
-                                const localDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
-                                setSlotInfo({ date: localDateStr, time: `${hour}:00` })
-                                setShowAllBookingsModal(true)
-                              }}
-                            >
-                              +{dayBookings.length - 2} więcej wizyt
-                            </div>
-                          )}
                         </div>
                       )}
                       </div>
@@ -1561,43 +1546,35 @@ export default function CalendarPage() {
                               </div>
                             </div>
                           ) : (
-                            // Wiele wizyt - kompaktowy widok ze stackowaniem
+                            // Wiele wizyt - pokazujemy WSZYSTKIE wizyty (automatyczne poszerzanie kratki)
                             <div className="space-y-1">
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleBookingClick(dayBookings[0])
-                                }}
-                                className={`p-1.5 rounded cursor-pointer hover:shadow-lg transition-all ${
-                                  dayBookings[0].eventType === 'block'
-                                    ? 'bg-gray-600 border border-gray-700'
-                                    : dayBookings[0].status === 'confirmed' 
-                                    ? 'bg-emerald-600 border border-emerald-700' 
-                                    : dayBookings[0].status === 'no_show'
-                                    ? 'bg-orange-500 border border-orange-600'
-                                    : dayBookings[0].status === 'cancelled'
-                                    ? 'bg-red-600 border border-red-700'
-                                    : 'bg-yellow-500 border border-yellow-600'
-                                }`}
-                              >
-                                <div className="text-xs text-white font-semibold truncate">
-                                  {dayBookings[0].customerName}
-                                </div>
-                              </div>
-                              {dayBookings.length > 1 && (
-                                <div 
-                                  className="text-xs text-center py-1 px-2 bg-[var(--text-primary)]/20 rounded text-[var(--text-primary)] font-semibold cursor-pointer hover:bg-[var(--text-primary)]/30 transition-colors"
+                              {dayBookings.map((booking, idx) => (
+                                <div
+                                  key={booking.id}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    setAllBookingsInSlot(dayBookings)
-                                    const localDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                                    setSlotInfo({ date: localDateStr, time: `${hour}:00` })
-                                    setShowAllBookingsModal(true)
+                                    handleBookingClick(booking)
                                   }}
+                                  className={`p-1.5 rounded cursor-pointer hover:shadow-lg transition-all ${
+                                    booking.eventType === 'block'
+                                      ? 'bg-gray-600 border border-gray-700'
+                                      : booking.status === 'confirmed' 
+                                      ? 'bg-emerald-600 border border-emerald-700' 
+                                      : booking.status === 'no_show'
+                                      ? 'bg-orange-500 border border-orange-600'
+                                      : booking.status === 'cancelled'
+                                      ? 'bg-red-600 border border-red-700'
+                                      : 'bg-yellow-500 border border-yellow-600'
+                                  }`}
                                 >
-                                  +{dayBookings.length - 1}
+                                  <div className="text-xs text-white font-semibold truncate">
+                                    {booking.customerName}
+                                  </div>
+                                  <div className="text-[10px] text-white/70 truncate">
+                                    {booking.serviceName}
+                                  </div>
                                 </div>
-                              )}
+                              ))}
                             </div>
                           )}
                         </div>

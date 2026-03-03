@@ -54,6 +54,71 @@ export class TenantsController {
     return tenant;
   }
 
+  // Endpoint publiczny - pobieranie danych firmy dla SEO (używany przez frontend)
+  @Public()
+  @Get('public/seo/:subdomain')
+  async getPublicSeoData(@Param('subdomain') subdomain: string) {
+    const tenant = await this.prisma.tenants.findFirst({
+      where: { 
+        subdomain,
+        isSuspended: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        subdomain: true,
+        description: true,
+        city: true,
+        address: true,
+        phone: true,
+        email: true,
+        logo: true,
+        banner: true,
+        openingHours: true,
+        socialMedia: true,
+      },
+    });
+
+    if (!tenant) {
+      return null;
+    }
+
+    // Pobierz usługi osobno
+    const services = await this.prisma.services.findMany({
+      where: { 
+        tenantId: tenant.id,
+        isActive: true,
+      },
+      select: {
+        name: true,
+        categoryId: true,
+        basePrice: true,
+        duration: true,
+      },
+      take: 20,
+    });
+
+    return {
+      businessName: tenant.name,
+      subdomain: tenant.subdomain,
+      description: tenant.description,
+      city: tenant.city,
+      address: tenant.address,
+      phone: tenant.phone,
+      email: tenant.email,
+      logo: tenant.logo,
+      banner: tenant.banner,
+      openingHours: tenant.openingHours,
+      socialMedia: tenant.socialMedia,
+      services: services.map(s => ({
+        name: s.name,
+        category: s.categoryId,
+        price: s.basePrice,
+        duration: s.duration,
+      })),
+    };
+  }
+
   // Sprawdź status konta (czy jest zawieszone) i subskrypcji
   @Get('status')
   async getAccountStatus(@Res({ passthrough: true }) res: Response) {

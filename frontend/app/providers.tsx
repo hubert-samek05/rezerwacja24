@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { useDeepLinks } from '@/hooks/useDeepLinks'
+import { CustomerAuthProvider } from '@/contexts/CustomerAuthContext'
 
 // Komponent do obsługi deep linków
 function DeepLinkHandler() {
@@ -27,9 +28,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <DeepLinkHandler />
-      {children}
-      <Toaster
+      <CustomerAuthProvider>
+        <DeepLinkHandler />
+        {children}
+        <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
@@ -46,7 +48,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }}
       />
-      <ReactQueryDevtools initialIsOpen={false} />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </CustomerAuthProvider>
     </QueryClientProvider>
   )
 }

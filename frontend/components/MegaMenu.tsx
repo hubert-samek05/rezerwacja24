@@ -810,15 +810,18 @@ export default function MegaMenu({ locale }: MegaMenuProps) {
       </div>
 
       {/* Regular links */}
-      <Link href="/firmy" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
+      <a href="https://rezerwacja24.pl" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
         {isPl ? 'Katalog firm' : 'Directory'}
-      </Link>
-      <a href="/#jak-to-dziala" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
+      </a>
+      <a href="/dla-biznesu#jak-to-dziala" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
         {isPl ? 'Jak to działa?' : 'How it works?'}
       </a>
-      <a href="/#cennik" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
+      <a href="/dla-biznesu#cennik" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
         {isPl ? 'Cennik' : 'Pricing'}
       </a>
+      <Link href="/support" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
+        {isPl ? 'Pomoc' : 'Help'}
+      </Link>
       <Link href="/contact" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-teal-800 transition-colors rounded-lg hover:bg-gray-50">
         {isPl ? 'Kontakt' : 'Contact'}
       </Link>

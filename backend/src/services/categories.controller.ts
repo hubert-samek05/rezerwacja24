@@ -42,12 +42,17 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Utwórz nową kategorię usług' })
   @ApiResponse({ status: 201, description: 'Kategoria została utworzona' })
   async create(@Body() createCategoryDto: CreateCategoryDto, @Req() req: any) {
-    const tenantId = req.headers['x-tenant-id'] || 'default';
+    const tenantId = req.headers['x-tenant-id'];
+    
+    if (!tenantId) {
+      throw new Error('Brak identyfikatora firmy (tenantId)');
+    }
     
     return this.prisma.service_categories.create({
       data: {
         id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...createCategoryDto,
+        tenantId, // Zapisujemy tenantId przy tworzeniu kategorii
         updatedAt: new Date(),
       },
     });
@@ -57,49 +62,16 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Pobierz wszystkie kategorie' })
   @ApiResponse({ status: 200, description: 'Lista kategorii' })
   async findAll(@Req() req: any) {
-    const tenantId = req.headers['x-tenant-id'] || 'default';
+    const tenantId = req.headers['x-tenant-id'];
     
-    // Pobierz userIds dla tego tenanta
-    const tenantUsers = await this.prisma.tenant_users.findMany({
-      where: { tenantId },
-      select: { userId: true },
-    });
+    if (!tenantId) {
+      return [];
+    }
     
-    const userIds = tenantUsers.map(tu => tu.userId);
-    
-    // Pobierz employees dla tych users
-    const employees = await this.prisma.employees.findMany({
-      where: { userId: { in: userIds } },
-      select: { id: true },
-    });
-    
-    const employeeIds = employees.map(e => e.id);
-    
-    // Pobierz WSZYSTKIE kategorie które:
-    // 1. Nie mają żadnych usług (nowe kategorie) LUB
-    // 2. Mają usługi przypisane do employees tego tenanta
+    // Pobierz tylko kategorie należące do tego tenanta
     return this.prisma.service_categories.findMany({
       where: {
-        OR: [
-          // Kategorie bez usług (nowe)
-          {
-            services: {
-              none: {},
-            },
-          },
-          // Kategorie z usługami tego tenanta
-          {
-            services: {
-              some: {
-                service_employees: {
-                  some: {
-                    employeeId: { in: employeeIds },
-                  },
-                },
-              },
-            },
-          },
-        ],
+        tenantId: tenantId,
       },
       include: {
         _count: {

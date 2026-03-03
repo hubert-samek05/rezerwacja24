@@ -49,6 +49,8 @@ export class PublicBookingController {
     // Pobierz minCancellationHours z pageSettings (nowe) lub cancel_deadline_hours (stare)
     const pageSettings = (tenant as any).pageSettings || {};
     const cancelDeadlineHours = pageSettings.minCancellationHours ?? (tenant as any).cancel_deadline_hours ?? 0;
+    const allowReschedule = pageSettings.allowReschedule !== false;
+    const rescheduleDeadlineHours = pageSettings.minRescheduleHours ?? cancelDeadlineHours;
     
     const bookingTime = new Date(booking.startTime).getTime();
     const now = Date.now();
@@ -56,22 +58,34 @@ export class PublicBookingController {
     
     // Jeśli firma ma włączone zaliczki i rezerwacja ma zaliczkę - klient może anulować zawsze
     const hasDeposit = (booking as any).depositAmount > 0;
-    const canCancel = (hasDeposit || hoursUntilBooking >= cancelDeadlineHours) && booking.status !== 'CANCELLED';
+    const isPast = bookingTime < now;
+    const isCancelled = booking.status === 'CANCELLED';
+    const isCompleted = booking.status === 'COMPLETED';
+    
+    const canCancel = !isPast && !isCancelled && !isCompleted && (hasDeposit || hoursUntilBooking >= cancelDeadlineHours);
+    const canReschedule = !isPast && !isCancelled && !isCompleted && allowReschedule && hoursUntilBooking >= rescheduleDeadlineHours;
 
     return {
       id: booking.id,
       startTime: booking.startTime,
+      endTime: booking.endTime,
       status: booking.status,
       serviceName: (booking as any).services?.name || 'Usługa',
+      serviceId: (booking as any).services?.id,
+      serviceDuration: (booking as any).services?.duration,
       employeeName: (booking as any).employees 
         ? ((booking as any).employees.firstName + ' ' + (booking as any).employees.lastName) 
         : 'Pracownik',
+      employeeId: (booking as any).employees?.id || booking.employeeId,
       customerName: (booking as any).customers 
         ? ((booking as any).customers.firstName + ' ' + (booking as any).customers.lastName) 
         : 'Klient',
       businessName: tenant.name,
+      tenantId: tenant.id,
       canCancel,
       cancelDeadlineHours,
+      canReschedule,
+      rescheduleDeadlineHours,
       hasDeposit,
     };
   }
@@ -137,6 +151,90 @@ export class PublicBookingController {
       : 'Rezerwacja została anulowana';
 
     return { success: true, message };
+  }
+
+  @Public()
+  @Post(':id/reschedule')
+  @ApiOperation({ summary: 'Przesuń rezerwację na nowy termin (publiczne)' })
+  async rescheduleBooking(
+    @Param('id') id: string,
+    @Body('subdomain') subdomain: string,
+    @Body('newDate') newDate: string,
+    @Body('newTime') newTime: string,
+  ) {
+    const tenant = await this.prisma.tenants.findFirst({
+      where: { subdomain },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Firma nie została znaleziona');
+    }
+
+    const booking = await this.prisma.bookings.findFirst({
+      where: { id },
+      include: {
+        services: true,
+        employees: true,
+        customers: true,
+      },
+    });
+
+    if (!booking || booking.customers?.tenantId !== tenant.id) {
+      throw new NotFoundException('Rezerwacja nie została znaleziona');
+    }
+
+    // Sprawdź czy można przesunąć
+    const pageSettings = (tenant as any).pageSettings || {};
+    const allowReschedule = pageSettings.allowReschedule !== false;
+    const rescheduleDeadlineHours = pageSettings.minRescheduleHours ?? pageSettings.minCancellationHours ?? 0;
+    
+    const bookingTime = new Date(booking.startTime).getTime();
+    const now = Date.now();
+    const hoursUntilBooking = (bookingTime - now) / (1000 * 60 * 60);
+    
+    if (booking.status === 'CANCELLED') {
+      throw new BadRequestException('Ta rezerwacja została już anulowana');
+    }
+    
+    if (bookingTime < now) {
+      throw new BadRequestException('Nie można przesunąć rezerwacji, która już się odbyła');
+    }
+    
+    if (!allowReschedule) {
+      throw new BadRequestException('Przesuwanie rezerwacji jest wyłączone dla tej firmy');
+    }
+    
+    if (hoursUntilBooking < rescheduleDeadlineHours) {
+      throw new BadRequestException(
+        `Przesunięcie jest możliwe do ${rescheduleDeadlineHours} godzin przed wizytą`,
+      );
+    }
+
+    // Oblicz nowy czas rozpoczęcia i zakończenia
+    const [hours, minutes] = newTime.split(':').map(Number);
+    const newStartTime = new Date(newDate);
+    newStartTime.setHours(hours, minutes, 0, 0);
+    
+    const duration = booking.services?.duration || 60;
+    const newEndTime = new Date(newStartTime);
+    newEndTime.setMinutes(newEndTime.getMinutes() + duration);
+
+    // Zaktualizuj rezerwację
+    await this.prisma.bookings.update({
+      where: { id },
+      data: {
+        startTime: newStartTime,
+        endTime: newEndTime,
+        updatedAt: new Date(),
+      },
+    });
+
+    return { 
+      success: true, 
+      message: 'Rezerwacja została przesunięta',
+      newStartTime: newStartTime.toISOString(),
+      newEndTime: newEndTime.toISOString(),
+    };
   }
 
   @Public()

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar, CalendarDays, Clock, MapPin, Phone, Mail, Star,
   Facebook, Instagram, Globe as GlobeIcon, ArrowRight, Loader2,
-  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet, Info, Building2, Heart, Share2
+  ChevronDown, ChevronLeft, ChevronRight, Check, X, User, Sparkles, Package, Percent, Users, Plus, AlertCircle, Wallet, Info, Building2, Heart, Share2, LogIn, UserPlus, CalendarClock
 } from 'lucide-react'
 
 interface Service {
@@ -136,13 +136,38 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
   const [serviceDetailData, setServiceDetailData] = useState<Service | null>(null)
   // Info o płatności po powrocie ze Stripe
   const [paymentSuccessInfo, setPaymentSuccessInfo] = useState<{ bookingId: string; status: 'paid' | 'processing' | 'cancelled' } | null>(null)
+  // Przesunięcie terminu - ID starej rezerwacji do anulowania
+  const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null)
   // Modal wyboru usługi (gdy ktoś kliknie "Zarezerwuj wizytę")
   const [servicePickerModal, setServicePickerModal] = useState(false)
+  // Auth popup - logowanie/rejestracja/gość
+  const [authModal, setAuthModal] = useState(false)
+  const [loggedInCustomer, setLoggedInCustomer] = useState<{ id: string; email: string; firstName: string; lastName: string; phone?: string } | null>(null)
+  const [authMode, setAuthMode] = useState<'choice' | 'login' | 'register'>('choice')
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [registerEmail, setRegisterEmail] = useState('')
+  const [registerPassword, setRegisterPassword] = useState('')
+  const [registerFirstName, setRegisterFirstName] = useState('')
+  const [registerLastName, setRegisterLastName] = useState('')
+  const [registerPhone, setRegisterPhone] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       setIsEmbedded(urlParams.get('embed') === 'true')
+      
+      // Sprawdź czy to przesunięcie terminu
+      const rescheduleId = urlParams.get('reschedule')
+      if (rescheduleId) {
+        setRescheduleBookingId(rescheduleId)
+        // Usuń parametr z URL żeby nie przeszkadzał
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('reschedule')
+        window.history.replaceState({}, '', newUrl.pathname + newUrl.search)
+      }
       
       // Sprawdź czy to powrót z płatności Stripe
       const paymentStatus = urlParams.get('payment')
@@ -287,6 +312,36 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
           sessionStorage.removeItem('pendingPaymentTime')
         }
       }
+      
+      // Sprawdź czy klient jest zalogowany
+      const customerToken = localStorage.getItem('customerAccessToken')
+      if (customerToken) {
+        const checkCustomerAuth = async () => {
+          try {
+            const apiUrl = window.location.hostname.includes('rezerwacja24.pl') 
+              ? 'https://api.rezerwacja24.pl' 
+              : 'http://localhost:3001'
+            const response = await fetch(`${apiUrl}/api/customer-auth/me`, {
+              headers: { 'Authorization': `Bearer ${customerToken}` }
+            })
+            if (response.ok) {
+              const data = await response.json()
+              setLoggedInCustomer(data)
+              // Wypełnij dane klienta
+              setCustomerName(`${data.firstName || ''} ${data.lastName || ''}`.trim())
+              setCustomerEmail(data.email || '')
+              setCustomerPhone(data.phone || '')
+            } else {
+              // Token nieważny - usuń
+              localStorage.removeItem('customerAccessToken')
+              localStorage.removeItem('customerRefreshToken')
+            }
+          } catch (err) {
+            console.error('Error checking customer auth:', err)
+          }
+        }
+        checkCustomerAuth()
+      }
     }
   }, [])
 
@@ -358,6 +413,14 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     }
     loadGroupBookings()
   }, [company?.userId])
+
+  // Automatycznie przełącz na zajęcia grupowe gdy nie ma usług
+  useEffect(() => {
+    const hasServices = company?.services && company.services.length > 0
+    if (!hasServices && groupBookings.length > 0) {
+      setViewMode('group')
+    }
+  }, [company?.services, groupBookings.length])
 
   useEffect(() => {
     const loadAvailableSlots = async () => {
@@ -544,6 +607,123 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
     }
   }, [selectedService?.id, customerPhone])
 
+  // Funkcja logowania klienta
+  const handleCustomerLogin = async () => {
+    if (!loginEmail || !loginPassword) {
+      setAuthError('Wypełnij wszystkie pola')
+      return
+    }
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') 
+        ? 'https://api.rezerwacja24.pl' 
+        : 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/api/customer-auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        localStorage.setItem('customerAccessToken', data.accessToken)
+        localStorage.setItem('customerRefreshToken', data.refreshToken)
+        setLoggedInCustomer(data.customer)
+        setCustomerName(`${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim())
+        setCustomerEmail(data.customer.email || '')
+        setCustomerPhone(data.customer.phone || '')
+        setAuthModal(false)
+        setAuthMode('choice')
+        setLoginEmail('')
+        setLoginPassword('')
+      } else {
+        setAuthError(data.message || 'Błąd logowania')
+      }
+    } catch (err) {
+      setAuthError('Błąd połączenia z serwerem')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // Funkcja rejestracji klienta
+  const handleCustomerRegister = async () => {
+    if (!registerEmail || !registerPassword || !registerFirstName) {
+      setAuthError('Wypełnij wymagane pola')
+      return
+    }
+    if (registerPassword.length < 6) {
+      setAuthError('Hasło musi mieć minimum 6 znaków')
+      return
+    }
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('rezerwacja24.pl') 
+        ? 'https://api.rezerwacja24.pl' 
+        : 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/api/customer-auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: registerEmail, 
+          password: registerPassword,
+          firstName: registerFirstName,
+          lastName: registerLastName,
+          phone: registerPhone
+        })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        localStorage.setItem('customerAccessToken', data.accessToken)
+        localStorage.setItem('customerRefreshToken', data.refreshToken)
+        setLoggedInCustomer(data.customer)
+        setCustomerName(`${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim())
+        setCustomerEmail(data.customer.email || '')
+        setCustomerPhone(data.customer.phone || registerPhone || '')
+        setAuthModal(false)
+        setAuthMode('choice')
+        setRegisterEmail('')
+        setRegisterPassword('')
+        setRegisterFirstName('')
+        setRegisterLastName('')
+        setRegisterPhone('')
+      } else {
+        setAuthError(data.message || 'Błąd rejestracji')
+      }
+    } catch (err) {
+      setAuthError('Błąd połączenia z serwerem')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // Kontynuuj jako gość
+  const handleContinueAsGuest = () => {
+    setAuthModal(false)
+    setAuthMode('choice')
+    setBookingStep(4) // Przejdź do formularza danych klienta
+  }
+
+  // Wyloguj klienta
+  const handleCustomerLogout = () => {
+    localStorage.removeItem('customerAccessToken')
+    localStorage.removeItem('customerRefreshToken')
+    setLoggedInCustomer(null)
+    setCustomerName('')
+    setCustomerEmail('')
+    setCustomerPhone('')
+  }
+
+  // Pokaż auth modal przed krokiem z danymi klienta (jeśli nie zalogowany)
+  const proceedToCustomerDataStep = (nextStep: number) => {
+    if (!loggedInCustomer && !customerName && !customerEmail) {
+      setAuthModal(true)
+    } else {
+      setBookingStep(nextStep)
+    }
+  }
+
   const handleBookingSubmit = async () => {
     const finalEmployeeId = selectedSlotEmployee || selectedEmployee
     const isFlexibleService = selectedService?.flexibleDuration || selectedService?.allowMultiDay
@@ -584,7 +764,11 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         packageId: selectedPackage?.id || null,
         // Informacje o zaliczce
         depositRequired: depositInfo?.required || false,
-        depositAmount: depositInfo?.amount || 0
+        depositAmount: depositInfo?.amount || 0,
+        // Powiązanie z kontem klienta (jeśli zalogowany)
+        customerAccountId: loggedInCustomer?.id || null,
+        // Przesunięcie terminu - ID starej rezerwacji do anulowania
+        rescheduleBookingId: rescheduleBookingId || null
       }
       // Dla rezerwacji wielodniowych dodaj endDate
       if (selectedService.allowMultiDay && selectedEndDate) {
@@ -883,6 +1067,32 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
         <section className="relative">
           {/* Mobile Hero - Full Screen */}
           <div className="lg:hidden relative min-h-[70vh] flex flex-col">
+            {/* Top Bar - Moje konto */}
+            <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center">
+              <a href="https://rezerwacja24.pl" className="text-white/80 text-sm hover:text-white transition-colors">
+                ← Strona główna
+              </a>
+              {loggedInCustomer ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-white/80 text-sm">{loggedInCustomer.firstName}</span>
+                  <a 
+                    href={`https://rezerwacja24.pl/konto?token=${typeof window !== 'undefined' ? localStorage.getItem('customerAccessToken') || '' : ''}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-teal-500/80 backdrop-blur-sm border border-teal-400/30 rounded-full hover:bg-teal-500 transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    Moje konto
+                  </a>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setAuthModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Zaloguj się
+                </button>
+              )}
+            </div>
             {/* Background Image */}
             <div className="absolute inset-0">
               <Image 
@@ -1010,6 +1220,24 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
               </div>
               {/* Przyciski akcji */}
               <div className="flex items-center gap-2">
+                {/* Logowanie klienta */}
+                {loggedInCustomer ? (
+                  <a 
+                    href={`https://rezerwacja24.pl/konto?token=${typeof window !== 'undefined' ? localStorage.getItem('customerAccessToken') || '' : ''}`}
+                    className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-500 rounded-full hover:bg-teal-600 transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    {loggedInCustomer.firstName}
+                  </a>
+                ) : (
+                  <button 
+                    onClick={() => setAuthModal(true)}
+                    className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Zaloguj się
+                  </button>
+                )}
                 {pageSettings.showSocialMedia && company.socialMedia?.facebook && (
                   <a href={company.socialMedia.facebook} target="_blank" rel="noopener noreferrer" 
                      className="w-10 h-10 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
@@ -1190,8 +1418,9 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
               )}
 
               {/* Zakładki Usługi / Pakiety / Zajęcia grupowe */}
-              {(packages.length > 0 || groupBookings.length > 0) && (
+              {(packages.length > 0 || groupBookings.length > 0 || (company?.services && company.services.length > 0)) && (
                 <div className="flex flex-wrap gap-2 mb-6">
+                  {company?.services && company.services.length > 0 && (
                   <button
                     onClick={() => setViewMode('services')}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
@@ -1203,6 +1432,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                     <Sparkles className="w-4 h-4" />
                     Usługi
                   </button>
+                  )}
                   {packages.length > 0 && (
                   <button
                     onClick={() => setViewMode('packages')}
@@ -2453,6 +2683,20 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                 {/* KROK 3: Dane klienta - dla usług elastycznych */}
                 {(selectedService.flexibleDuration || selectedService.allowMultiDay) && bookingStep === 3 && !bookingSuccess && (
                   <div className="space-y-5">
+                    {/* Banner przesunięcia terminu */}
+                    {rescheduleBookingId && (
+                      <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <CalendarClock className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-amber-900">Przesunięcie terminu</div>
+                            <div className="text-sm text-amber-700">Twoja poprzednia rezerwacja zostanie automatycznie anulowana po potwierdzeniu nowego terminu.</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {/* Podsumowanie terminu */}
                     <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl">
                       <div className="flex items-start gap-3">
@@ -2651,7 +2895,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                     ) : availableSlots.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                         {availableSlots.map((slot) => (
-                          <button key={slot.time} onClick={() => { setSelectedTime(slot.time); setSelectedSlotEmployee(slot.employees?.[0]?.employeeId || slot.employeeId || ''); setBookingStep(4) }} className="py-3 px-2 rounded-xl text-sm font-medium transition-all bg-slate-50 hover:bg-teal-500 hover:text-white text-slate-700">{slot.time}</button>
+                          <button key={slot.time} onClick={() => { setSelectedTime(slot.time); setSelectedSlotEmployee(slot.employees?.[0]?.employeeId || slot.employeeId || ''); proceedToCustomerDataStep(4) }} className="py-3 px-2 rounded-xl text-sm font-medium transition-all bg-slate-50 hover:bg-teal-500 hover:text-white text-slate-700">{slot.time}</button>
                         ))}
                       </div>
                     ) : (
@@ -2667,6 +2911,20 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                 {/* KROK 4: Dane klienta */}
                 {!selectedService.flexibleDuration && !selectedService.allowMultiDay && bookingStep === 4 && !bookingSuccess && (
                   <div className="space-y-5">
+                    {/* Banner przesunięcia terminu */}
+                    {rescheduleBookingId && (
+                      <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <CalendarClock className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-amber-900">Przesunięcie terminu</div>
+                            <div className="text-sm text-amber-700">Twoja poprzednia rezerwacja zostanie automatycznie anulowana po potwierdzeniu nowego terminu.</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {/* Podsumowanie terminu - elegancka karta */}
                     <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl">
                       <div className="flex items-start gap-4">
@@ -2721,13 +2979,30 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                         </div>
                       </div>
                     </div>
+                    {/* Info o zalogowanym kliencie */}
+                    {loggedInCustomer && (
+                      <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-teal-800">Zalogowano jako {loggedInCustomer.firstName}</div>
+                            <div className="text-sm text-teal-600">{loggedInCustomer.email}</div>
+                          </div>
+                        </div>
+                        <button onClick={handleCustomerLogout} className="text-sm text-teal-600 hover:text-teal-800 font-medium">
+                          Wyloguj
+                        </button>
+                      </div>
+                    )}
                     {/* Formularz danych - układ 2 kolumny na desktopie */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">Imię i nazwisko *</label>
                         <div className="relative">
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                          <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-0 transition-colors bg-slate-50 focus:bg-white" placeholder="Jan Kowalski" />
+                          <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} readOnly={!!loggedInCustomer} className={`w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-0 transition-colors ${loggedInCustomer ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-50 focus:bg-white'}`} placeholder="Jan Kowalski" />
                         </div>
                       </div>
                       <div>
@@ -2742,7 +3017,7 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Email *</label>
                       <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-0 transition-colors bg-slate-50 focus:bg-white" placeholder="jan@example.com" required />
+                        <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} readOnly={!!loggedInCustomer} className={`w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-0 transition-colors ${loggedInCustomer ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-50 focus:bg-white'}`} placeholder="jan@example.com" required />
                       </div>
                     </div>
                     {/* Uwagi - dla usług elastycznych */}
@@ -3322,6 +3597,256 @@ export default function TenantPublicPage({ params }: { params: { subdomain: stri
                   </button>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========== AUTH MODAL - Logowanie/Rejestracja/Gość ========== */}
+      <AnimatePresence>
+        {authModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            onClick={() => { setAuthModal(false); setAuthMode('choice'); setAuthError('') }}
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {authMode === 'choice' ? 'Kontynuuj rezerwację' : authMode === 'login' ? 'Zaloguj się' : 'Utwórz konto'}
+                    </h3>
+                    <p className="text-teal-100 text-sm mt-1">
+                      {authMode === 'choice' ? 'Wybierz jak chcesz kontynuować' : authMode === 'login' ? 'Zaloguj się do swojego konta' : 'Zarejestruj się i śledź rezerwacje'}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => { setAuthModal(false); setAuthMode('choice'); setAuthError('') }}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Wybór opcji */}
+                {authMode === 'choice' && (
+                  <div className="space-y-3">
+                    {/* Zaloguj się */}
+                    <button
+                      onClick={() => setAuthMode('login')}
+                      className="w-full p-4 border-2 border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50 transition-all flex items-center gap-4 group"
+                    >
+                      <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center group-hover:bg-teal-500 transition-colors">
+                        <LogIn className="w-6 h-6 text-teal-600 group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="font-semibold text-slate-800">Mam już konto</div>
+                        <div className="text-sm text-slate-500">Zaloguj się i śledź swoje rezerwacje</div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-teal-500" />
+                    </button>
+
+                    {/* Zarejestruj się */}
+                    <button
+                      onClick={() => setAuthMode('register')}
+                      className="w-full p-4 border-2 border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50 transition-all flex items-center gap-4 group"
+                    >
+                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-500 transition-colors">
+                        <UserPlus className="w-6 h-6 text-purple-600 group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="font-semibold text-slate-800">Utwórz konto</div>
+                        <div className="text-sm text-slate-500">Zarejestruj się i zarządzaj rezerwacjami</div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-purple-500" />
+                    </button>
+
+                    {/* Kontynuuj jako gość */}
+                    <button
+                      onClick={handleContinueAsGuest}
+                      className="w-full p-4 border-2 border-dashed border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-4 group"
+                    >
+                      <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
+                        <User className="w-6 h-6 text-slate-500" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="font-semibold text-slate-700">Kontynuuj jako gość</div>
+                        <div className="text-sm text-slate-500">Bez rejestracji - podaj tylko dane kontaktowe</div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-400" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Formularz logowania */}
+                {authMode === 'login' && (
+                  <div className="space-y-4">
+                    <button 
+                      onClick={() => { setAuthMode('choice'); setAuthError('') }}
+                      className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Wróć
+                    </button>
+
+                    {authError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {authError}
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input
+                          type="email"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                          placeholder="twoj@email.pl"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Hasło</label>
+                      <input
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCustomerLogin()}
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                        placeholder="••••••••"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleCustomerLogin}
+                      disabled={authLoading || !loginEmail || !loginPassword}
+                      className="w-full py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      {authLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><LogIn className="w-5 h-5" /> Zaloguj się</>}
+                    </button>
+
+                    <p className="text-center text-sm text-slate-500">
+                      Nie masz konta?{' '}
+                      <button onClick={() => { setAuthMode('register'); setAuthError('') }} className="text-teal-600 font-medium hover:underline">
+                        Zarejestruj się
+                      </button>
+                    </p>
+                  </div>
+                )}
+
+                {/* Formularz rejestracji */}
+                {authMode === 'register' && (
+                  <div className="space-y-4">
+                    <button 
+                      onClick={() => { setAuthMode('choice'); setAuthError('') }}
+                      className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Wróć
+                    </button>
+
+                    {authError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {authError}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Imię *</label>
+                        <input
+                          type="text"
+                          value={registerFirstName}
+                          onChange={(e) => setRegisterFirstName(e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                          placeholder="Jan"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Nazwisko</label>
+                        <input
+                          type="text"
+                          value={registerLastName}
+                          onChange={(e) => setRegisterLastName(e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                          placeholder="Kowalski"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Email *</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input
+                          type="email"
+                          value={registerEmail}
+                          onChange={(e) => setRegisterEmail(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                          placeholder="twoj@email.pl"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Telefon</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input
+                          type="tel"
+                          value={registerPhone}
+                          onChange={(e) => setRegisterPhone(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                          placeholder="+48 123 456 789"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Hasło *</label>
+                      <input
+                        type="password"
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCustomerRegister()}
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+                        placeholder="Min. 6 znaków"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleCustomerRegister}
+                      disabled={authLoading || !registerEmail || !registerPassword || !registerFirstName}
+                      className="w-full py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      {authLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><UserPlus className="w-5 h-5" /> Utwórz konto</>}
+                    </button>
+
+                    <p className="text-center text-sm text-slate-500">
+                      Masz już konto?{' '}
+                      <button onClick={() => { setAuthMode('login'); setAuthError('') }} className="text-teal-600 font-medium hover:underline">
+                        Zaloguj się
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}

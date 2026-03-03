@@ -40,6 +40,7 @@ import { LoyaltyModule } from './loyalty/loyalty.module';
 import { EmployeeAccountsModule } from './employee-accounts/employee-accounts.module';
 import { DepositsModule } from './deposits/deposits.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
+import { CustomerAuthModule } from './customer-auth/customer-auth.module';
 import { appProviders } from './app.providers';
 import { TrialNotificationsService } from './subscription/trial-notifications.service';
 import { SubscriptionNotificationsService } from './subscription/subscription-notifications.service';
@@ -112,6 +113,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     EmployeeAccountsModule,
     DepositsModule,
     MarketplaceModule,
+    CustomerAuthModule,
   ],
   providers: [...appProviders, TrialNotificationsService, SubscriptionNotificationsService],
 })

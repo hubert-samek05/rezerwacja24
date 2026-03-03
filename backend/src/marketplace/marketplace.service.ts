@@ -31,9 +31,24 @@ export class MarketplaceService {
 
   /**
    * Pobiera listę opublikowanych firm z marketplace
+   * 
+   * ALGORYTM SORTOWANIA:
+   * 1. Premium (isPremium=true) - zawsze na samej górze
+   * 2. Wyróżnione (isFeatured=true) - tuż pod premium
+   * 3. Reszta wg wybranego kryterium sortowania:
+   *    - ranking: rankingScore (obliczany z: oceny, rezerwacje, wyświetlenia, kompletność profilu)
+   *    - rating: średnia ocena
+   *    - popular: liczba rezerwacji
+   *    - newest: data publikacji
+   * 
+   * rankingScore jest obliczany jako:
+   * - 40% ocena (averageRating * 20)
+   * - 30% popularność (min(bookingCount, 100))
+   * - 20% aktywność (min(viewCount/10, 50))
+   * - 10% kompletność profilu (czy ma zdjęcie, opis, etc.)
    */
   async getPublishedListings(query: ListingsQuery) {
-    const { category, subcategory, search, city, page = 1, limit = 20, sortBy = 'ranking' } = query;
+    const { category, subcategory, search, city, page = 1, limit = 24, sortBy = 'ranking' } = query;
     const skip = (page - 1) * limit;
 
     // Budowanie warunków WHERE
@@ -57,7 +72,10 @@ export class MarketplaceService {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
+        { shortDesc: { contains: search, mode: 'insensitive' } },
         { tags: { has: search.toLowerCase() } },
+        { tenants: { name: { contains: search, mode: 'insensitive' } } },
+        { tenants: { city: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -68,30 +86,32 @@ export class MarketplaceService {
       };
     }
 
-    // Sortowanie - Featured (plan Premium) zawsze na górze
-    let secondaryOrderBy: any = { rankingScore: 'desc' };
+    // Sortowanie wielopoziomowe
+    // Premium > Featured > Wybrane kryterium
+    let orderBy: any[] = [
+      { isPremium: 'desc' },   // Premium zawsze na górze
+      { isFeatured: 'desc' },  // Featured tuż pod premium
+    ];
+
     switch (sortBy) {
       case 'rating':
-        secondaryOrderBy = { averageRating: 'desc' };
+        orderBy.push({ averageRating: 'desc' }, { reviewCount: 'desc' });
         break;
       case 'newest':
-        secondaryOrderBy = { publishedAt: 'desc' };
+        orderBy.push({ publishedAt: 'desc' });
         break;
       case 'popular':
-        secondaryOrderBy = { viewCount: 'desc' };
+        orderBy.push({ bookingCount: 'desc' }, { viewCount: 'desc' });
         break;
       case 'ranking':
       default:
-        secondaryOrderBy = { rankingScore: 'desc' };
+        orderBy.push({ rankingScore: 'desc' }, { averageRating: 'desc' });
     }
 
     const [listings, total] = await Promise.all([
       this.prisma.marketplace_listings.findMany({
         where,
-        orderBy: [
-          { isFeatured: 'desc' },  // Featured (Premium) zawsze na górze
-          secondaryOrderBy,        // Potem wg wybranego kryterium
-        ],
+        orderBy,
         skip,
         take: limit,
         include: {
@@ -124,7 +144,10 @@ export class MarketplaceService {
         averageRating: listing.averageRating,
         reviewCount: listing.reviewCount,
         bookingCount: listing.bookingCount,
+        viewCount: listing.viewCount,
         isFeatured: listing.isFeatured,
+        isPremium: listing.isPremium,
+        rankingScore: listing.rankingScore,
         tenants: listing.tenants,
       })),
       pagination: {
@@ -134,6 +157,46 @@ export class MarketplaceService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Aktualizuje ranking score dla danego listingu
+   * Wywoływane po nowej rezerwacji, recenzji, lub wyświetleniu
+   */
+  async updateRankingScore(listingId: string) {
+    const listing = await this.prisma.marketplace_listings.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) return;
+
+    // Oblicz nowy ranking score
+    const ratingScore = (Number(listing.averageRating) || 0) * 20; // max 100
+    const popularityScore = Math.min(listing.bookingCount || 0, 100); // max 100
+    const activityScore = Math.min((listing.viewCount || 0) / 10, 50); // max 50
+    
+    // Kompletność profilu
+    let completenessScore = 0;
+    if (listing.coverImage) completenessScore += 10;
+    if (listing.description && listing.description.length > 100) completenessScore += 10;
+    if (listing.shortDesc) completenessScore += 5;
+    if (listing.tags && listing.tags.length > 0) completenessScore += 5;
+    if (listing.gallery && listing.gallery.length > 0) completenessScore += 10;
+    // max 40
+
+    const rankingScore = Math.round(
+      ratingScore * 0.4 +
+      popularityScore * 0.3 +
+      activityScore * 0.2 +
+      completenessScore * 0.1
+    );
+
+    await this.prisma.marketplace_listings.update({
+      where: { id: listingId },
+      data: { rankingScore },
+    });
+
+    this.logger.debug(`Updated ranking score for ${listingId}: ${rankingScore}`);
   }
 
   /**

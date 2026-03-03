@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-// Typy dla Capacitor Purchases plugin
-interface Product {
-  identifier: string;
+// Typy dla cordova-plugin-purchase (StoreKit)
+interface IAPProduct {
+  id: string;
   title: string;
   description: string;
-  price: number;
-  priceString: string;
-  currencyCode: string;
+  price: string;
+  priceMicros: number;
+  currency: string;
+  loaded: boolean;
+  valid: boolean;
+  canPurchase: boolean;
+  owned: boolean;
 }
 
 interface PurchaseResult {
@@ -21,7 +25,7 @@ interface PurchaseResult {
 interface ApplePurchasesState {
   isAvailable: boolean;
   isLoading: boolean;
-  products: Product[];
+  products: IAPProduct[];
   error: string | null;
 }
 
@@ -42,9 +46,20 @@ export const PLAN_TO_PRODUCT_ID: Record<string, string> = {
   'pro': APPLE_PRODUCT_IDS.PRO_MONTHLY,
 };
 
+// Mapowanie product ID na slug planu
+export const PRODUCT_ID_TO_PLAN: Record<string, string> = {
+  [APPLE_PRODUCT_IDS.STARTER_MONTHLY]: 'starter',
+  [APPLE_PRODUCT_IDS.STANDARD_MONTHLY]: 'standard',
+  [APPLE_PRODUCT_IDS.PRO_MONTHLY]: 'pro',
+  [APPLE_PRODUCT_IDS.STARTER_YEARLY]: 'starter',
+  [APPLE_PRODUCT_IDS.STANDARD_YEARLY]: 'standard',
+  [APPLE_PRODUCT_IDS.PRO_YEARLY]: 'pro',
+};
+
 /**
  * Hook do obsługi zakupów In-App Purchase na iOS
- * Używa Capacitor Purchases plugin (RevenueCat) lub natywnego StoreKit
+ * Używa cordova-plugin-purchase (StoreKit)
+ * TYLKO dla natywnej aplikacji iOS - na web/Android używamy Stripe
  */
 export function useApplePurchases() {
   const [state, setState] = useState<ApplePurchasesState>({
@@ -54,95 +69,183 @@ export function useApplePurchases() {
     error: null,
   });
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const storeInitialized = useRef(false);
 
-  // Sprawdź czy jesteśmy na iOS i czy IAP jest dostępny
-  const checkAvailability = useCallback(async () => {
+  // Sprawdź czy jesteśmy na NATYWNYM iOS (nie web, nie Android)
+  const isNativeIOS = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    const Capacitor = (window as any).Capacitor;
+    return Capacitor?.isNativePlatform?.() === true && Capacitor?.getPlatform?.() === 'ios';
+  }, []);
+
+  // Inicjalizuj store
+  const initializeStore = useCallback(async () => {
+    // WAŻNE: Tylko na natywnym iOS!
+    if (!isNativeIOS()) {
+      console.log('[IAP] Not native iOS - skipping IAP, using Stripe');
+      setState(prev => ({ ...prev, isAvailable: false, isLoading: false }));
+      return;
+    }
+
+    if (storeInitialized.current) return;
+
     try {
-      const Capacitor = (window as any).Capacitor;
-      const isNativeIOS = Capacitor?.isNativePlatform?.() && Capacitor?.getPlatform?.() === 'ios';
+      // cordova-plugin-purchase eksportuje globalny obiekt CdvPurchase
+      const CdvPurchase = (window as any).CdvPurchase;
       
-      if (!isNativeIOS) {
+      if (!CdvPurchase?.store) {
+        console.log('[IAP] CdvPurchase.store not available');
         setState(prev => ({ ...prev, isAvailable: false, isLoading: false }));
         return;
       }
 
-      // Sprawdź czy plugin Purchases jest dostępny
-      // Możemy użyć @revenuecat/purchases-capacitor lub własnej implementacji
-      const Purchases = Capacitor?.Plugins?.Purchases;
-      
-      if (Purchases) {
-        setState(prev => ({ ...prev, isAvailable: true, isLoading: false }));
-        await loadProducts();
-      } else {
-        // Brak pluginu - IAP niedostępny, ale to OK - użyjemy Stripe
-        console.log('[IAP] Purchases plugin not available');
-        setState(prev => ({ ...prev, isAvailable: false, isLoading: false }));
-      }
-    } catch (error) {
-      console.error('[IAP] Error checking availability:', error);
-      setState(prev => ({ ...prev, isAvailable: false, isLoading: false }));
-    }
-  }, []);
+      const store = CdvPurchase.store;
+      storeInitialized.current = true;
 
-  // Załaduj produkty z App Store
-  const loadProducts = useCallback(async () => {
-    try {
-      const Capacitor = (window as any).Capacitor;
-      const Purchases = Capacitor?.Plugins?.Purchases;
-      
-      if (!Purchases) return;
+      console.log('[IAP] Initializing StoreKit...');
 
+      // Rejestruj produkty
       const productIds = Object.values(APPLE_PRODUCT_IDS);
-      const result = await Purchases.getProducts({ productIdentifiers: productIds });
+      productIds.forEach(productId => {
+        store.register({
+          id: productId,
+          type: CdvPurchase.ProductType.PAID_SUBSCRIPTION,
+          platform: CdvPurchase.Platform.APPLE_APPSTORE,
+        });
+      });
+
+      // Obsługa zatwierdzonych transakcji
+      store.when()
+        .approved((transaction: any) => {
+          console.log('[IAP] Transaction approved:', transaction.id);
+          // Weryfikuj na backendzie
+          verifyPurchaseOnBackend({
+            productIdentifier: transaction.products[0]?.id,
+            transactionId: transaction.id,
+            receipt: transaction.appStoreReceipt,
+          }).then(() => {
+            transaction.finish();
+          }).catch((err: any) => {
+            console.error('[IAP] Backend verification failed:', err);
+          });
+        })
+        .verified((receipt: any) => {
+          console.log('[IAP] Receipt verified:', receipt);
+          receipt.finish();
+        })
+        .finished((transaction: any) => {
+          console.log('[IAP] Transaction finished:', transaction.id);
+          setIsPurchasing(false);
+        });
+
+      // Obsługa błędów
+      store.error((error: any) => {
+        console.error('[IAP] Store error:', error);
+        setState(prev => ({ ...prev, error: error.message }));
+        setIsPurchasing(false);
+      });
+
+      // Inicjalizuj store
+      await store.initialize([CdvPurchase.Platform.APPLE_APPSTORE]);
       
-      if (result?.products) {
-        setState(prev => ({ 
-          ...prev, 
-          products: result.products,
-          error: null 
-        }));
-      }
+      // Załaduj produkty
+      await store.update();
+
+      // Pobierz załadowane produkty
+      const loadedProducts: IAPProduct[] = [];
+      productIds.forEach(productId => {
+        const product = store.get(productId, CdvPurchase.Platform.APPLE_APPSTORE);
+        if (product && product.valid) {
+          loadedProducts.push({
+            id: product.id,
+            title: product.title,
+            description: product.description,
+            price: product.pricing?.price || '',
+            priceMicros: product.pricing?.priceMicros || 0,
+            currency: product.pricing?.currency || 'PLN',
+            loaded: true,
+            valid: product.valid,
+            canPurchase: product.canPurchase,
+            owned: product.owned,
+          });
+        }
+      });
+
+      console.log('[IAP] Loaded products:', loadedProducts.length);
+      
+      setState({
+        isAvailable: true,
+        isLoading: false,
+        products: loadedProducts,
+        error: null,
+      });
+
     } catch (error: any) {
-      console.error('[IAP] Error loading products:', error);
+      console.error('[IAP] Initialization error:', error);
       setState(prev => ({ 
         ...prev, 
-        error: 'Nie udało się załadować produktów' 
+        isAvailable: false, 
+        isLoading: false,
+        error: error.message 
       }));
     }
-  }, []);
+  }, [isNativeIOS]);
 
   // Kup produkt
   const purchaseProduct = useCallback(async (productId: string): Promise<PurchaseResult | null> => {
+    if (!isNativeIOS()) {
+      throw new Error('IAP only available on iOS');
+    }
+
     try {
       setIsPurchasing(true);
       setState(prev => ({ ...prev, error: null }));
 
-      const Capacitor = (window as any).Capacitor;
-      const Purchases = Capacitor?.Plugins?.Purchases;
+      const CdvPurchase = (window as any).CdvPurchase;
+      const store = CdvPurchase?.store;
       
-      if (!Purchases) {
-        throw new Error('Purchases plugin not available');
+      if (!store) {
+        throw new Error('Store not initialized');
       }
 
       console.log('[IAP] Starting purchase for:', productId);
       
-      const result = await Purchases.purchaseProduct({ productIdentifier: productId });
+      const product = store.get(productId, CdvPurchase.Platform.APPLE_APPSTORE);
       
-      console.log('[IAP] Purchase result:', result);
-      
-      if (result?.transaction) {
-        // Wyślij receipt do backendu do weryfikacji
-        await verifyPurchaseOnBackend(result.transaction);
-        return result.transaction;
+      if (!product || !product.canPurchase) {
+        throw new Error('Product not available for purchase');
       }
+
+      // Rozpocznij zakup
+      const offer = product.getOffer();
+      if (!offer) {
+        throw new Error('No offer available');
+      }
+
+      const result = await store.order(offer);
       
-      return null;
+      if (result && result.isError) {
+        if (result.code === CdvPurchase.ErrorCode.PAYMENT_CANCELLED) {
+          // Użytkownik anulował - nie pokazuj błędu
+          return null;
+        }
+        throw new Error(result.message);
+      }
+
+      console.log('[IAP] Purchase initiated');
+      
+      // Transakcja będzie obsłużona przez handler 'approved'
+      return {
+        productIdentifier: productId,
+        transactionId: result?.transactionId || 'pending',
+      };
+      
     } catch (error: any) {
       console.error('[IAP] Purchase error:', error);
       
       // Sprawdź czy użytkownik anulował
-      if (error?.code === 'E_USER_CANCELLED' || error?.message?.includes('cancel')) {
-        // Nie pokazuj błędu przy anulowaniu
+      if (error?.message?.includes('cancel') || error?.message?.includes('Cancel')) {
+        setIsPurchasing(false);
         return null;
       }
       
@@ -150,11 +253,10 @@ export function useApplePurchases() {
         ...prev, 
         error: error?.message || 'Błąd podczas zakupu' 
       }));
-      throw error;
-    } finally {
       setIsPurchasing(false);
+      throw error;
     }
-  }, []);
+  }, [isNativeIOS]);
 
   // Weryfikuj zakup na backendzie
   const verifyPurchaseOnBackend = async (transaction: PurchaseResult) => {
@@ -188,21 +290,37 @@ export function useApplePurchases() {
   };
 
   // Przywróć zakupy (dla użytkowników którzy reinstalowali aplikację)
-  const restorePurchases = useCallback(async () => {
+  const restorePurchases = useCallback(async (): Promise<boolean> => {
+    if (!isNativeIOS()) {
+      return false;
+    }
+
     try {
       setIsPurchasing(true);
       
-      const Capacitor = (window as any).Capacitor;
-      const Purchases = Capacitor?.Plugins?.Purchases;
+      const CdvPurchase = (window as any).CdvPurchase;
+      const store = CdvPurchase?.store;
       
-      if (!Purchases) {
-        throw new Error('Purchases plugin not available');
+      if (!store) {
+        throw new Error('Store not initialized');
       }
 
-      const result = await Purchases.restorePurchases();
+      // Przywróć zakupy z App Store
+      await store.restorePurchases();
       
-      if (result?.customerInfo?.activeSubscriptions?.length > 0) {
-        // Użytkownik ma aktywne subskrypcje - zsynchronizuj z backendem
+      // Sprawdź czy są aktywne subskrypcje
+      const productIds = Object.values(APPLE_PRODUCT_IDS);
+      const activeSubscriptions: string[] = [];
+      
+      productIds.forEach(productId => {
+        const product = store.get(productId, CdvPurchase.Platform.APPLE_APPSTORE);
+        if (product && product.owned) {
+          activeSubscriptions.push(productId);
+        }
+      });
+
+      if (activeSubscriptions.length > 0) {
+        // Zsynchronizuj z backendem
         const token = localStorage.getItem('token');
         const apiUrl = getApiUrl();
         
@@ -213,7 +331,7 @@ export function useApplePurchases() {
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
-            subscriptions: result.customerInfo.activeSubscriptions,
+            subscriptions: activeSubscriptions,
           }),
         });
         
@@ -231,7 +349,7 @@ export function useApplePurchases() {
     } finally {
       setIsPurchasing(false);
     }
-  }, []);
+  }, [isNativeIOS]);
 
   // Helper do pobierania API URL
   const getApiUrl = () => {
@@ -243,22 +361,24 @@ export function useApplePurchases() {
   };
 
   // Pobierz produkt po ID planu
-  const getProductForPlan = useCallback((planSlug: string): Product | undefined => {
+  const getProductForPlan = useCallback((planSlug: string): IAPProduct | undefined => {
     const productId = PLAN_TO_PRODUCT_ID[planSlug];
-    return state.products.find(p => p.identifier === productId);
+    return state.products.find(p => p.id === productId);
   }, [state.products]);
 
+  // Inicjalizuj store przy montowaniu
   useEffect(() => {
-    checkAvailability();
-  }, [checkAvailability]);
+    initializeStore();
+  }, [initializeStore]);
 
   return {
     ...state,
     isPurchasing,
+    isNativeIOS: isNativeIOS(),
     purchaseProduct,
     restorePurchases,
     getProductForPlan,
-    refreshProducts: loadProducts,
+    refreshProducts: initializeStore,
   };
 }
 

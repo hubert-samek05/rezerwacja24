@@ -48,6 +48,7 @@ export default function MainNavigation() {
       forWhom: locale === 'pl' ? 'Dla kogo?' : 'For whom?',
       howItWorks: locale === 'pl' ? 'Jak to działa' : 'How it works',
       pricing: locale === 'pl' ? 'Cennik' : 'Pricing',
+      help: locale === 'pl' ? 'Pomoc' : 'Help',
       contact: locale === 'pl' ? 'Kontakt' : 'Contact',
       allFeatures: locale === 'pl' ? 'Wszystkie funkcje →' : 'All features →',
       allCategories: locale === 'pl' ? 'Zobacz wszystkie kategorie →' : 'See all categories →',
@@ -78,8 +79,8 @@ export default function MainNavigation() {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center">
             <Image 
               src="/logo.png"
@@ -245,12 +246,26 @@ export default function MainNavigation() {
                   <div className="my-3 border-t border-gray-100"></div>
                   
                   {/* Other links */}
-                  <Link 
-                    href="/firmy" 
+                  <a 
+                    href="/dla-biznesu#jak-to-dziala" 
                     onClick={() => setMobileMenuOpen(false)} 
                     className="block py-3 px-4 text-base text-gray-700 hover:bg-gray-50 font-medium rounded-xl transition-colors"
                   >
-                    {locale === 'pl' ? 'Katalog firm' : 'Directory'}
+                    {t.nav.howItWorks}
+                  </a>
+                  <a 
+                    href="/dla-biznesu#cennik" 
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className="block py-3 px-4 text-base text-gray-700 hover:bg-gray-50 font-medium rounded-xl transition-colors"
+                  >
+                    {t.nav.pricing}
+                  </a>
+                  <Link 
+                    href="/support" 
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className="block py-3 px-4 text-base text-gray-700 hover:bg-gray-50 font-medium rounded-xl transition-colors"
+                  >
+                    {t.nav.help}
                   </Link>
                   <Link 
                     href="/contact" 

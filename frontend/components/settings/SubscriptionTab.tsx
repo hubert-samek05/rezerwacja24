@@ -15,11 +15,13 @@ import {
   BarChart3,
   Star,
   AlertTriangle,
+  Apple,
 } from 'lucide-react';
 import { useAccountStatus } from '@/hooks/useAccountStatus';
 import StripeProvider from '@/components/billing/StripeProvider';
 import StripeCardForm from '@/components/billing/StripeCardForm';
 import { useDashboardTranslations } from '@/hooks/useDashboardTranslations';
+import { useApplePurchases, PLAN_TO_PRODUCT_ID } from '@/hooks/useApplePurchases';
 
 interface Plan {
   id: string;
@@ -100,9 +102,22 @@ export default function SubscriptionTab() {
   const [changingPlan, setChangingPlan] = useState(false);
   const [billingDataComplete, setBillingDataComplete] = useState(false);
   const [showBillingDataWarning, setShowBillingDataWarning] = useState(false);
+  const [showPaymentMethodSelector, setShowPaymentMethodSelector] = useState(false);
+  const [pendingPlanChange, setPendingPlanChange] = useState<{ planId: string; planSlug: string } | null>(null);
   
   const { isSuspended, suspendedReason } = useAccountStatus();
   const { d, isB2B, formatPricePerMonth } = useDashboardTranslations();
+  
+  // Apple In-App Purchase - TYLKO na natywnym iOS
+  const { 
+    isAvailable: isAppleIAPAvailable, 
+    isLoading: isLoadingIAP,
+    isPurchasing: isApplePurchasing,
+    products: appleProducts,
+    purchaseProduct: purchaseAppleProduct,
+    isNativeIOS,
+    error: appleError,
+  } = useApplePurchases();
 
   useEffect(() => {
     fetchData();
@@ -275,7 +290,7 @@ export default function SubscriptionTab() {
     setTimeout(() => setSuccessMessage(null), 5000);
   };
 
-  const handleChangePlan = async (planId: string) => {
+  const handleChangePlan = async (planId: string, planSlug?: string) => {
     if (planId === subscription?.subscription_plans?.id) return;
     
     if (!billingDataComplete) {
@@ -283,6 +298,19 @@ export default function SubscriptionTab() {
       return;
     }
     
+    // Na iOS z dostępnym IAP - pokaż wybór metody płatności
+    if (isNativeIOS && isAppleIAPAvailable && planSlug) {
+      setPendingPlanChange({ planId, planSlug });
+      setShowPaymentMethodSelector(true);
+      return;
+    }
+    
+    // Standardowa zmiana planu przez Stripe
+    await processStripePayment(planId);
+  };
+
+  // Zmiana planu przez Stripe
+  const processStripePayment = async (planId: string) => {
     try {
       setChangingPlan(true);
       setError(null);
@@ -310,6 +338,49 @@ export default function SubscriptionTab() {
       setError('Wystąpił błąd podczas zmiany planu');
     } finally {
       setChangingPlan(false);
+    }
+  };
+
+  // Zakup przez Apple In-App Purchase
+  const handleApplePurchase = async (planSlug: string) => {
+    const productId = PLAN_TO_PRODUCT_ID[planSlug];
+    if (!productId) {
+      setError('Produkt nie znaleziony');
+      return;
+    }
+
+    try {
+      setChangingPlan(true);
+      setError(null);
+      
+      const result = await purchaseAppleProduct(productId);
+      
+      if (result) {
+        setSuccessMessage('Subskrypcja została aktywowana przez Apple');
+        setShowPaymentMethodSelector(false);
+        setPendingPlanChange(null);
+        fetchData();
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (err: any) {
+      // Nie pokazuj błędu jeśli użytkownik anulował
+      if (!err?.message?.includes('cancel')) {
+        setError(err?.message || 'Błąd podczas zakupu przez Apple');
+      }
+    } finally {
+      setChangingPlan(false);
+    }
+  };
+
+  // Obsługa wyboru metody płatności
+  const handlePaymentMethodSelect = (method: 'apple' | 'stripe') => {
+    if (!pendingPlanChange) return;
+    
+    if (method === 'apple') {
+      handleApplePurchase(pendingPlanChange.planSlug);
+    } else {
+      setShowPaymentMethodSelector(false);
+      processStripePayment(pendingPlanChange.planId);
     }
   };
 
@@ -903,12 +974,12 @@ export default function SubscriptionTab() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleChangePlan(plan.id);
+                      handleChangePlan(plan.id, plan.slug);
                     }}
-                    disabled={changingPlan}
+                    disabled={changingPlan || isApplePurchasing}
                     className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {changingPlan ? (
+                    {changingPlan || isApplePurchasing ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
@@ -1025,6 +1096,95 @@ export default function SubscriptionTab() {
                 {d.billingData?.completeData || 'Uzupełnij dane'}
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Wybór metody płatności (TYLKO na iOS) */}
+      {showPaymentMethodSelector && pendingPlanChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--border-color)]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-emerald-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                {isB2B ? 'Choose payment method' : 'Wybierz metodę płatności'}
+              </h3>
+            </div>
+            
+            <p className="text-[var(--text-secondary)] mb-6">
+              {isB2B 
+                ? 'Select how you want to pay for your subscription.' 
+                : 'Wybierz jak chcesz zapłacić za subskrypcję.'
+              }
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {/* Opcja Apple In-App Purchase */}
+              <button
+                onClick={() => handlePaymentMethodSelect('apple')}
+                disabled={changingPlan || isApplePurchasing}
+                className="w-full p-4 rounded-xl border-2 border-[var(--border-color)] hover:border-emerald-500 transition-all text-left flex items-center gap-4 disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-black flex items-center justify-center flex-shrink-0">
+                  <Apple className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-[var(--text-primary)]">
+                    {isB2B ? 'Apple Pay / In-App Purchase' : 'Apple Pay / Zakup w aplikacji'}
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {isB2B ? 'Pay with Apple' : 'Zapłać przez Apple'}
+                  </p>
+                </div>
+                {isApplePurchasing && <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />}
+              </button>
+
+              {/* Opcja Stripe (karta kredytowa) */}
+              <button
+                onClick={() => handlePaymentMethodSelect('stripe')}
+                disabled={changingPlan || isApplePurchasing}
+                className="w-full p-4 rounded-xl border-2 border-[var(--border-color)] hover:border-emerald-500 transition-all text-left flex items-center gap-4 disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-[var(--text-primary)]">
+                    {isB2B ? 'Credit/Debit Card' : 'Karta kredytowa/debetowa'}
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {isB2B ? 'Pay with Stripe' : 'Zapłać przez Stripe'}
+                  </p>
+                </div>
+                {changingPlan && !isApplePurchasing && <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />}
+              </button>
+            </div>
+
+            {/* Błąd Apple IAP */}
+            {appleError && (
+              <p className="text-sm text-red-500 mb-4">{appleError}</p>
+            )}
+            
+            <button
+              onClick={() => {
+                setShowPaymentMethodSelector(false);
+                setPendingPlanChange(null);
+              }}
+              disabled={changingPlan || isApplePurchasing}
+              className="w-full px-4 py-2.5 border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-secondary)] transition-colors disabled:opacity-50"
+            >
+              {d.buttons?.cancel || 'Anuluj'}
+            </button>
+
+            {/* Info o subskrypcji */}
+            <p className="text-xs text-[var(--text-muted)] text-center mt-4">
+              {isB2B 
+                ? 'Subscription renews automatically. You can cancel anytime.'
+                : 'Subskrypcja odnawia się automatycznie. Możesz anulować w każdej chwili.'
+              }
+            </p>
           </div>
         </div>
       )}

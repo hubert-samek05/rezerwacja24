@@ -1512,6 +1512,8 @@ export class BookingsService {
       date: data.date,
       time: data.time,
       customerName: data.customerName,
+      customerEmail: data.customerEmail,
+      customerAccountId: data.customerAccountId,
     })}`);
     
     const tenantId = data.tenantId;
@@ -1571,13 +1573,48 @@ export class BookingsService {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
     
+    // Automatyczne powiązanie z kontem klienta po emailu (jeśli nie przekazano customerAccountId)
+    let customerAccountId = data.customerAccountId || null;
+    if (!customerAccountId && data.customerEmail) {
+      const customerAccount = await this.prisma.customer_accounts.findUnique({
+        where: { email: data.customerEmail.toLowerCase() },
+        select: { id: true },
+      });
+      if (customerAccount) {
+        customerAccountId = customerAccount.id;
+        this.logger.log(`Auto-linked customer to account by email: ${customerAccountId}`);
+      }
+    }
+    
     // Znajdź lub utwórz klienta
-    let customer = await this.prisma.customers.findFirst({
-      where: {
-        tenantId,
-        phone: data.customerPhone,
-      },
-    });
+    // PRIORYTET: 1) email (unikalny dla konta), 2) telefon (fallback)
+    let customer = null;
+    
+    // Najpierw szukaj po emailu (jeśli jest) - email jest bardziej wiarygodny
+    if (data.customerEmail) {
+      customer = await this.prisma.customers.findFirst({
+        where: {
+          tenantId,
+          email: data.customerEmail.toLowerCase(),
+        },
+      });
+      if (customer) {
+        this.logger.log(`Found customer by email: ${customer.id}`);
+      }
+    }
+    
+    // Jeśli nie znaleziono po emailu, szukaj po telefonie
+    if (!customer && data.customerPhone) {
+      customer = await this.prisma.customers.findFirst({
+        where: {
+          tenantId,
+          phone: data.customerPhone,
+        },
+      });
+      if (customer) {
+        this.logger.log(`Found customer by phone: ${customer.id}`);
+      }
+    }
     
     if (!customer) {
       // Utwórz nowego klienta ze zgodami
@@ -1588,7 +1625,9 @@ export class BookingsService {
           firstName,
           lastName,
           phone: data.customerPhone,
-          email: data.customerEmail || null,
+          email: data.customerEmail ? data.customerEmail.toLowerCase() : null,
+          // Powiązanie z kontem klienta
+          customerAccountId,
           // Zgody RODO i marketingowe
           rodo_consent: data.rodoConsent || false,
           rodo_consent_date: data.rodoConsent ? new Date() : null,
@@ -1598,10 +1637,20 @@ export class BookingsService {
           updatedAt: new Date(),
         },
       });
-      this.logger.log(`Created new customer: ${customer.id} with consents`);
+      this.logger.log(`Created new customer: ${customer.id} with consents, customerAccountId: ${customerAccountId || 'none'}`);
     } else {
-      // Zaktualizuj zgody istniejącego klienta (jeśli wyraził nowe)
+      // Zaktualizuj dane istniejącego klienta
       const updateData: any = { updatedAt: new Date() };
+      
+      // Aktualizuj email jeśli nie ma lub jest inny
+      if (data.customerEmail && customer.email !== data.customerEmail.toLowerCase()) {
+        updateData.email = data.customerEmail.toLowerCase();
+      }
+      
+      // Aktualizuj telefon jeśli nie ma lub jest inny
+      if (data.customerPhone && customer.phone !== data.customerPhone) {
+        updateData.phone = data.customerPhone;
+      }
       
       if (data.rodoConsent && !customer.rodo_consent) {
         updateData.rodo_consent = true;
@@ -1612,13 +1661,18 @@ export class BookingsService {
         updateData.marketing_consent_date = new Date();
         updateData.marketing_consent_text = data.marketingConsentText;
       }
+      // Powiązanie z kontem klienta (jeśli zalogowany i jeszcze nie powiązany)
+      if (customerAccountId && !customer.customerAccountId) {
+        updateData.customerAccountId = customerAccountId;
+        this.logger.log(`Linking existing customer ${customer.id} to account: ${customerAccountId}`);
+      }
       
       if (Object.keys(updateData).length > 1) {
         customer = await this.prisma.customers.update({
           where: { id: customer.id },
           data: updateData,
         });
-        this.logger.log(`Updated customer consents: ${customer.id}`);
+        this.logger.log(`Updated customer: ${customer.id}, customerAccountId: ${updateData.customerAccountId || 'unchanged'}`);
       }
     }
     
@@ -1720,6 +1774,32 @@ export class BookingsService {
         WHERE id = ${booking.id}
       `;
       this.logger.log(`Deposit required for booking ${booking.id}: ${data.depositAmount} PLN`);
+    }
+    
+    // 🔄 Jeśli to przesunięcie terminu - anuluj starą rezerwację
+    if (data.rescheduleBookingId) {
+      try {
+        const oldBooking = await this.prisma.bookings.findUnique({
+          where: { id: data.rescheduleBookingId },
+          select: { id: true, status: true, customerId: true },
+        });
+        
+        if (oldBooking && oldBooking.status !== 'CANCELLED') {
+          await this.prisma.bookings.update({
+            where: { id: data.rescheduleBookingId },
+            data: {
+              status: 'CANCELLED',
+              cancelledAt: new Date(),
+              cancelledBy: 'customer',
+              cancellationReason: `Przesunięto na nowy termin (nowa rezerwacja: ${booking.id})`,
+            },
+          });
+          this.logger.log(`🔄 Anulowano starą rezerwację ${data.rescheduleBookingId} - przesunięto na ${booking.id}`);
+        }
+      } catch (rescheduleError) {
+        this.logger.error(`❌ Błąd anulowania starej rezerwacji: ${rescheduleError}`);
+        // Nie przerywamy - nowa rezerwacja została utworzona
+      }
     }
     
     // 📧 Wyślij email potwierdzający rezerwację do klienta
