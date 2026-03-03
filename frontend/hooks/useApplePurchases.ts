@@ -29,31 +29,26 @@ interface ApplePurchasesState {
   error: string | null;
 }
 
-// Product IDs zdefiniowane w App Store Connect
+// Product IDs zdefiniowane w App Store Connect (v2)
 export const APPLE_PRODUCT_IDS = {
-  STARTER_MONTHLY: 'pl.rezerwacja24.starter.monthly',
-  STANDARD_MONTHLY: 'pl.rezerwacja24.standard.monthly',
-  PRO_MONTHLY: 'pl.rezerwacja24.pro.monthly',
-  STARTER_YEARLY: 'pl.rezerwacja24.starter.yearly',
-  STANDARD_YEARLY: 'pl.rezerwacja24.standard.yearly',
-  PRO_YEARLY: 'pl.rezerwacja24.pro.yearly',
+  STARTER_MONTHLY: 'pl.rezerwacja24.starter.monthly.v2',
+  PRO_MONTHLY: 'pl.rezerwacja24.pro.monthly.v2',
+  PREMIUM_MONTHLY: 'pl.rezerwacja24.premium.monthly.v2',
 };
 
 // Mapowanie planów na product IDs
+// Uwaga: w bazie danych mamy plany: starter, pro, premium
 export const PLAN_TO_PRODUCT_ID: Record<string, string> = {
   'starter': APPLE_PRODUCT_IDS.STARTER_MONTHLY,
-  'standard': APPLE_PRODUCT_IDS.STANDARD_MONTHLY,
   'pro': APPLE_PRODUCT_IDS.PRO_MONTHLY,
+  'premium': APPLE_PRODUCT_IDS.PREMIUM_MONTHLY,
 };
 
 // Mapowanie product ID na slug planu
 export const PRODUCT_ID_TO_PLAN: Record<string, string> = {
   [APPLE_PRODUCT_IDS.STARTER_MONTHLY]: 'starter',
-  [APPLE_PRODUCT_IDS.STANDARD_MONTHLY]: 'standard',
   [APPLE_PRODUCT_IDS.PRO_MONTHLY]: 'pro',
-  [APPLE_PRODUCT_IDS.STARTER_YEARLY]: 'starter',
-  [APPLE_PRODUCT_IDS.STANDARD_YEARLY]: 'standard',
-  [APPLE_PRODUCT_IDS.PRO_YEARLY]: 'pro',
+  [APPLE_PRODUCT_IDS.PREMIUM_MONTHLY]: 'premium',
 };
 
 /**
